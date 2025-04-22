@@ -103,7 +103,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
 // Windwsアプリでの円とリポウント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
-
+  // 誰も補足しなかった場合(Unhandled),補足する関数を登録
+  // main関数はじまってすぐに登録するとよい
+  SetUnhandledExceptionFilter(ExportDump);
   // ログのディレクトリを用意
   std::filesystem::create_directory("logs");
 
@@ -212,10 +214,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   MSG msg{};
   // ウィンドウの×ボタンが押されるまでループ
   while (msg.message != WM_QUIT) {
-    // 誰も補足しなかった場合(Unhandled),補足する関数を登録
-    // main関数はじまってすぐに登録するとよい
-    SetUnhandledExceptionFilter(ExportDump);
-   
+    uint32_t *p = nullptr;
+    *p = 100;
 
     // Windowにメッセージが来てたら最優先で処理させる
     if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
