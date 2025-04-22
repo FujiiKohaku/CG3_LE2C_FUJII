@@ -8,11 +8,43 @@
 // #include <format>
 #include <fstream>
 #include <string>
+#include <strsafe.h>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
+#include <dbghelp.h>
+#pragma comment(lib, "dbghelp.lib")
 //////////////
 // 関数の作成///
 //////////////
+
+static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
+  // 時刻を取得して、時刻を名前に入れたファイルを作成。Dumpsディレクトリ以下ぶ出力
+  SYSTEMTIME time;
+  GetLocalTime(&time);
+  wchar_t filePath[MAX_PATH] = {0};
+  CreateDirectory(L"./Dumps", nullptr);
+  StringCchPrintfW(filePath, MAX_PATH, L"./Dumps/%04d-%02d%02d-%02d%02d.dmp",
+                   time.wYear, time.wMonth, time.wDay, time.wHour,
+                   time.wMinute);
+  HANDLE dumpFileHandle =
+      CreateFile(filePath, GENERIC_READ | GENERIC_WRITE,
+                 FILE_SHARE_WRITE | FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
+  // processId(このexeのId)とクラッシュ(例外)の発生したthreadIdを取得
+  DWORD processId = GetCurrentProcessId();
+  DWORD threadId = GetCurrentThreadId();
+  // 設定情報を入力
+  MINIDUMP_EXCEPTION_INFORMATION minidumpInformation{0};
+  minidumpInformation.ThreadId = threadId;
+  minidumpInformation.ExceptionPointers = exception;
+  minidumpInformation.ClientPointers = TRUE;
+  // Dumpを出力。MiniDumpNormalは最低限の情報を出力するフラグ
+  MiniDumpWriteDump(GetCurrentProcess(), processId, dumpFileHandle,
+                    MiniDumpNormal, &minidumpInformation, nullptr, nullptr);
+  // 他に関連づけられているSEH例外ハンドラがあれば実行。
+
+  return EXCEPTION_EXECUTE_HANDLER;
+}
+
 void Log(std::ostream &os, const std::string &message) {
   os << message << std::endl;
   OutputDebugStringA(message.c_str());
@@ -180,6 +212,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   MSG msg{};
   // ウィンドウの×ボタンが押されるまでループ
   while (msg.message != WM_QUIT) {
+    // 誰も補足しなかった場合(Unhandled),補足する関数を登録
+    // main関数はじまってすぐに登録するとよい
+    SetUnhandledExceptionFilter(ExportDump);
+   
+
     // Windowにメッセージが来てたら最優先で処理させる
     if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
       TranslateMessage(&msg);
@@ -193,5 +230,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   Log(logStream, "HelloWorld\n");
   Log(logStream, ConvertString(std::format(L"clientSize:{},{}\n", kClientWidth,
                                            kClientHeight)));
+
   return 0;
 }
