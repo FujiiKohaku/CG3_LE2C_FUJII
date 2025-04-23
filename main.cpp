@@ -218,9 +218,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                   IID_PPV_ARGS(&commandQueue));
   // コマンドキューの生成が上手くいかなかったので起動できない
   assert(SUCCEEDED(hr));
-  //コマンドアロケーターを生成する
+  // コマンドアロケーターを生成する
   ID3D12CommandAllocator *commandAllocator = nullptr;
-  hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,)
+  hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
+                                      IID_PPV_ARGS(&commandAllocator));
+  // コマンドキューアロケーターの生成があ上手くいかなかったので起動できない
+  assert(SUCCEEDED(hr));
+
+  // コマンドリストを生成する
+  ID3D12GraphicsCommandList *commandList = nullptr;
+  hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
+                                 commandAllocator, nullptr,
+                                 IID_PPV_ARGS(&commandList));
+  // コマンドリストの生成が上手くいかなかったので起動できない
+  assert(SUCCEEDED(hr));
   MSG msg{};
   // ウィンドウの×ボタンが押されるまでループ
   while (msg.message != WM_QUIT) {
