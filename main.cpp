@@ -300,13 +300,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
                                   nullptr);
   // 指定した色で画面全体をクリアする
-  float clearColor[] = {1.0f, 0.25f, 0.5f, 1.0f}; /// 青っぽい色RGBAの順
+  float clearColor[] = {
+      0.1f, 0.25f, 0.5f,
+      1.0f}; /// 青っぽい色RGBAの順 //これ最初の文字1.0fにするとピンク画面になる
   commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0,
                                      nullptr);
   // コマンドリストの内容を確定させる。すべ手のコマンドを積んでからCloseすること
   hr = commandList->Close();
   assert(SUCCEEDED(hr));
-  
+
+  // GPUにコマンドリストの実行を行わせる
+  ID3D12CommandList *commandLists[] = {commandList};
+  commandQueue->ExecuteCommandLists(1, commandLists);
+  // GPUとosに画面の交換を行うよう通知する
+  swapChain->Present(1, 0);
+  // 次のｆｒａｍｅ用のコマンドりイストを準備
+  hr = commandAllocator->Reset();
+  assert(SUCCEEDED(hr));
+  hr = commandList->Reset(commandAllocator, nullptr);
+  assert(SUCCEEDED(hr));
+
   MSG msg{};
   // ウィンドウの×ボタンが押されるまでループ
   while (msg.message != WM_QUIT) {
