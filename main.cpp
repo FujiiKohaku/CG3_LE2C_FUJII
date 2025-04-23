@@ -294,7 +294,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   device->CreateRenderTargetView(swapChainResources[1], &rtvDesc,
                                  rtvHandles[1]);
 
-
+  // これから書き込むバックバッファのインデックスを取得
+  UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+  // 描画先のRTVうぃ設定する
+  commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
+                                  nullptr);
+  // 指定した色で画面全体をクリアする
+  float clearColor[] = {1.0f, 0.25f, 0.5f, 1.0f}; /// 青っぽい色RGBAの順
+  commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0,
+                                     nullptr);
+  // コマンドリストの内容を確定させる。すべ手のコマンドを積んでからCloseすること
+  hr = commandList->Close();
+  assert(SUCCEEDED(hr));
+  
   MSG msg{};
   // ウィンドウの×ボタンが押されるまでループ
   while (msg.message != WM_QUIT) {
