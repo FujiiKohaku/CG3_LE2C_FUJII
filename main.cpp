@@ -233,8 +233,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
     // 警告時に泊まる
     infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
-    //抑制するメッセージのＩＤ
-   
+    // 抑制するメッセージのＩＤ
+    D3D12_MESSAGE_ID denyIds[] = {
+        // windows11でのDXGIデバックレイヤーとDX12デバックレイヤーの相互作用バグによるエラーメッセージ
+        // https://stackoverflow.com/questions/69805245/directx-12-application-is-crashing-in-windows-11
+        D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE};
+    // 抑制するレベル
+    D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
+    D3D12_INFO_QUEUE_FILTER filter{};
+    filter.DenyList.NumIDs = _countof(denyIds);
+    filter.DenyList.pIDList = denyIds;
+    filter.DenyList.NumSeverities = _countof(severities);
+    filter.DenyList.pSeverityList = severities;
+    // 指定したメッセージの表示wp抑制する
+    infoQueue->PushStorageFilter(&filter);
     // 解放
     infoQueue->Release();
   }
