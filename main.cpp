@@ -158,8 +158,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                            wc.hInstance,         // インスタンスハンドル
                            nullptr);             // オプション
 
+#ifdef _DEBUG
 
-
+  ID3D12Debug1 *debugController = nullptr;
+  if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+    // デバックレイヤーを有効化する
+    debugController->EnableDebugLayer();
+    // さらに6PU側でもチェックリストを行うようにする
+    debugController->SetEnableGPUBasedValidation(TRUE);
+  }
+#endif // _DEBUG
 
   // ウィンドウを表示する
   ShowWindow(hwnd, SW_SHOW);
@@ -214,6 +222,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // デバイスの生成が上手くいかなかったので起動できない
   assert(device != nullptr);
   Log(logStream, "Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
+
+#ifdef _DEBUG
+
+  ID3D12InfoQueue *infoQueue = nullptr;
+  if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
+    // やばいエラー時に止まる
+    infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+    // エラー時に止まる
+    infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+    // 警告時に泊まる
+    infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
+    //抑制するメッセージのＩＤ
+   
+    // 解放
+    infoQueue->Release();
+  }
+
+#endif // DEBUG
+
   // コマンドキューを生成する
   ID3D12CommandQueue *commandQueue = nullptr;
   D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
