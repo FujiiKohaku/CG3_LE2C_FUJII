@@ -232,6 +232,44 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                  IID_PPV_ARGS(&commandList));
   // コマンドリストの生成が上手くいかなかったので起動できない
   assert(SUCCEEDED(hr));
+
+  // スワップチェーンを生成する
+  IDXGISwapChain4 *swapChain = nullptr;
+  DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
+  swapChainDesc.Width =
+      kClientWidth; // 画面の幅。ウィンドウのクライアント領域を同じものんにしておく
+  swapChainDesc.Height =
+      kClientHeight; // 画面の高さ。ウィンドウのクライアント領域を同じものにしておく
+  swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式
+  swapChainDesc.SampleDesc.Count = 1;                // マルチサンプルしない
+  swapChainDesc.BufferUsage =
+      DXGI_USAGE_RENDER_TARGET_OUTPUT; // 描画のターゲットとしてりようする
+  swapChainDesc.BufferCount = 2;       // ダブルバッファ
+  swapChainDesc.SwapEffect =
+      DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニターに移したら,中身を吐き
+  // コマンドキュー,ウィンドウバンドル、設定を渡して生成する
+  hr = dxgiFactory->CreateSwapChainForHwnd(
+      commandQueue, hwnd, &swapChainDesc, nullptr, nullptr,
+      reinterpret_cast<IDXGISwapChain1 **>(&swapChain));
+  assert(SUCCEEDED(hr));
+
+  // ディスクリプタヒープの生成
+  ID3D12DescriptorHeap *rtvDescriptorHeap = nullptr;
+
+  D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc{};
+  rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+  rtvDescriptorHeapDesc.NumDescriptors = 2;
+
+  hr = device->CreateDescriptorHeap(&rtvDescriptorHeapDesc,
+                                    IID_PPV_ARGS(&rtvDescriptorHeap));
+
+  //SwapChainからResourceを引っ張ってクル
+
+
+
+  // ディスクリプタヒープが作れなかったので起動できない
+  assert(SUCCEEDED(hr));
+
   MSG msg{};
   // ウィンドウの×ボタンが押されるまでループ
   while (msg.message != WM_QUIT) {
