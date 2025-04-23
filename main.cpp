@@ -158,6 +158,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                            wc.hInstance,         // インスタンスハンドル
                            nullptr);             // オプション
 
+
+
+
   // ウィンドウを表示する
   ShowWindow(hwnd, SW_SHOW);
 
