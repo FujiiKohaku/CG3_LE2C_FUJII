@@ -15,6 +15,9 @@
 #pragma comment(lib, "dbghelp.lib")
 #include <dxgidebug.h>
 #pragma comment(lib, "dxguid.lib")
+#include <dxcapi.h>
+#pragma comment(lib, "dxcompiler,lib")
+
 //////////////
 // 関数の作成///
 //////////////
@@ -348,6 +351,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // FenceのSignalを待つためのイベントを作成する01_02
   HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
   assert(fenceEvent != nullptr);
+
+  // dxcCompilerを初期化CG2_02_00
+  IDxcUtils *dxcUtils = nullptr;
+  IDxcCompiler3 *dxcCompiler = nullptr;
+  hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
+  assert(SUCCEEDED(hr));
+  hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
+  assert(SUCCEEDED(hr));
+
+  // 現時点でincludeはしないがincludeに対応するための設定を行っておく
+  IDxcIncludeHandler *includHandler = nullptr;
+  hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
+  assert(SUCCEEDED(hr));
 
   MSG msg{};
 
