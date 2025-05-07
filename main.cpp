@@ -351,6 +351,39 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // 画面のクリア処理
       //   これから書き込むバックバッファのインデックスを取得
       UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+      // TransitionBarrieの設定01_02
+      D3D12_RESOURCE_BARRIER barrier{};
+      // 今回のバリアはTransion
+      barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+      // Noneにしておく
+      barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+      // バリアをはる対象のリソース。現在のバックバッファに対して行う
+      barrier.Transition.pResource = swapChainResources[backBufferIndex];
+      // 遷移前(現在)のResourceState
+      barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+      // 遷移後のResourceState
+      barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+      // TransitionBarrierを張る
+      commandList->ResourceBarrier(1, &barrier);
+
+      // 画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
+      barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+      barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+      // TransitionBarrierを張る
+      commandList->ResourceBarrier(1, &barrier);
+
+      //////
+      // 初期値でFenceを作る01_02
+      ID3D12Fence *Fence = nullptr;
+      uint64_t fenceValue = 0;
+      hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE,IID_PPV_ARGS(&Fence));
+      assert(SUCCEEDED(hr));
+
+      //FenceのSignalを待つためのイベントを作成する
+      HANDLE
+
+
+
       // 描画先のRTVうぃ設定する
       commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
                                       nullptr);
