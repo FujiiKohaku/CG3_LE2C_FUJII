@@ -365,7 +365,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       hr = commandList->Close();
       assert(SUCCEEDED(hr));
 
-      // GPUにコマンドリストの実行を行わせる
+      // GPUにコマンドリストの実行を行わせる;
       ID3D12CommandList *commandLists[] = {commandList};
       commandQueue->ExecuteCommandLists(1, commandLists);
       // GPUとosに画面の交換を行うよう通知する
