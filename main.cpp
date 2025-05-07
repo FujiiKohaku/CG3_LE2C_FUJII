@@ -13,6 +13,8 @@
 #pragma comment(lib, "dxgi.lib")
 #include <dbghelp.h>
 #pragma comment(lib, "dbghelp.lib")
+#include <dxgidebug.h>
+#pragma comment(lib, "dxguid.lib")
 //////////////
 // 関数の作成///
 //////////////
@@ -378,8 +380,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // TransitionBarrierを張る
       commandList->ResourceBarrier(1, &barrier);
 
-
-
       // 描画先のRTVうぃ設定する
       commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
                                       nullptr);
@@ -391,7 +391,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->ClearRenderTargetView(rtvHandles[backBufferIndex],
                                          clearColor, 0, nullptr);
 
-            // 画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
+      // 画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
       barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
       barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
       // TransitionBarrierを張る
@@ -432,5 +432,30 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   Log(logStream, ConvertString(std::format(L"clientSize:{},{}\n", kClientWidth,
                                            kClientHeight)));
 
+  // リソースチェックCG2_01_03
+  IDXGIDebug1 *debug;
+  if (SUCCEEDED(DXGIGetDebugInterface1(1, IID_PPV_ARGS(&debug)))) {
+    debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
+    debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
+    debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
+    debug->Release();
+    // 解放処理CG2_01_03
+    CloseHandle(fenceEvent);
+    fence->Release();
+    rtvDescriptorHeap->Release();
+    swapChainResources[0]->Release();
+    swapChainResources[1]->Release();
+    swapChain->Release();
+    commandList->Release();
+    commandAllocator->Release();
+    commandQueue->Release();
+    device->Release();
+    useAdapter->Release();
+    dxgiFactory->Release();
+#ifdef _DeBUG
+    debugController->Release();
+#endif
+    CloseWindow(hwnd);
+  }
   return 0;
 }
