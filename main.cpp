@@ -105,78 +105,79 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   // 標準のメッセージ処理を行う
   return DefWindowProc(hwnd, msg, wparam, lparam);
 }
-// CompileShader関数
+// CompileShader関数02_00
 IDxcBlob *CompileShader(
-    // CompilerするSHaderファイルへのパス
+    // CompilerするSHaderファイルへのパス02_00
     const std::wstring &filepath,
-    // Compilerに使用するprofile
+    // Compilerに使用するprofile02_00
     const wchar_t *profile,
-    // 初期化で生成したものを3つ
+    // 初期化で生成したものを3つ02_00
     IDxcUtils *dxcUtils, IDxcCompiler3 *dxcCompiler,
     IDxcIncludeHandler *includeHandler, std::ostream &os) {
-  // ここの中身を書いていく
-  // 1.hlslファイルを読み込む
-  // これからシェーダーをコンパイルする旨をログに出す
+  // ここの中身を書いていく02_00
+  // 1.hlslファイルを読み込む02_00
+  // これからシェーダーをコンパイルする旨をログに出す02_00
   Log(os, ConvertString(std::format(L"Begin CompileShader,path:{},profike:{}\n",
                                     filepath, profile)));
-  // hlslファイルを読む
+  // hlslファイルを読む02_00
   IDxcBlobEncoding *shaderSource = nullptr;
   HRESULT hr = dxcUtils->LoadFile(filepath.c_str(), nullptr, &shaderSource);
-  // 読めなかったら止める
+  // 読めなかったら止める02_00
   assert(SUCCEEDED(hr));
-  // 読み込んだファイルの内容を設定する
+  // 読み込んだファイルの内容を設定する02_00
   DxcBuffer shaderSourceBuffer;
   shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
   shaderSourceBuffer.Size = shaderSource->GetBufferSize();
-  shaderSourceBuffer.Encoding = DXC_CP_UTF8; // UTF8の文字コードであることを通知
+  shaderSourceBuffer.Encoding =
+      DXC_CP_UTF8; // UTF8の文字コードであることを通知02_00
   // 2.Compileする
   LPCWSTR arguments[] = {
-      filepath.c_str(), // コンパイル対象のhlslファイル名
+      filepath.c_str(), // コンパイル対象のhlslファイル名02_00
       L"-E",
-      L"main", // エントリーポイントの指定。基本的にmain以外にはしない
+      L"main", // エントリーポイントの指定。基本的にmain以外にはしない02_00
       L"-T",
-      profile, // shaderProfileの設定
+      profile, // shaderProfileの設定02_00
       L"-Zi"
-      L"-Qembed_debug", // デバック用の設定を埋め込む
-      L"-Od",           /// 最適化を外しておく
-      L"-Zpr"           // メモリレイアウトは行優先
+      L"-Qembed_debug", // デバック用の設定を埋め込む02_00
+      L"-Od",           /// 最適化を外しておく02_00
+      L"-Zpr"           // メモリレイアウトは行優先02_00
 
   };
-  // 実際にShaderをコンパイルする
+  // 実際にShaderをコンパイルする02_00
   IDxcResult *shaderResult = nullptr;
   hr = dxcCompiler->Compile(
 
-      &shaderSourceBuffer,        // 読み込んだファイル
-      arguments,                  // コンパイルオプション
-      _countof(arguments),        // コンパイルオプションの数
-      includeHandler,             // includeが含まれた諸々
-      IID_PPV_ARGS(&shaderResult) // コンパイル結果
+      &shaderSourceBuffer,        // 読み込んだファイル02_00
+      arguments,                  // コンパイルオプション02_00
+      _countof(arguments),        // コンパイルオプションの数02_00
+      includeHandler,             // includeが含まれた諸々02_00
+      IID_PPV_ARGS(&shaderResult) // コンパイル結果02_00
   );
-  // コンパイルエラーではなくdxcが起動できないなど致命的な状況
+  // コンパイルエラーではなくdxcが起動できないなど致命的な状況02_00
   assert(SUCCEEDED(hr));
-  // 3.警告、エラーが出ていないか確認する
-  // 警告.エラーが出ていたらログに出して止める
+  // 3.警告、エラーが出ていないか確認する02_00
+  // 警告.エラーが出ていたらログに出して止める02_00
   IDxcBlobUtf8 *shaderError = nullptr;
   shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
   if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
     Log(os, shaderError->GetStringPointer());
-    // 警告、エラーダメ絶対
+    // 警告、エラーダメ絶対02_00
     assert(false);
   }
-  // 4.Compile結果を受け取って返す
-  // コンパイル結果から実行用のバイナリ部分を取得
+  // 4.Compile結果を受け取って返す02_00
+  // コンパイル結果から実行用のバイナリ部分を取得02_00
   IDxcBlob *shaderBlob = nullptr;
   hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob),
                                nullptr);
   assert(SUCCEEDED(hr));
-  // 成功したログを出す
+  // 成功したログを出す02_00
   Log(os,
       ConvertString(std::format(L"Compile Succeeded, path:{}, profike:{}\n ",
                                 filepath, profile)));
-  // もう使わないリソースを解放
+  // もう使わないリソースを解放02_00
   shaderSource->Release();
   shaderResult->Release();
-  // 実行用のバイナリを返却
+  // 実行用のバイナリを返却02_00
   return shaderBlob;
 }
 /////
@@ -441,6 +442,27 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
   assert(SUCCEEDED(hr));
 
+  // RootSignature作成02_00
+  D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
+  descriptionRootSignature.Flags =
+      D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+  // シリアライズしてバイナリにする02_00
+  ID3DBlob *signatureBlob = nullptr;
+  ID3DBlob *errorBlob = nullptr;
+  hr = D3D12SerializeRootSignature(&descriptionRootSignature,
+                                   D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob,
+                                   &errorBlob);
+  if (FAILED(hr)) {
+    Log(logStream, reinterpret_cast<char *>(errorBlob->GetBufferPointer()));
+    assert(false);
+  }
+  // バイナリをもとに生成02_00
+  ID3D12RootSignature *rootSignature = nullptr;
+  hr = device->CreateRootSignature(0, signatureBlob->GetBufferPointer(),
+                                   signatureBlob->GetBufferSize(),
+                                   IID_PPV_ARGS(&rootSignature));
+  assert(SUCCEEDED(hr));
+
   MSG msg{};
 
   // ウィンドウの×ボタンが押されるまでループ
@@ -551,7 +573,5 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     debug->Release();
   }
   return 0;
-
-  
 
 } // 最後のカギかっこ
