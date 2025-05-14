@@ -446,25 +446,35 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   IDxcIncludeHandler *includHandler = nullptr;
   hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
   assert(SUCCEEDED(hr));
-
+  // ==== ルートシグネチャを作る準備 ====
   // RootSignature作成02_00
+  // 頂点データの形式を使っていいよ！というフラグを立てる
   D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
   descriptionRootSignature.Flags =
       D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-  // シリアライズしてバイナリにする02_00
-  ID3DBlob *signatureBlob = nullptr;
-  ID3DBlob *errorBlob = nullptr;
+
+  // RootParameter作成。複数設定できるので配列。今回は結果１つだけなので長さ１の配列
+  D3D12_ROOT_PARAMETER rootParameters[1] = {};
+  rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // CBVを使う
+  rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;//PixelShaderで使う
+  rootParameters[0].Descriptor.ShaderRegister = 0;//レジスタ番号０とバインド
+  descriptionRootSignature.pParameters = rootParameters;//ルートパラメータ配列へのポインタ
+  descriptionRootSignature.NumParameters = _countof(rootParameters);//配列の長さ
+
+  // ==== シリアライズしてバイナリにする（GPUが読める形に変換） ====
+  // バイナリになるデータを入れるための箱02_00
+  ID3DBlob *signatureBlob = nullptr; // ルートシグネチャ本体
+  ID3DBlob *errorBlob = nullptr;     // エラー内容が入るかも
+  // GPUが読めるようにデータ変換！（バイナリ化）
   hr = D3D12SerializeRootSignature(&descriptionRootSignature,
                                    D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob,
                                    &errorBlob);
+  // もし失敗したら、エラーメッセージを出して止める
   if (FAILED(hr)) {
-    Log(logStream, reinterpret_cast<char *>(errorBlob->GetBufferPointer()));
-    assert(false);
+    Log(logStream, reinterpret_cast<char *>(
+                       errorBlob->GetBufferPointer())); // エラーをログに出す
+    assert(false); // 絶対成功してないと困るので、止める
   }
-
-
-
-
 
   // バイナリをもとに生成02_00
   ID3D12RootSignature *rootSignature = nullptr;
@@ -594,8 +604,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   scissorRect.top = 0;
   scissorRect.bottom = kClientHeight;
 
-
-  
   MSG msg{};
 
   // ウィンドウの×ボタンが押されるまでループ
@@ -651,7 +659,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->DrawInstanced(3, 1, 0, 0);
       // 描画
 
-      
       //  画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
       barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
       barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
