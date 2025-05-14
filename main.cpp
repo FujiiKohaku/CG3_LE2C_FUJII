@@ -461,6 +461,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     Log(logStream, reinterpret_cast<char *>(errorBlob->GetBufferPointer()));
     assert(false);
   }
+
+
+
+
+
   // バイナリをもとに生成02_00
   ID3D12RootSignature *rootSignature = nullptr;
   hr = device->CreateRootSignature(0, signatureBlob->GetBufferPointer(),
@@ -590,6 +595,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   scissorRect.bottom = kClientHeight;
 
 
+  
   MSG msg{};
 
   // ウィンドウの×ボタンが押されるまでループ
@@ -632,10 +638,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->ClearRenderTargetView(rtvHandles[backBufferIndex],
                                          clearColor, 0, nullptr);
 
-
-
-
-        commandList->RSSetViewports(1, &viewport);       // viewportを設定
+      // 描画
+      commandList->RSSetViewports(1, &viewport);       // viewportを設定
       commandList->RSSetScissorRects(1, &scissorRect); // Scirssorを設定
       // RootSignatureを設定。PS0に設定しているけど別途設定が必要
       commandList->SetGraphicsRootSignature(rootSignature);
@@ -645,11 +649,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
       commandList->DrawInstanced(3, 1, 0, 0);
+      // 描画
 
-
-
-
-      // 画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
+      
+      //  画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
       barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
       barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
       // TransitionBarrierを張る
