@@ -16,3 +16,4 @@ VertexShaderOutput main(VertexSgaderInput input)
     output.position = input.position;
     return output;
 }
+
