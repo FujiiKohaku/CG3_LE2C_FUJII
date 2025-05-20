@@ -651,7 +651,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 書き込むためのアドレスを取得
   materialResource->Map(0, nullptr, reinterpret_cast<void **>(&materialData));
   // 今回は赤を書き込んでみる
-  *materialData = Vector4(1.0f, 0.2f, 0.0f, 1.0f);
+  *materialData = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
 
   MSG msg{};
 
