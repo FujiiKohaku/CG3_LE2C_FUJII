@@ -22,10 +22,20 @@
 struct Vector4 {
   float x, y, z, w;
 };
-
+struct Matrix4x4 {
+  float m[4][4];
+};
 //////////////
 // 関数の作成///
 //////////////
+
+// 単位行列の作成
+Matrix4x4 MakeIdentity4x4() {
+  Matrix4x4 result{};
+  for (int i = 0; i < 4; ++i)
+    result.m[i][i] = 1.0f;
+  return result;
+}
 
 static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
   // 時刻を取得して、時刻を名前に入れたファイルを作成。Dumpsディレクトリ以下ぶ出力
@@ -485,11 +495,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
   // RootParameter作成。複数設定できるので配列。今回は結果１つだけなので長さ１の配列
-  D3D12_ROOT_PARAMETER rootParameters[1] = {};
+  // PixelShaderのMaterialとVertexShaderのTransform
+  D3D12_ROOT_PARAMETER rootParameters[2] = {};
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // CBVを使う
   rootParameters[0].ShaderVisibility =
       D3D12_SHADER_VISIBILITY_PIXEL;               // PixelShaderで使う
   rootParameters[0].Descriptor.ShaderRegister = 0; // レジスタ番号０とバインド
+  // ここから[2]
+  rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // CBVを使う
+  rootParameters[1].ShaderVisibility =
+      D3D12_SHADER_VISIBILITY_VERTEX;              // Vertexshaderで使う
+  rootParameters[1].Descriptor.ShaderRegister = 0; // 得wジスタ番号０を使う
+  // ここまで[2]
   descriptionRootSignature.pParameters =
       rootParameters; // ルートパラメータ配列へのポインタ
   descriptionRootSignature.NumParameters =
@@ -653,6 +670,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 今回は赤を書き込んでみる
   *materialData = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
 
+  // WVPリソースを作る02_02
+  ID3D12Resource *wvpResource =
+      CreateBufferRespource(device, sizeof(Matrix4x4));
+  // データを書き込む
+  Matrix4x4 *wvpData = nullptr;
+  // 書き込むためのアドレスを取得
+  wvpResource->Map(0, nullptr, reinterpret_cast<void **>(&wvpData));
+  // 単位行列を書き込んでおく
+  *wvpData = MakeIdentity4x4(); // WVPリソースを作る
+
   MSG msg{};
 
   // ウィンドウの×ボタンが押されるまでループ
@@ -695,7 +722,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->ClearRenderTargetView(rtvHandles[backBufferIndex],
                                          clearColor, 0, nullptr);
 
-      
       // 描画
       commandList->RSSetViewports(1, &viewport);       // viewportを設定
       commandList->RSSetScissorRects(1, &scissorRect); // Scirssorを設定
@@ -709,6 +735,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // マテリアルCbufferの場所を設定
       commandList->SetGraphicsRootConstantBufferView(
           0, materialResource->GetGPUVirtualAddress());
+
+      // wvp用のCBufferの場所を設定02_02
+      commandList->SetGraphicsRootConstantBufferView(
+          1, wvpResource->GetGPUVirtualAddress());
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
       commandList->DrawInstanced(3, 1, 0, 0);
@@ -780,6 +810,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 #ifdef _DEBUG
   debugController->Release();
   materialResource->Release();
+  wvpResource->Release();
 #endif
   CloseWindow(hwnd);
 
