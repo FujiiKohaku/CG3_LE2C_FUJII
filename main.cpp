@@ -18,6 +18,14 @@
 #pragma comment(lib, "dxguid.lib")
 #include <dxcapi.h>
 #pragma comment(lib, "dxcompiler.lib")
+#include "externals/imgui/imgui.h"
+#include "externals/imgui/imgui_impl_dx12.h"
+#include "externals/imgui/imgui_impl_win32.h"
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
+                                                             UINT msg,
+                                                             WPARAM wParam,
+                                                             LPARAM lParam);
 
 struct Vector4 {
   float x, y, z, w;
@@ -33,14 +41,6 @@ struct Transform {
   Vector3 rotate;
   Vector3 translate;
 };
-
-// 変数//
-
-// トランスフォーム
-Transform transform{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
-// カメラトランスフォーム
-Transform cameraTransform{
-    {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -5.0f}};
 
 // 変数//
 //////////////
@@ -355,26 +355,27 @@ std::string ConvertString(const std::wstring &str) {
   return result;
 }
 
+// 関数作成ヒープですか？ 02_03
 ID3D12Resource *CreateBufferRespource(ID3D12Device *device,
                                       size_t sizeInBytes) {
 
-  // 頂点リソース用のヒープの設定
+  // 頂点リソース用のヒープの設定02_03
   D3D12_HEAP_PROPERTIES uploadHeapProperties{};
   uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD; // Uploadheapを使う
-  // 頂点リソースの設定
+  // 頂点リソースの設定02_03
   D3D12_RESOURCE_DESC vertexResourceDesc{};
-  // バッファリソース。テクスチャの場合はまた別の設定をする
+  // バッファリソース。テクスチャの場合はまた別の設定をする02_03
   vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-  vertexResourceDesc.Width = sizeInBytes; // リソースのサイズ　
-  // バッファの場合はこれらは１にする決まり
+  vertexResourceDesc.Width = sizeInBytes; // リソースのサイズ　02_03
+  // バッファの場合はこれらは１にする決まり02_03
   vertexResourceDesc.Height = 1;
   vertexResourceDesc.DepthOrArraySize = 1;
   vertexResourceDesc.MipLevels = 1;
   vertexResourceDesc.SampleDesc.Count = 1;
-  // バッファの場合はこれにする決まり
+  // バッファの場合はこれにする決まり02_03
   vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-  // 実際に頂点リソースを作る
+  // 実際に頂点リソースを作る02_03
   ID3D12Resource *vertexResource = nullptr;
   HRESULT hr = device->CreateCommittedResource(
       &uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &vertexResourceDesc,
@@ -385,12 +386,39 @@ ID3D12Resource *CreateBufferRespource(ID3D12Device *device,
   return vertexResource;
 }
 
+ID3D12DescriptorHeap *CreateDescriptorHeap(ID3D12Device *device,
+                                           D3D12_DESCRIPTOR_HEAP_TYPE heapType,
+                                           UINT numDescriptors,
+                                           bool shaderVisivle) {
+  // ディスクリプタヒープの生成02_02
+  ID3D12DescriptorHeap *DescriptorHeap = nullptr;
+
+  D3D12_DESCRIPTOR_HEAP_DESC DescriptorHeapDesc{};
+  DescriptorHeapDesc.Type = heapType;
+  DescriptorHeapDesc.NumDescriptors = numDescriptors;
+  DescriptorHeapDesc.Flags = shaderVisivle
+                                 ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+                                 : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+  HRESULT hr = device->CreateDescriptorHeap(&DescriptorHeapDesc,
+                                            IID_PPV_ARGS(&DescriptorHeap));
+  // ディスクリプタヒープが作れなかったので起動できない
+  assert(SUCCEEDED(hr)); // 1
+  return DescriptorHeap;
+}
+
 ////////////////////
 // 関数の生成ここまで//
 ////////////////////
 
 // ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+
+  //
+  if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
+    return true;
+  }
+
   // メッセージに応じて固有の処理を行う
   switch (msg) {
     // ウィンドウが破棄された
@@ -674,17 +702,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       reinterpret_cast<IDXGISwapChain1 **>(&swapChain));
   assert(SUCCEEDED(hr));
 
-  // ディスクリプタヒープの生成
-  ID3D12DescriptorHeap *rtvDescriptorHeap = nullptr;
+  // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
+  ID3D12DescriptorHeap *rtvDescriptorHeap =
+      CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
 
-  D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc{};
-  rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-  rtvDescriptorHeapDesc.NumDescriptors = 2;
+  ID3D12DescriptorHeap *srvDescriptorHeap = CreateDescriptorHeap(
+      device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
-  hr = device->CreateDescriptorHeap(&rtvDescriptorHeapDesc,
-                                    IID_PPV_ARGS(&rtvDescriptorHeap));
-  // ディスクリプタヒープが作れなかったので起動できない
-  assert(SUCCEEDED(hr));
+  //// ディスクリプタヒープの生成
+  // ID3D12DescriptorHeap *rtvDescriptorHeap = nullptr;//1
+  // D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc{};//1
+  // rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;//1
+  // rtvDescriptorHeapDesc.NumDescriptors = 2;//1
+  // hr = device->CreateDescriptorHeap(&rtvDescriptorHeapDesc,
+  //                                   IID_PPV_ARGS(&rtvDescriptorHeap));//1
+  //// ディスクリプタヒープが作れなかったので起動できない
+  // assert(SUCCEEDED(hr));//1
 
   // SwapChainからResourceを引っ張ってくる
   ID3D12Resource *swapChainResources[2] = {nullptr};
@@ -931,6 +964,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 単位行列を書き込んでおく02_02
   *wvpData = MakeIdentity4x4(); // WVPリソースを作る
 
+  // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
+  // こういうもんである02_03
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGui::StyleColorsClassic();
+  ImGui_ImplWin32_Init(hwnd);
+  ImGui_ImplDX12_Init(device, swapChainDesc.BufferCount, rtvDesc.Format,
+                      srvDescriptorHeap,
+                      srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+                      srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+
+  // 変数//
+
+  // トランスフォーム
+  Transform transform{
+      {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+  // カメラトランスフォーム
+  Transform cameraTransform{
+      {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -5.0f}};
   MSG msg{};
 
   // ウィンドウの×ボタンが押されるまでループ
@@ -942,9 +994,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       DispatchMessage(&msg);
     } else {
 
-      // ゲームの処理
-      // 02_02
-      transform.rotate.y += 0.03;
+      // ここがframeの先頭02_03
+      ImGui_ImplDX12_NewFrame();
+      ImGui_ImplWin32_NewFrame();
+      ImGui::NewFrame();
+      // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
+      ImGui::ShowDemoWindow(); // ImGuiの始まりの場所
+
+      // ImGuiの内部コマンドを生成する02_03
+      ImGui::Render();
+      // 描画用のDescrriptorHeapの設定02_03
+      ID3D12DescriptorHeap *descriptorHeaps[] = {srvDescriptorHeap};
+      commandList->SetDescriptorHeaps(1, descriptorHeaps);
+
+      // ImGui終わりの場所。描画の前02_03
+
+      //  ゲームの処理02_02
+      //  02_02
+      transform.rotate.y += 0.03f;
 
       // メイクアフィンマトリックス02_02
       Matrix4x4 worldMatrix = MakeAffineMatrix(
@@ -1015,6 +1082,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->DrawInstanced(3, 1, 0, 0);
       // 描画
 
+
+
+      //描画の最後です//----------------------------------------------------
+       // 実際のcommandListのImGuiの描画コマンドを積む
+      ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
+
       //  画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
       barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
       barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
@@ -1055,6 +1128,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   Log(logStream, "HelloWorld\n");
   Log(logStream, ConvertString(std::format(L"clientSize:{},{}\n", kClientWidth,
                                            kClientHeight)));
+  // ImGuiの終了処理。詳細はさして重要ではないので解説は省略する。
+  // こういうもんである。初期化と逆順に行う
+  ImGui_ImplDX12_Shutdown();
+  ImGui_ImplWin32_Shutdown();
+  ImGui::DestroyContext();
 
   // 解放処理CG2_01_03
   CloseHandle(fenceEvent);
@@ -1082,6 +1160,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   debugController->Release();
   materialResource->Release();
   wvpResource->Release();
+  srvDescriptorHeap->Release();
+
 #endif
   CloseWindow(hwnd);
 
@@ -1093,6 +1173,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
     debug->Release();
   }
+
 
   return 0;
 
