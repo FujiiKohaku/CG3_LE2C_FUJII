@@ -22,6 +22,8 @@
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
 
+#include "externals/DirectXTex/DirectXTex.h"
+
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
                                                              UINT msg,
                                                              WPARAM wParam,
@@ -288,6 +290,77 @@ Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height,
 }
 #pragma endregion
 
+// ミップマップです03_00
+DirectX::ScratchImage LoadTexture(const std::string &filePath) {
+  // テクスチャファイルを読んでプログラムで扱えるようにする
+  DirectX::ScratchImage image{};
+  std::wstring filePathW = ConvertString(filePath);
+  HRESULT hr = DirectX::LoadFromWICFile(
+      filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+  assert(SUCCEEDED(hr));
+
+  // ミップマップの作成
+  DirectX::ScratchImage mipImages{};
+  hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(),
+                                image.GetMetadata(), DirectX::TEX_FILTER_SRGB,
+                                0, mipImages);
+  assert(SUCCEEDED(hr));
+
+  // ミップマップ付きのデータを返す
+  return mipImages;
+}
+// クリエイトテクスチャ03_00
+ID3D12Resource *CreateTextureResource(ID3D12Device *device,
+                                      const DirectX::TexMetadata &metadata) {
+  // 1.metadataをもとにResourceの設定
+  D3D12_RESOURCE_DESC resourceDesc{};
+  resourceDesc.Width = UINT(metadata.width);           // Textureの幅
+  resourceDesc.Height = UINT(metadata.height);         // Textureの高さ
+  resourceDesc.MipLevels = UINT16(metadata.mipLevels); // mipdmapの数
+  resourceDesc.DepthOrArraySize =
+      UINT16(metadata.arraySize);        // 奥行き　or 配列Textureの配列数
+  resourceDesc.Format = metadata.format; // TextureのFormat
+  resourceDesc.SampleDesc.Count - 1;     // サンプリングカウント。1固定
+  resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION(
+      metadata.dimension); // Textureの次元数　普段使っているのは二次元
+  // 2.利用するHeapの設定。非常に特殊な運用。02_04exで一般的なケース版がある
+  D3D12_HEAP_PROPERTIES heapProperties{};
+  heapProperties.Type = D3D12_HEAP_TYPE_CUSTOM; // 細かい設定を行う
+  heapProperties.CPUPageProperty =
+      D3D12_CPU_PAGE_PROPERTY_WRITE_BACK; // WriteBaackポリシーでCPUアクセス可能
+  heapProperties.MemoryPoolPreference =
+      D3D12_MEMORY_POOL_L0; // プロセッサの近くに配置
+
+  // 3.Resourceを生成する
+  ID3D12Resource *resource = nullptr;
+  HRESULT hr = device->CreateCommittedResource(
+      &heapProperties,                   // Heapの固定
+      D3D12_HEAP_FLAG_NONE,              // Heapの特殊な設定。特になし
+      &resourceDesc,                     // Resourceの設定
+      D3D12_RESOURCE_STATE_GENERIC_READ, // 初回のResourceState.Textureは基本読むだけ
+      nullptr,                           // Clear最適地。使わないのでnullptr
+      IID_PPV_ARGS(&resource));          // 作成するResourceポインタへのポインタ
+  assert(SUCCEEDED(hr));
+  return resource;
+}
+// データを転送するUploadTextureData関数を作る
+void UploadTextureData(ID3D12Resource *texture,
+                       const DirectX::ScratchImage &mipImages) {
+  // Meta情報を取得
+  const DirectX::TexMetadata &metadata = mipImages.GetMetadata();
+  // 全MipMapについて
+  for (size_t mipLevel = 0; mipLevel < metadata.mipLevels; ++mipLevel) {
+    // MipMapLevelを指定して各Imageを取得
+    const DirectX::Image *img = mipImages.GetImage(mipLevel, 0, 0);
+    // Textureに転送
+    HRESULT hr =
+        texture->WriteToSubresource(UINT(mipLevel), nullptr, img->pixels,
+                                    UINT(img->rowPitch), UINT(img->slicePitch));
+    assert(SUCCEEDED(hr));
+  }
+}
+
+
 static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
   // 時刻を取得して、時刻を名前に入れたファイルを作成。Dumpsディレクトリ以下ぶ出力
   SYSTEMTIME time;
@@ -506,14 +579,18 @@ IDxcBlob *CompileShader(
   return shaderBlob;
 }
 /////
+// main関数/////-------------------------------------------------------------------------------------------------
+//  Windwsアプリでの円とリポウント(main関数)
 
-// Windwsアプリでの円とリポウント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+  CoInitializeEx(0, COINIT_MULTITHREADED);
+
   // 誰も補足しなかった場合(Unhandled),補足する関数を登録
   // main関数はじまってすぐに登録するとよい
   SetUnhandledExceptionFilter(ExportDump);
   // ログのディレクトリを用意
   std::filesystem::create_directory("logs");
+  // main関数の先頭02_04
 
   // 現在時刻を取得(UTC時刻)
   std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
@@ -999,15 +1076,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui_ImplWin32_NewFrame();
       ImGui::NewFrame();
       // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
-      ImGui::ShowDemoWindow(); // ImGuiの始まりの場所
+      ImGui::
+          ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
 
+      ImGui::Begin("Materialcolor");
+      ImGui::ColorEdit4("Color", &(*materialData).x);
+      ImGui::End();
       // ImGuiの内部コマンドを生成する02_03
-      ImGui::Render();
+      ImGui::
+          Render(); // ImGui終わりの場所。描画の前02_03--------------------------
       // 描画用のDescrriptorHeapの設定02_03
       ID3D12DescriptorHeap *descriptorHeaps[] = {srvDescriptorHeap};
       commandList->SetDescriptorHeaps(1, descriptorHeaps);
-
-      // ImGui終わりの場所。描画の前02_03
 
       //  ゲームの処理02_02
       //  02_02
@@ -1082,10 +1162,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->DrawInstanced(3, 1, 0, 0);
       // 描画
 
-
-
-      //描画の最後です//----------------------------------------------------
-       // 実際のcommandListのImGuiの描画コマンドを積む
+      // 描画の最後です//----------------------------------------------------
+      //  実際のcommandListのImGuiの描画コマンドを積む
       ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 
       //  画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
@@ -1162,6 +1240,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   wvpResource->Release();
   srvDescriptorHeap->Release();
 
+  CoInitialize();
 #endif
   CloseWindow(hwnd);
 
@@ -1173,7 +1252,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
     debug->Release();
   }
-
 
   return 0;
 
