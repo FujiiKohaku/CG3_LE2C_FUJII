@@ -29,6 +29,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
                                                              UINT msg,
                                                              WPARAM wParam,
                                                              LPARAM lParam);
+struct Vector2 {
+  float x, y;
+};
 
 struct Vector4 {
   float x, y, z, w;
@@ -44,7 +47,10 @@ struct Transform {
   Vector3 rotate;
   Vector3 translate;
 };
-
+struct VertexData {
+  Vector4 position;
+   Vector2 texcoord;
+};
 // 変数//
 //////////////
 // 関数の作成///
@@ -389,7 +395,7 @@ ID3D12Resource *CreateBufferRespource(ID3D12Device *device,
   return vertexResource;
 }
 
-//テクスチャデータを読む
+// テクスチャデータを読む
 ID3D12DescriptorHeap *CreateDescriptorHeap(ID3D12Device *device,
                                            D3D12_DESCRIPTOR_HEAP_TYPE heapType,
                                            UINT numDescriptors,
@@ -926,14 +932,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   device->CreateShaderResourceView(textureResource, &srvDesc,
                                    textureSrvHandleCPU);
 
-
-
   // InputLayout
-  D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
+  D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
   inputElementDescs[0].SemanticName = "POSITION";
   inputElementDescs[0].SemanticIndex = 0;
   inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
   inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+  inputElementDescs[1].SemanticName = "TEXCOORD";
+  inputElementDescs[1].SemanticIndex = 0;
+  inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+  inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
   D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
   inputLayoutDesc.pInputElementDescs = inputElementDescs;
   inputLayoutDesc.NumElements = _countof(inputElementDescs);
@@ -1025,19 +1034,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   vertexBufferView.SizeInBytes = sizeof(Vector4) * 3;
   // 1頂点あたりのサイズ
   vertexBufferView.StrideInBytes = sizeof(Vector4);
-
+  
   // 頂点リソースにデータを書き込む
-  Vector4 *vertexData = nullptr;
-  // 書き込むためのアドレスを取得
+  VertexData *vertexData = nullptr;
+
+  // 書き込むためのアドレスを取得----------------------03_00
   vertexResource->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
   // 左下
-  vertexData[0] = {-0.5f, -0.5f, 0.0f, 1.0f};
-  // 上
-  vertexData[1] = {0.0f, 0.5f, 0.0f, 1.0f};
-  // 右下
-  vertexData[2] = {0.5f, -0.5f, 0.0f, 1.0f};
-
-  // ビューポート
+  vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
+   vertexData[0].texcoord = {0.0f, 1.0f};
+  //  上
+  vertexData[1].position = {0.0f, 0.5f, 0.0f, 1.0f};
+   vertexData[1].texcoord = {0.5f, 0.0f};
+  //  右下
+  vertexData[2].position = {0.5f, -0.5f, 0.0f, 1.0f};
+   vertexData[2].texcoord = {1.0f, 1.0f};
+  //  ビューポート
   D3D12_VIEWPORT viewport{};
   // クライアント領域のサイズと一緒にして画面全体に表示
   viewport.Width = kClientWidth;
@@ -1291,4 +1303,4 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 } // 最後のカギかっこ
 
-//20page final;OK
+// 20page final;OK
