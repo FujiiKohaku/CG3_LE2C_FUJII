@@ -1051,7 +1051,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
    vertexData[2].texcoord = {1.0f, 1.0f};
   //  ビューポート
   D3D12_VIEWPORT viewport{};
-  // クライアント領域のサイズと一緒にして画面全体に表示
+  // クライアント領域のサイズと一緒にして画面全体に表示/
   viewport.Width = kClientWidth;
   viewport.Height = kClientHeight;
   viewport.TopLeftX = 0;
