@@ -49,10 +49,45 @@ struct Transform {
 };
 struct VertexData {
   Vector4 position;
-   Vector2 texcoord;
+  // Vector2 texcoord;
 };
-// 変数//
-//////////////
+struct Fragment {
+  Vector3 position;
+  Vector3 velocity;
+  Vector3 rotation;
+  Vector3 rotationSpeed;
+  float alpha;
+  bool active;
+};
+// 変数//--------------------
+
+// --- 列挙体 ---
+enum WaveType {
+  WAVE_SINE,
+  WAVE_CHAINSAW,
+  WAVE_SQUARE,
+};
+
+enum AnimationType {
+  ANIM_RESET,
+  ANIM_NONE,
+  ANIM_COLOR,
+  ANIM_SCALE,
+  ANIM_ROTATE,
+  ANIM_TRANSLATE,
+  ANIM_TORNADO,
+  ANIM_PULSE,
+  ANIM_AURORA,
+  ANIM_BOUNCE,
+  ANIM_TWIST,
+  ANIM_ALL
+
+};
+
+WaveType waveType = WAVE_SINE;
+AnimationType animationType = ANIM_NONE;
+float waveTime = 0.0f;
+//////////////---------------------------------------
 // 関数の作成///
 //////////////
 #pragma region 行列関数
@@ -297,10 +332,6 @@ Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height,
 }
 #pragma endregion
 
-
-
-
-
 static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
   // 時刻を取得して、時刻を名前に入れたファイルを作成。Dumpsディレクトリ以下ぶ出力
   SYSTEMTIME time;
@@ -492,6 +523,7 @@ DirectX::ScratchImage LoadTexture(const std::string &filePath) {
   // ミップマップ付きのデータを返す
   return mipImages;
 }
+
 ////////////////////
 // 関数の生成ここまで//
 ////////////////////
@@ -937,16 +969,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                    textureSrvHandleCPU);
 
   // InputLayout
-  D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
+  D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
   inputElementDescs[0].SemanticName = "POSITION";
   inputElementDescs[0].SemanticIndex = 0;
   inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
   inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-  
-  inputElementDescs[1].SemanticName = "TEXCOORD";
-  inputElementDescs[1].SemanticIndex = 0;
-  inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-  inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+  // inputElementDescs[1].SemanticName = "TEXCOORD";
+  // inputElementDescs[1].SemanticIndex = 0;
+  // inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+  // inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
   D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
   inputLayoutDesc.pInputElementDescs = inputElementDescs;
   inputLayoutDesc.NumElements = _countof(inputElementDescs);
@@ -1038,7 +1070,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   vertexBufferView.SizeInBytes = sizeof(Vector4) * 3;
   // 1頂点あたりのサイズ
   vertexBufferView.StrideInBytes = sizeof(Vector4);
-  
+
   // 頂点リソースにデータを書き込む
   VertexData *vertexData = nullptr;
 
@@ -1046,13 +1078,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   vertexResource->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
   // 左下
   vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
-   vertexData[0].texcoord = {0.0f, 1.0f};
+  /* vertexData[0].texcoord = {0.0f, 1.0f};*/
   //  上
   vertexData[1].position = {0.0f, 0.5f, 0.0f, 1.0f};
-   vertexData[1].texcoord = {0.5f, 0.0f};
+  /* vertexData[1].texcoord = {0.5f, 0.0f};*/
   //  右下
   vertexData[2].position = {0.5f, -0.5f, 0.0f, 1.0f};
-   vertexData[2].texcoord = {1.0f, 1.0f};
+  /* vertexData[2].texcoord = {1.0f, 1.0f};*/
   //  ビューポート
   D3D12_VIEWPORT viewport{};
   // クライアント領域のサイズと一緒にして画面全体に表示/
@@ -1129,8 +1161,46 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
 
       ImGui::Begin("Materialcolor");
+      ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 5.0f);
+      ImGui::SliderAngle("RotateX", &transform.rotate.x, -180.0f, 180.0f);
+      ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
+      ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
+      ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
       ImGui::ColorEdit4("Color", &(*materialData).x);
+
+      // --- アニメーション選択 ---
+      ImGui::Text("Animation");
+      if (ImGui::Button("None"))
+        animationType = ANIM_NONE;
+      if (ImGui::Button("RESET"))
+        animationType = ANIM_RESET;
+      ImGui::SameLine();
+      if (ImGui::Button("Color"))
+        animationType = ANIM_COLOR;
+      ImGui::SameLine();
+      if (ImGui::Button("Scale"))
+        animationType = ANIM_SCALE;
+      if (ImGui::Button("Rotate"))
+        animationType = ANIM_ROTATE;
+      ImGui::SameLine();
+      if (ImGui::Button("Translate"))
+        animationType = ANIM_TRANSLATE;
+      ImGui::SameLine();
+      if (ImGui::Button("All"))
+        animationType = ANIM_ALL;
+      ImGui::SameLine();
+      if (ImGui::Button("Pulse"))
+        animationType = ANIM_PULSE;
+      ImGui::SameLine();
+      if (ImGui::Button("Aurora"))
+        animationType = ANIM_AURORA;
+      if (ImGui::Button("Bounce"))
+        animationType = ANIM_BOUNCE;
+      ImGui::SameLine();
+      if (ImGui::Button("Twist"))
+        animationType = ANIM_TWIST;
       ImGui::End();
+
       // ImGuiの内部コマンドを生成する02_03
       ImGui::
           Render(); // ImGui終わりの場所。描画の前02_03--------------------------
@@ -1140,8 +1210,92 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
       //  ゲームの処理02_02
       //  02_02
-      transform.rotate.y += 0.03f;
+      waveTime += 0.05f;
 
+      // アニメーション切り替え
+      switch (animationType) {
+      case ANIM_NONE:
+
+        break;
+      case ANIM_RESET:
+        // トランスフォームの初期化
+        transform.translate = {0.0f, 0.0f, 0.0f};
+        transform.rotate = {0.0f, 0.0f, 0.0f};
+        transform.scale = {1.0f, 1.0f, 1.0f};
+
+        // 色の初期化（
+        materialData->x = 1.0f;
+        materialData->y = 1.0f;
+        materialData->z = 1.0f;
+        materialData->w = 1.0f;
+        animationType = ANIM_RESET;
+        break;
+
+      case ANIM_COLOR:
+        materialData->x = fabsf(sinf(waveTime));
+        materialData->y = fabsf(sinf(waveTime + 1.0f));
+        materialData->z = fabsf(sinf(waveTime + 2.0f));
+        break;
+
+      case ANIM_SCALE:
+        transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
+        transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
+        break;
+
+      case ANIM_TRANSLATE:
+        transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
+        break;
+      case ANIM_ROTATE:
+
+        transform.rotate.y += 0.02f;
+
+        transform.rotate.y += 0.1f;
+
+        transform.rotate.y += 0.05f;
+
+        break;
+
+      case ANIM_ALL:
+        materialData->x = fabsf(sinf(waveTime));
+        materialData->y = fabsf(sinf(waveTime + 1.0f));
+        materialData->z = fabsf(sinf(waveTime + 2.0f));
+        transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
+        transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
+        transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
+        switch (waveType) {
+        case WAVE_SINE:
+          transform.rotate.y += 0.02f;
+          break;
+        case WAVE_CHAINSAW:
+          transform.rotate.y += 0.1f;
+          break;
+        case WAVE_SQUARE:
+          transform.rotate.y += 0.05f;
+          break;
+        }
+
+      case ANIM_PULSE: {
+        float pulse = sinf(waveTime * 5.0f) * 0.2f + 1.0f;
+        transform.scale.x = pulse;
+        transform.scale.y = pulse;
+      } break;
+
+      case ANIM_AURORA:
+        materialData->x = 0.2f + 0.2f * sinf(waveTime);
+        materialData->y = 0.2f + 0.2f * sinf(waveTime + 1.5f);
+        materialData->z = 0.2f + 0.2f * sinf(waveTime + 3.0f);
+        break;
+
+      case ANIM_BOUNCE:
+        transform.translate.y = fabsf(sinf(waveTime * 2.0f)) * 1.1f;
+        break;
+
+      case ANIM_TWIST:
+        transform.rotate.z = sinf(waveTime * 1.0f);
+        transform.rotate.x = sinf(waveTime * 1.5f);
+        transform.rotate.y = sinf(waveTime * 2.0f);
+        break;
+      }
       // メイクアフィンマトリックス02_02
       Matrix4x4 worldMatrix = MakeAffineMatrix(
           transform.scale, transform.rotate, transform.translate);
@@ -1251,7 +1405,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     }
   }
 
-  
   // ImGuiの終了処理。詳細はさして重要ではないので解説は省略する。
   // こういうもんである。初期化と逆順に行う
   ImGui_ImplDX12_Shutdown();
