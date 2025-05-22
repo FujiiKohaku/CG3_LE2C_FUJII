@@ -286,16 +286,20 @@ Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height,
 
   // 行0：X方向スケーリングと移動
   m.m[0][0] = width / 2.0f;
-  m.m[3][0] = left + width / 2.0f;
   m.m[1][1] = -height / 2.0f;
-  m.m[3][1] = top + height / 2.0f;
   m.m[2][2] = maxDepth - minDepth;
-  m.m[2][3] = minDepth;
+  m.m[3][0] = left + width / 2.0f;
+  m.m[3][1] = top + height / 2.0f;
+  m.m[3][2] = minDepth;
   m.m[3][3] = 1.0f;
 
   return m;
 }
 #pragma endregion
+
+
+
+
 
 static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
   // 時刻を取得して、時刻を名前に入れたファイルを作成。Dumpsディレクトリ以下ぶ出力
@@ -938,7 +942,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   inputElementDescs[0].SemanticIndex = 0;
   inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
   inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-
+  
   inputElementDescs[1].SemanticName = "TEXCOORD";
   inputElementDescs[1].SemanticIndex = 0;
   inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
@@ -1247,10 +1251,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     }
   }
 
-  // 出力ウィンドウへの文字出力
-  Log(logStream, "HelloWorld\n");
-  Log(logStream, ConvertString(std::format(L"clientSize:{},{}\n", kClientWidth,
-                                           kClientHeight)));
+  
   // ImGuiの終了処理。詳細はさして重要ではないので解説は省略する。
   // こういうもんである。初期化と逆順に行う
   ImGui_ImplDX12_Shutdown();
