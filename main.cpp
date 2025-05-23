@@ -49,7 +49,7 @@ struct Transform {
 };
 struct VertexData {
   Vector4 position;
-  // Vector2 texcoord;
+  Vector2 texcoord;
 };
 struct Fragment {
   Vector3 position;
@@ -295,8 +295,7 @@ Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio,
   result.m[1][1] = f;
   result.m[2][2] = farClip / (farClip - nearClip);
   result.m[2][3] = 1.0f;
-  result.m[3][2] = (-nearClip * farClip) / (farClip - nearClip);
-
+  result.m[3][2] = -(nearClip * farClip) / (farClip - nearClip);
   return result;
 }
 // 正射影行列
@@ -969,16 +968,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                    textureSrvHandleCPU);
 
   // InputLayout
-  D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
+  D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
   inputElementDescs[0].SemanticName = "POSITION";
   inputElementDescs[0].SemanticIndex = 0;
   inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
   inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-  // inputElementDescs[1].SemanticName = "TEXCOORD";
-  // inputElementDescs[1].SemanticIndex = 0;
-  // inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-  // inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+   inputElementDescs[1].SemanticName = "TEXCOORD";
+   inputElementDescs[1].SemanticIndex = 0;
+   inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+   inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
   D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
   inputLayoutDesc.pInputElementDescs = inputElementDescs;
   inputLayoutDesc.NumElements = _countof(inputElementDescs);
@@ -1035,7 +1034,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   assert(SUCCEEDED(hr));
 
   ID3D12Resource *vertexResource =
-      CreateBufferRespource(device, sizeof(Vector4) * 3);
+      CreateBufferRespource(device, sizeof(VertexData) * 3);
 
   //// 頂点リソース用のヒープの設定
   // D3D12_HEAP_PROPERTIES uploadHeapProperties{};
@@ -1067,9 +1066,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // リソースの先頭のアドレスから使う
   vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
   // 使用するリソースのサイズは頂点３つ分のサイズ
-  vertexBufferView.SizeInBytes = sizeof(Vector4) * 3;
+  vertexBufferView.SizeInBytes = sizeof(VertexData) * 3;
   // 1頂点あたりのサイズ
-  vertexBufferView.StrideInBytes = sizeof(Vector4);
+  vertexBufferView.StrideInBytes = sizeof(VertexData);
 
   // 頂点リソースにデータを書き込む
   VertexData *vertexData = nullptr;
@@ -1077,14 +1076,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 書き込むためのアドレスを取得----------------------03_00
   vertexResource->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
   // 左下
-  vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
-  /* vertexData[0].texcoord = {0.0f, 1.0f};*/
+  vertexData[0].position = {-0.5f, -0.5f, 0.0f,1.0f};
+   vertexData[0].texcoord = {0.0f, 1.0f};
   //  上
   vertexData[1].position = {0.0f, 0.5f, 0.0f, 1.0f};
-  /* vertexData[1].texcoord = {0.5f, 0.0f};*/
+   vertexData[1].texcoord = {0.5f, 0.0f};
   //  右下
   vertexData[2].position = {0.5f, -0.5f, 0.0f, 1.0f};
-  /* vertexData[2].texcoord = {1.0f, 1.0f};*/
+  vertexData[2].texcoord = {1.0f, 1.0f};
   //  ビューポート
   D3D12_VIEWPORT viewport{};
   // クライアント領域のサイズと一緒にして画面全体に表示/
@@ -1210,7 +1209,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
       //  ゲームの処理02_02
       //  02_02
-      waveTime += 0.05f;
+      //waveTime += 0.05f;
 
       // アニメーション切り替え
       switch (animationType) {
