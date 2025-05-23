@@ -9,7 +9,6 @@
 #include <string>
 // #include <format>
 #include <fstream>
-#include <string>
 #include <strsafe.h>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -522,8 +521,15 @@ DirectX::ScratchImage LoadTexture(const std::string &filePath) {
   // ミップマップ付きのデータを返す
   return mipImages;
 }
+ID3D12Resource* CreateDepthStencilTextureResource(ID3D12Device* device,
+                                                  int32_t width,
+                                                  int32_t height)
+    {
 
-////////////////////
+
+
+    }
+    ////////////////////
 // 関数の生成ここまで//
 ////////////////////
 
@@ -894,13 +900,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // ==== ルートシグネチャを作る準備 ====
   // RootSignature作成02_00
   // 頂点データの形式を使っていいよ！というフラグを立てる
+  // ルート何？03_00
   D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
   descriptionRootSignature.Flags =
       D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+  D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
+  staticSamplers[0].Filter =
+      D3D12_FILTER_MIN_MAG_MIP_LINEAR; // バイリニアフィルタ
+  staticSamplers[0].AddressU =
+      D3D12_TEXTURE_ADDRESS_MODE_WRAP; // 0〜1の範囲外をリピート
+  staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+  staticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+  staticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
+  staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX; // ありったけのMipMapを使う
+  staticSamplers[0].ShaderRegister = 0;         // レジスタ番号0を使う
+  staticSamplers[0].ShaderVisibility =
+      D3D12_SHADER_VISIBILITY_PIXEL; // PixelShaderで使う
 
+  descriptionRootSignature.pStaticSamplers = staticSamplers;
+  descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
   // RootParameter作成。複数設定できるので配列。今回は結果１つだけなので長さ１の配列
   // PixelShaderのMaterialとVertexShaderのTransform
-  D3D12_ROOT_PARAMETER rootParameters[2] = {};
+  D3D12_ROOT_PARAMETER rootParameters[3] = {};
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // CBVを使う
   rootParameters[0].ShaderVisibility =
       D3D12_SHADER_VISIBILITY_PIXEL;               // PixelShaderで使う
@@ -911,10 +932,29 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       D3D12_SHADER_VISIBILITY_VERTEX;              // Vertexshaderで使う
   rootParameters[1].Descriptor.ShaderRegister = 0; // 得wジスタ番号０を使う
   // ここまで[2]
+  // 新しいディスクリプタレンジ03_00
+  D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
+  descriptorRange[0].BaseShaderRegister = 0;                      // 0から始まる
+  descriptorRange[0].NumDescriptors = 1;                          // 数は1つ
+  descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
+  descriptorRange[0].OffsetInDescriptorsFromTableStart =
+      D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
   descriptionRootSignature.pParameters =
       rootParameters; // ルートパラメータ配列へのポインタ
   descriptionRootSignature.NumParameters =
       _countof(rootParameters); // 配列の長さ
+
+  // 新しいディスクリプタレンジ03_00
+  // ここから[3]03_00
+  rootParameters[2].ParameterType =
+      D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // DescriptorTableを使う
+  rootParameters[2].ShaderVisibility =
+      D3D12_SHADER_VISIBILITY_PIXEL; // PixelShaderで使う
+  rootParameters[2].DescriptorTable.pDescriptorRanges =
+      descriptorRange; // Tableの中身の配列を指定
+  rootParameters[2].DescriptorTable.NumDescriptorRanges =
+      _countof(descriptorRange); // Tableで利用する数
+  // ここまで[3]
 
   // ==== シリアライズしてバイナリにする（GPUが読める形に変換） ====
   // バイナリになるデータを入れるための箱02_00
@@ -924,6 +964,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   hr = D3D12SerializeRootSignature(&descriptionRootSignature,
                                    D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob,
                                    &errorBlob);
+
   // もし失敗したら、エラーメッセージを出して止める
   if (FAILED(hr)) {
     Log(logStream, reinterpret_cast<char *>(
@@ -974,10 +1015,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
   inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-   inputElementDescs[1].SemanticName = "TEXCOORD";
-   inputElementDescs[1].SemanticIndex = 0;
-   inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-   inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+  inputElementDescs[1].SemanticName = "TEXCOORD";
+  inputElementDescs[1].SemanticIndex = 0;
+  inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+  inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
   D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
   inputLayoutDesc.pInputElementDescs = inputElementDescs;
   inputLayoutDesc.NumElements = _countof(inputElementDescs);
@@ -997,12 +1038,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   // Shaderをコンパイルする
   IDxcBlob *vertexShaderBlob =
-      CompileShader(L"Object3D.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler,
+      CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler,
                     includHandler, logStream);
   assert(vertexShaderBlob != nullptr);
 
   IDxcBlob *pixelShaderBlob =
-      CompileShader(L"Object3D.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler,
+      CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler,
                     includHandler, logStream);
   assert(pixelShaderBlob != nullptr);
 
@@ -1034,7 +1075,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   assert(SUCCEEDED(hr));
 
   ID3D12Resource *vertexResource =
-      CreateBufferRespource(device, sizeof(VertexData) * 3);
+      CreateBufferRespource(device, sizeof(VertexData) * 6);
 
   //// 頂点リソース用のヒープの設定
   // D3D12_HEAP_PROPERTIES uploadHeapProperties{};
@@ -1066,7 +1107,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // リソースの先頭のアドレスから使う
   vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
   // 使用するリソースのサイズは頂点３つ分のサイズ
-  vertexBufferView.SizeInBytes = sizeof(VertexData) * 3;
+  vertexBufferView.SizeInBytes = sizeof(VertexData) * 6;
   // 1頂点あたりのサイズ
   vertexBufferView.StrideInBytes = sizeof(VertexData);
 
@@ -1076,14 +1117,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 書き込むためのアドレスを取得----------------------03_00
   vertexResource->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
   // 左下
-  vertexData[0].position = {-0.5f, -0.5f, 0.0f,1.0f};
-   vertexData[0].texcoord = {0.0f, 1.0f};
+  vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
+  vertexData[0].texcoord = {0.0f, 1.0f};
   //  上
   vertexData[1].position = {0.0f, 0.5f, 0.0f, 1.0f};
-   vertexData[1].texcoord = {0.5f, 0.0f};
+  vertexData[1].texcoord = {0.5f, 0.0f};
   //  右下
   vertexData[2].position = {0.5f, -0.5f, 0.0f, 1.0f};
   vertexData[2].texcoord = {1.0f, 1.0f};
+  //左下２
+  vertexData[3].position = {-0.5f, -0.5f, 0.5f, 1.0f};
+  vertexData[3].texcoord = {0.0f, 1.0f};
+  //上２
+  vertexData[4].position = {0.0f, 0.0f, 0.0f, 1.0f};
+  vertexData[4].texcoord = {0.5f, 0.0f};
+  //右下
+  vertexData[5].position = {0.5f, -0.5f, -0.5f, 1.0f};
+  vertexData[5].texcoord = {1.0f, 1.0f};
   //  ビューポート
   D3D12_VIEWPORT viewport{};
   // クライアント領域のサイズと一緒にして画面全体に表示/
@@ -1209,7 +1259,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
       //  ゲームの処理02_02
       //  02_02
-      //waveTime += 0.05f;
+      waveTime += 0.05f;
 
       // アニメーション切り替え
       switch (animationType) {
@@ -1351,6 +1401,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // VBVを設定
       // 形状を設定。PS0に設定しているものとはまた別。同じものを設定すると考えていけばよい
       commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+      commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 
       // マテリアルCbufferの場所を設定
       commandList->SetGraphicsRootConstantBufferView(
@@ -1361,7 +1412,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           1, wvpResource->GetGPUVirtualAddress());
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
-      commandList->DrawInstanced(3, 1, 0, 0);
+      commandList->DrawInstanced(6, 1, 0, 0);
       // 描画
 
       // 描画の最後です//----------------------------------------------------
@@ -1455,5 +1506,3 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   return 0;
 
 } // 最後のカギかっこ
-
-// 20page final;OK
