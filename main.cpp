@@ -60,36 +60,36 @@ struct Fragment {
 };
 // 変数//--------------------
 
-// --- 列挙体 ---
-enum WaveType {
-  WAVE_SINE,
-  WAVE_CHAINSAW,
-  WAVE_SQUARE,
-};
-
-enum AnimationType {
-  ANIM_RESET,
-  ANIM_NONE,
-  ANIM_COLOR,
-  ANIM_SCALE,
-  ANIM_ROTATE,
-  ANIM_TRANSLATE,
-  ANIM_TORNADO,
-  ANIM_PULSE,
-  ANIM_AURORA,
-  ANIM_BOUNCE,
-  ANIM_TWIST,
-  ANIM_ALL
-
-};
-
-WaveType waveType = WAVE_SINE;
-AnimationType animationType = ANIM_NONE;
-float waveTime = 0.0f;
-
-enum TextureType { TEXTURE_UVCHECKER, TEXTURE_MONSTERBALL };
-
-static TextureType selectedTexture = TEXTURE_UVCHECKER;
+//// --- 列挙体 ---
+// enum WaveType {
+//   WAVE_SINE,
+//   WAVE_CHAINSAW,
+//   WAVE_SQUARE,
+// };
+//
+// enum AnimationType {
+//   ANIM_RESET,
+//   ANIM_NONE,
+//   ANIM_COLOR,
+//   ANIM_SCALE,
+//   ANIM_ROTATE,
+//   ANIM_TRANSLATE,
+//   ANIM_TORNADO,
+//   ANIM_PULSE,
+//   ANIM_AURORA,
+//   ANIM_BOUNCE,
+//   ANIM_TWIST,
+//   ANIM_ALL
+//
+// };
+//
+// WaveType waveType = WAVE_SINE;
+// AnimationType animationType = ANIM_NONE;
+// float waveTime = 0.0f;
+//
+// enum TextureType { TEXTURE_UVCHECKER, TEXTURE_MONSTERBALL };
+//
+// static TextureType selectedTexture = TEXTURE_UVCHECKER;
 
 //////////////---------------------------------------
 // 関数の作成///
@@ -1163,6 +1163,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ID3D12Resource *vertexResource =
       CreateBufferRespource(device, sizeof(VertexData) * 6);
 
+  // sprite用の頂点リソースを作る04_00
+  ID3D12Resource *vertexResourceSprite =
+      CreateBufferRespource(device, sizeof(VertexData) * 6);
+
   //// 頂点リソース用のヒープの設定
   // D3D12_HEAP_PROPERTIES uploadHeapProperties{};
   // uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD; // Uploadheapを使う
@@ -1197,10 +1201,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 1頂点あたりのサイズ
   vertexBufferView.StrideInBytes = sizeof(VertexData);
 
+  // sprite用の頂点バッファビューを作成する04_00
+  D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite{};
+  // sprite用のリソースの先頭のアドレスから使う04_00
+  vertexBufferViewSprite.BufferLocation =
+      vertexResourceSprite->GetGPUVirtualAddress();
+  // sprite用の使用するリーソースのサイズは頂点6つ分のサイズ04_00
+  vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 6;
+  // sprite用の１頂点当たりのサイズ04_00
+  vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
+
   // 頂点リソースにデータを書き込む
   VertexData *vertexData = nullptr;
-
-  // 書き込むためのアドレスを取得----------------------03_00
+  // sprite用の頂点リソースにデータを書き込む04_00
+  VertexData *vertexDataSprite = nullptr;
+  //  書き込むためのアドレスを取得----------------------03_00
   vertexResource->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
   // 左下
   vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
@@ -1220,6 +1235,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 右下
   vertexData[5].position = {0.5f, -0.5f, -0.5f, 1.0f};
   vertexData[5].texcoord = {1.0f, 1.0f};
+  //  書き込むためのアドレスを取得----------------------04_00
+  vertexResourceSprite->Map(
+      0, nullptr,
+      reinterpret_cast<void **>(&vertexDataSprite)); // 04_00
+  // 1枚目の三角形
+  vertexDataSprite[0].position = {0.0f, 360.0f, 0.0f, 1.0f}; // 左下04_00
+  vertexDataSprite[0].texcoord = {0.0f, 1.0f};
+  vertexDataSprite[1].position = {0.0f, 0.0f, 0.0f, 1.0f}; // 左上04_00
+  vertexDataSprite[1].texcoord = {0.0f, 0.0f};
+  vertexDataSprite[2].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下04_00
+  vertexDataSprite[2].texcoord = {1.0f, 1.0f};
+  // ２枚目の三角形
+  vertexDataSprite[3].position = {0.0f, 0.0f, 0.0f, 1.0f}; // 左下04_00
+  vertexDataSprite[3].texcoord = {0.0f, 0.0f};
+  vertexDataSprite[4].position = {640.0f, 0.0f, 0.0f, 1.0f}; // 左上04_00
+  vertexDataSprite[4].texcoord = {1.0f, 0.0f};
+  vertexDataSprite[5].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下04_00
+  vertexDataSprite[5].texcoord = {1.0f, 1.0f};
+
   //  ビューポート
   D3D12_VIEWPORT viewport{};
   // クライアント領域のサイズと一緒にして画面全体に表示/
@@ -1257,6 +1291,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 単位行列を書き込んでおく02_02
   *wvpData = MakeIdentity4x4(); // WVPリソースを作る
 
+  // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
+  // 1つ分のサイズを用意する04_00
+  ID3D12Resource *transformationMatrixResourceSprite =
+      CreateBufferRespource(device, sizeof(Matrix4x4));
+  // sprite用のデータを書き込む04_00
+  Matrix4x4 *transformationMatrixDataSprite = nullptr;
+  // sprite用の書き込むためのアドレスを取得04_00
+  transformationMatrixResourceSprite->Map(
+      0, nullptr, reinterpret_cast<void **>(&transformationMatrixDataSprite));
+  // 単位行列を書き込んでおく04_00
+  *transformationMatrixDataSprite = MakeIdentity4x4();
+
   // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
   // こういうもんである02_03
   IMGUI_CHECKVERSION();
@@ -1269,13 +1315,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                       srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
   // 変数//
-
+  // spriteトランスフォーム
+  Transform transformSprite{
+      {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
   // トランスフォーム
   Transform transform{
       {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
   // カメラトランスフォーム
   Transform cameraTransform{
       {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -5.0f}};
+
   MSG msg{};
 
   // ウィンドウの×ボタンが押されるまでループ
@@ -1303,45 +1352,45 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
       ImGui::ColorEdit4("Color", &(*materialData).x);
 
-      // --- アニメーション選択 ---
-      ImGui::Text("Animation");
-      if (ImGui::Button("None"))
-        animationType = ANIM_NONE;
-      if (ImGui::Button("RESET"))
-        animationType = ANIM_RESET;
-      ImGui::SameLine();
-      if (ImGui::Button("Color"))
-        animationType = ANIM_COLOR;
-      ImGui::SameLine();
-      if (ImGui::Button("Scale"))
-        animationType = ANIM_SCALE;
-      if (ImGui::Button("Rotate"))
-        animationType = ANIM_ROTATE;
-      ImGui::SameLine();
-      if (ImGui::Button("Translate"))
-        animationType = ANIM_TRANSLATE;
-      ImGui::SameLine();
-      if (ImGui::Button("All"))
-        animationType = ANIM_ALL;
-      ImGui::SameLine();
-      if (ImGui::Button("Pulse"))
-        animationType = ANIM_PULSE;
-      ImGui::SameLine();
-      if (ImGui::Button("Aurora"))
-        animationType = ANIM_AURORA;
-      if (ImGui::Button("Bounce"))
-        animationType = ANIM_BOUNCE;
-      ImGui::SameLine();
-      if (ImGui::Button("Twist"))
-        animationType = ANIM_TWIST;
+      //// --- アニメーション選択 ---
+      // ImGui::Text("Animation");
+      // if (ImGui::Button("None"))
+      //   animationType = ANIM_NONE;
+      // if (ImGui::Button("RESET"))
+      //   animationType = ANIM_RESET;
+      // ImGui::SameLine();
+      // if (ImGui::Button("Color"))
+      //   animationType = ANIM_COLOR;
+      // ImGui::SameLine();
+      // if (ImGui::Button("Scale"))
+      //   animationType = ANIM_SCALE;
+      // if (ImGui::Button("Rotate"))
+      //   animationType = ANIM_ROTATE;
+      // ImGui::SameLine();
+      // if (ImGui::Button("Translate"))
+      //   animationType = ANIM_TRANSLATE;
+      // ImGui::SameLine();
+      // if (ImGui::Button("All"))
+      //   animationType = ANIM_ALL;
+      // ImGui::SameLine();
+      // if (ImGui::Button("Pulse"))
+      //   animationType = ANIM_PULSE;
+      // ImGui::SameLine();
+      // if (ImGui::Button("Aurora"))
+      //   animationType = ANIM_AURORA;
+      // if (ImGui::Button("Bounce"))
+      //   animationType = ANIM_BOUNCE;
+      // ImGui::SameLine();
+      // if (ImGui::Button("Twist"))
+      //   animationType = ANIM_TWIST;
 
-      ImGui::Text("changeTexture:");
-      if (ImGui::Button("uvChecker")) {
-        selectedTexture = TEXTURE_UVCHECKER;
-      }
-      if (ImGui::Button("monsterBall")) {
-        selectedTexture = TEXTURE_MONSTERBALL;
-      }
+      // ImGui::Text("changeTexture:");
+      // if (ImGui::Button("uvChecker")) {
+      //   selectedTexture = TEXTURE_UVCHECKER;
+      // }
+      // if (ImGui::Button("monsterBall")) {
+      //   selectedTexture = TEXTURE_MONSTERBALL;
+      // }
       ImGui::End();
 
       // ImGuiの内部コマンドを生成する02_03
@@ -1354,92 +1403,92 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
       //  ゲームの処理02_02
       //  02_02
-      waveTime += 0.05f;
+      // waveTime += 0.05f;
 
-      // アニメーション切り替え
-      switch (animationType) {
-      case ANIM_NONE:
+      //// アニメーション切り替え
+      // switch (animationType) {
+      // case ANIM_NONE:
 
-        break;
-      case ANIM_RESET:
-        // トランスフォームの初期化
-        transform.translate = {0.0f, 0.0f, 0.0f};
-        transform.rotate = {0.0f, 0.0f, 0.0f};
-        transform.scale = {1.0f, 1.0f, 1.0f};
+      //  break;
+      // case ANIM_RESET:
+      //  // トランスフォームの初期化
+      //  transform.translate = {0.0f, 0.0f, 0.0f};
+      //  transform.rotate = {0.0f, 0.0f, 0.0f};
+      //  transform.scale = {1.0f, 1.0f, 1.0f};
 
-        // 色の初期化（
-        materialData->x = 1.0f;
-        materialData->y = 1.0f;
-        materialData->z = 1.0f;
-        materialData->w = 1.0f;
-        animationType = ANIM_RESET;
-        break;
+      //  // 色の初期化（
+      //  materialData->x = 1.0f;
+      //  materialData->y = 1.0f;
+      //  materialData->z = 1.0f;
+      //  materialData->w = 1.0f;
+      //  animationType = ANIM_RESET;
+      //  break;
 
-      case ANIM_COLOR:
-        materialData->x = fabsf(sinf(waveTime));
-        materialData->y = fabsf(sinf(waveTime + 1.0f));
-        materialData->z = fabsf(sinf(waveTime + 2.0f));
-        break;
+      // case ANIM_COLOR:
+      //   materialData->x = fabsf(sinf(waveTime));
+      //   materialData->y = fabsf(sinf(waveTime + 1.0f));
+      //   materialData->z = fabsf(sinf(waveTime + 2.0f));
+      //   break;
 
-      case ANIM_SCALE:
-        transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
-        transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
-        break;
+      // case ANIM_SCALE:
+      //   transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
+      //   transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
+      //   break;
 
-      case ANIM_TRANSLATE:
-        transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
-        break;
-      case ANIM_ROTATE:
+      // case ANIM_TRANSLATE:
+      //   transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
+      //   break;
+      // case ANIM_ROTATE:
 
-        transform.rotate.y += 0.02f;
+      //  transform.rotate.y += 0.02f;
 
-        transform.rotate.y += 0.1f;
+      //  transform.rotate.y += 0.1f;
 
-        transform.rotate.y += 0.05f;
+      //  transform.rotate.y += 0.05f;
 
-        break;
+      //  break;
 
-      case ANIM_ALL:
-        materialData->x = fabsf(sinf(waveTime));
-        materialData->y = fabsf(sinf(waveTime + 1.0f));
-        materialData->z = fabsf(sinf(waveTime + 2.0f));
-        transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
-        transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
-        transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
-        switch (waveType) {
-        case WAVE_SINE:
-          transform.rotate.y += 0.02f;
-          break;
-        case WAVE_CHAINSAW:
-          transform.rotate.y += 0.1f;
-          break;
-        case WAVE_SQUARE:
-          transform.rotate.y += 0.05f;
-          break;
-        }
+      // case ANIM_ALL:
+      //   materialData->x = fabsf(sinf(waveTime));
+      //   materialData->y = fabsf(sinf(waveTime + 1.0f));
+      //   materialData->z = fabsf(sinf(waveTime + 2.0f));
+      //   transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
+      //   transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
+      //   transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
+      //   switch (waveType) {
+      //   case WAVE_SINE:
+      //     transform.rotate.y += 0.02f;
+      //     break;
+      //   case WAVE_CHAINSAW:
+      //     transform.rotate.y += 0.1f;
+      //     break;
+      //   case WAVE_SQUARE:
+      //     transform.rotate.y += 0.05f;
+      //     break;
+      //   }
 
-      case ANIM_PULSE: {
-        float pulse = sinf(waveTime * 5.0f) * 0.2f + 1.0f;
-        transform.scale.x = pulse;
-        transform.scale.y = pulse;
-      } break;
+      // case ANIM_PULSE: {
+      //   float pulse = sinf(waveTime * 5.0f) * 0.2f + 1.0f;
+      //   transform.scale.x = pulse;
+      //   transform.scale.y = pulse;
+      // } break;
 
-      case ANIM_AURORA:
-        materialData->x = 0.2f + 0.2f * sinf(waveTime);
-        materialData->y = 0.2f + 0.2f * sinf(waveTime + 1.5f);
-        materialData->z = 0.2f + 0.2f * sinf(waveTime + 3.0f);
-        break;
+      // case ANIM_AURORA:
+      //   materialData->x = 0.2f + 0.2f * sinf(waveTime);
+      //   materialData->y = 0.2f + 0.2f * sinf(waveTime + 1.5f);
+      //   materialData->z = 0.2f + 0.2f * sinf(waveTime + 3.0f);
+      //   break;
 
-      case ANIM_BOUNCE:
-        transform.translate.y = fabsf(sinf(waveTime * 2.0f)) * 1.1f;
-        break;
+      // case ANIM_BOUNCE:
+      //   transform.translate.y = fabsf(sinf(waveTime * 2.0f)) * 1.1f;
+      //   break;
 
-      case ANIM_TWIST:
-        transform.rotate.z = sinf(waveTime * 1.0f);
-        transform.rotate.x = sinf(waveTime * 1.5f);
-        transform.rotate.y = sinf(waveTime * 2.0f);
-        break;
-      }
+      // case ANIM_TWIST:
+      //   transform.rotate.z = sinf(waveTime * 1.0f);
+      //   transform.rotate.x = sinf(waveTime * 1.5f);
+      //   transform.rotate.y = sinf(waveTime * 2.0f);
+      //   break;
+      // }
 
       // メイクアフィンマトリックス02_02
       Matrix4x4 worldMatrix = MakeAffineMatrix(
@@ -1458,6 +1507,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
       // CBVのバッファに書き込む02_02
       *wvpData = worldViewProjectionMatrix;
+
+      // Sprite用のworldviewProjectionMatrixを作る04_00
+      Matrix4x4 worldMatrixSprite =
+          MakeAffineMatrix(transformSprite.scale, transformSprite.rotate,
+                           transformSprite.translate);
+      Matrix4x4 viewMatrixSprite = MakeIdentity4x4();
+      Matrix4x4 projectionMatrixSprite = MakeOrthographicMatrix(
+          0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
+      Matrix4x4 woroldViewProjectionMatrixSprite =
+          Multiply(worldMatrixSprite,
+                   Multiply(viewMatrixSprite, projectionMatrixSprite));
+      *transformationMatrixDataSprite = woroldViewProjectionMatrixSprite;
 
       // 画面のクリア処理
       //   これから書き込むバックバッファのインデックスを取得
@@ -1504,14 +1565,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootSignature(rootSignature);
       commandList->SetPipelineState(graphicsPinelineState);     // PS0を設定
       commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // VBVを設定
+
       // 形状を設定。PS0に設定しているものとはまた別。同じものを設定すると考えていけばよい
       commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-if (selectedTexture == TEXTURE_UVCHECKER) {
-        commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-      } else {
-        commandList->SetGraphicsRootDescriptorTable(2, textureBallSrvGPU);
-      }
+      commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+
+      // commandList->SetGraphicsRootDescriptorTable(2, textureBallSrvGPU);
+
       // マテリアルCbufferの場所を設定
       commandList->SetGraphicsRootConstantBufferView(
           0, materialResource->GetGPUVirtualAddress());
@@ -1522,6 +1583,13 @@ if (selectedTexture == TEXTURE_UVCHECKER) {
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
       commandList->DrawInstanced(6, 1, 0, 0);
+
+      // spriteの描画04_00
+      commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+      commandList->SetGraphicsRootConstantBufferView(
+          1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
+      commandList->DrawInstanced(6, 1, 0, 0);
+
       // 描画
 
       // 描画の最後です//----------------------------------------------------
@@ -1603,6 +1671,8 @@ if (selectedTexture == TEXTURE_UVCHECKER) {
   depthStencilResource->Release(); // 03_01
   mipImagesBall.Release();         // 03_01
   textureBall->Release();
+  vertexResourceSprite->Release();
+  transformationMatrixResourceSprite->Release();
   CoInitialize(nullptr);
 #endif
   CloseWindow(hwnd);
