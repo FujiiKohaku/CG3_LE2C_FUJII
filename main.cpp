@@ -1351,7 +1351,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
       ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
       ImGui::ColorEdit4("Color", &(*materialData).x);
-
+ 
+      //ImGui::SliderFloat3("Scale", &transformSprite.scale.x, 0.1f, 5.0f);
+      //ImGui::SliderAngle("RotateX", &transformSprite.rotate.x, -180.0f, 180.0f);
+      //ImGui::SliderAngle("RotateY", &transformSprite.rotate.y, -180.0f, 180.0f);
+      //ImGui::SliderAngle("RotateZ", &transformSprite.rotate.z, -180.0f, 180.0f);
+      //ImGui::SliderFloat3("Translate", &transformSprite.translate.x, -5.0f,5.0f);
       //// --- アニメーション選択 ---
       // ImGui::Text("Animation");
       // if (ImGui::Button("None"))
