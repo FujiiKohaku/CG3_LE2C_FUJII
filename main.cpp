@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES
 #include "vector"
 #include <Windows.h>
 #include <cassert>
@@ -6,6 +7,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <filesystem>
+#include <math.h>
 #include <string>
 // #include <format>
 #include <fstream>
@@ -18,11 +20,10 @@
 #pragma comment(lib, "dxguid.lib")
 #include <dxcapi.h>
 #pragma comment(lib, "dxcompiler.lib")
+#include "externals/DirectXTex/DirectXTex.h"
 #include "externals/imgui/imgui.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
-
-#include "externals/DirectXTex/DirectXTex.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
                                                              UINT msg,
@@ -565,6 +566,42 @@ ID3D12Resource *CreateDepthStencilTextureResource(ID3D12Device *device,
   assert(SUCCEEDED(hr));
   return resource;
 }
+
+//void DrawSphere(const Sphere &sphere, const Matrix4x4 &viewProjectionMatrix,
+//                const Matrix4x4 &viewportMatrix, uint32_t color) {
+//
+//  const uint32_t kSubdivision = 16; // 分割数
+//  const float kLonEvery =
+//      2.0f * float(M_PI) / kSubdivision; // 経度ステップ（0～2π）
+//  const float kLatEvery =
+//      float(M_PI) / kSubdivision; // 緯度ステップ（-π/2～π/2）
+//
+//  // 緯度方向にループ -π/2 ～ +π/2
+//  for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
+//    float lat = -float(M_PI) / 2.0f + kLatEvery * latIndex;
+//
+//    // 経度方向にループ 0 ～ 2π
+//    for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
+//      float lon = lonIndex * kLonEvery;
+//
+//      // 球面上の3点（a, b, c）を求める
+//      Vector3 a = {sphere.center.x + sphere.radius * cosf(lat) * cosf(lon),
+//                   sphere.center.y + sphere.radius * sinf(lat),
+//                   sphere.center.z + sphere.radius * cosf(lat) * sinf(lon)};
+//
+//      Vector3 b = {
+//          sphere.center.x + sphere.radius * cosf(lat + kLatEvery) * cosf(lon),
+//          sphere.center.y + sphere.radius * sinf(lat + kLatEvery),
+//          sphere.center.z + sphere.radius * cosf(lat + kLatEvery) * sinf(lon)};
+//
+//      Vector3 c = {
+//          sphere.center.x + sphere.radius * cosf(lat) * cosf(lon + kLonEvery),
+//          sphere.center.y + sphere.radius * sinf(lat),
+//          sphere.center.z + sphere.radius * cosf(lat) * sinf(lon + kLonEvery)};
+//    }
+//  }
+//}
+
 ////////////////////
 // 関数の生成ここまで//
 ////////////////////
@@ -1069,7 +1106,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // SRVの生成03_00
   device->CreateShaderResourceView(textureResource, &srvDesc,
                                    textureSrvHandleCPU);
-  // ★ 追加（モンスターボール用SRV）
+  //  追加（モンスターボール用SRV）
   D3D12_CPU_DESCRIPTOR_HANDLE textureBallSrvCPU = textureSrvHandleCPU;
   textureBallSrvCPU.ptr += incrementSize; // 1つ分ずらす
 
@@ -1351,12 +1388,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
       ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
       ImGui::ColorEdit4("Color", &(*materialData).x);
- 
-      //ImGui::SliderFloat3("Scale", &transformSprite.scale.x, 0.1f, 5.0f);
-      //ImGui::SliderAngle("RotateX", &transformSprite.rotate.x, -180.0f, 180.0f);
-      //ImGui::SliderAngle("RotateY", &transformSprite.rotate.y, -180.0f, 180.0f);
-      //ImGui::SliderAngle("RotateZ", &transformSprite.rotate.z, -180.0f, 180.0f);
-      //ImGui::SliderFloat3("Translate", &transformSprite.translate.x, -5.0f,5.0f);
+
+      // ImGui::SliderFloat3("Scale", &transformSprite.scale.x, 0.1f, 5.0f);
+      // ImGui::SliderAngle("RotateX", &transformSprite.rotate.x, -180.0f,
+      // 180.0f); ImGui::SliderAngle("RotateY", &transformSprite.rotate.y,
+      // -180.0f, 180.0f); ImGui::SliderAngle("RotateZ",
+      // &transformSprite.rotate.z, -180.0f, 180.0f);
+      // ImGui::SliderFloat3("Translate", &transformSprite.translate.x,
+      // -5.0f,5.0f);
       //// --- アニメーション選択 ---
       // ImGui::Text("Animation");
       // if (ImGui::Button("None"))
