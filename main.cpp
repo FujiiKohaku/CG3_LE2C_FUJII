@@ -60,7 +60,9 @@ struct Fragment {
   bool active;
 };
 // 変数//--------------------
-
+const int kSubdivision = 16;
+const int kNumVertices = kSubdivision * kSubdivision * 6;
+VertexData vertices[kNumVertices];
 //// --- 列挙体 ---
 // enum WaveType {
 //   WAVE_SINE,
@@ -567,41 +569,70 @@ ID3D12Resource *CreateDepthStencilTextureResource(ID3D12Device *device,
   return resource;
 }
 
-//void DrawSphere(const Sphere &sphere, const Matrix4x4 &viewProjectionMatrix,
-//                const Matrix4x4 &viewportMatrix, uint32_t color) {
-//
-//  const uint32_t kSubdivision = 16; // 分割数
-//  const float kLonEvery =
-//      2.0f * float(M_PI) / kSubdivision; // 経度ステップ（0～2π）
-//  const float kLatEvery =
-//      float(M_PI) / kSubdivision; // 緯度ステップ（-π/2～π/2）
-//
-//  // 緯度方向にループ -π/2 ～ +π/2
-//  for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
-//    float lat = -float(M_PI) / 2.0f + kLatEvery * latIndex;
-//
-//    // 経度方向にループ 0 ～ 2π
-//    for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
-//      float lon = lonIndex * kLonEvery;
-//
-//      // 球面上の3点（a, b, c）を求める
-//      Vector3 a = {sphere.center.x + sphere.radius * cosf(lat) * cosf(lon),
-//                   sphere.center.y + sphere.radius * sinf(lat),
-//                   sphere.center.z + sphere.radius * cosf(lat) * sinf(lon)};
-//
-//      Vector3 b = {
-//          sphere.center.x + sphere.radius * cosf(lat + kLatEvery) * cosf(lon),
-//          sphere.center.y + sphere.radius * sinf(lat + kLatEvery),
-//          sphere.center.z + sphere.radius * cosf(lat + kLatEvery) * sinf(lon)};
-//
-//      Vector3 c = {
-//          sphere.center.x + sphere.radius * cosf(lat) * cosf(lon + kLonEvery),
-//          sphere.center.y + sphere.radius * sinf(lat),
-//          sphere.center.z + sphere.radius * cosf(lat) * sinf(lon + kLonEvery)};
-//    }
-//  }
-//}
+void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
+                            float radius) {
+  const float kLonEvery = (float)(M_PI * 2.0) / (float)kSubdivision;
+  const float kLatEvery = (float)(M_PI) / (float)kSubdivision;
 
+  for (int latIndex = 0; latIndex < kSubdivision; ++latIndex) {
+    float lat = -(float)M_PI / 2.0f + kLatEvery * latIndex;
+    float nextLat = lat + kLatEvery;
+
+    for (int lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
+      float lon = kLonEvery * lonIndex;
+      float nextLon = lon + kLonEvery;
+
+      // a
+      float ax = radius * cosf(lat) * cosf(lon);
+      float ay = radius * sinf(lat);
+      float az = radius * cosf(lat) * sinf(lon);
+
+      // b
+      float bx = radius * cosf(nextLat) * cosf(lon);
+      float by = radius * sinf(nextLat);
+      float bz = radius * cosf(nextLat) * sinf(lon);
+
+      // c
+      float cx = radius * cosf(lat) * cosf(nextLon);
+      float cy = radius * sinf(lat);
+      float cz = radius * cosf(lat) * sinf(nextLon);
+
+      // d
+      float dx = radius * cosf(nextLat) * cosf(nextLon);
+      float dy = radius * sinf(nextLat);
+      float dz = radius * cosf(nextLat) * sinf(nextLon);
+
+      // テクスチャ座標
+      float u0 = (float)lonIndex / kSubdivision;
+      float u1 = (float)(lonIndex + 1) / kSubdivision;
+      float v0 = 1.0f - (float)latIndex / kSubdivision;
+      float v1 = 1.0f - (float)(latIndex + 1) / kSubdivision;
+
+      // 書き込み開始位置
+      int start = (latIndex * kSubdivision + lonIndex) * 6;
+
+      // 三角形 abc
+      vertices[start + 0].position = {ax, ay, az, 1.0f};
+      vertices[start + 0].texcoord = {u0, v0};
+
+      vertices[start + 1].position = {bx, by, bz, 1.0f};
+      vertices[start + 1].texcoord = {u0, v1};
+
+      vertices[start + 2].position = {cx, cy, cz, 1.0f};
+      vertices[start + 2].texcoord = {u1, v0};
+
+      // 三角形 cbd
+      vertices[start + 3].position = {cx, cy, cz, 1.0f};
+      vertices[start + 3].texcoord = {u1, v0};
+
+      vertices[start + 4].position = {bx, by, bz, 1.0f};
+      vertices[start + 4].texcoord = {u0, v1};
+
+      vertices[start + 5].position = {dx, dy, dz, 1.0f};
+      vertices[start + 5].texcoord = {u1, v1};
+    }
+  }
+}
 ////////////////////
 // 関数の生成ここまで//
 ////////////////////
@@ -1198,11 +1229,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   assert(SUCCEEDED(hr));
 
   ID3D12Resource *vertexResource =
-      CreateBufferRespource(device, sizeof(VertexData) * 6);
+      CreateBufferRespource(device, (sizeof(VertexData) * kSubdivision * kSubdivision * 6));
 
   // sprite用の頂点リソースを作る04_00
   ID3D12Resource *vertexResourceSprite =
-      CreateBufferRespource(device, sizeof(VertexData) * 6);
+      CreateBufferRespource(device, sizeof(VertexData) * kSubdivision * kSubdivision * 6);
 
   //// 頂点リソース用のヒープの設定
   // D3D12_HEAP_PROPERTIES uploadHeapProperties{};
@@ -1234,7 +1265,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // リソースの先頭のアドレスから使う
   vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
   // 使用するリソースのサイズは頂点３つ分のサイズ
-  vertexBufferView.SizeInBytes = sizeof(VertexData) * 6;
+  vertexBufferView.SizeInBytes = sizeof(VertexData) * 16 * 16 * 6;
   // 1頂点あたりのサイズ
   vertexBufferView.StrideInBytes = sizeof(VertexData);
 
@@ -1290,7 +1321,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   vertexDataSprite[4].texcoord = {1.0f, 0.0f};
   vertexDataSprite[5].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下04_00
   vertexDataSprite[5].texcoord = {1.0f, 1.0f};
-
+  // スフィア
+  GenerateSphereVertices(vertexData, kSubdivision, 1.0f);
   //  ビューポート
   D3D12_VIEWPORT viewport{};
   // クライアント領域のサイズと一緒にして画面全体に表示/
@@ -1626,7 +1658,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           1, wvpResource->GetGPUVirtualAddress());
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
-      commandList->DrawInstanced(6, 1, 0, 0);
+      commandList->DrawInstanced(kSubdivision * kSubdivision *6, 1, 0, 0);
 
       // spriteの描画04_00
       commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
