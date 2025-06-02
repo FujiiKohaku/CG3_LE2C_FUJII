@@ -29,6 +29,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
                                                              UINT msg,
                                                              WPARAM wParam,
                                                              LPARAM lParam);
+#pragma region 構造体
 struct Vector2 {
   float x, y;
 };
@@ -59,45 +60,22 @@ struct Fragment {
   float alpha;
   bool active;
 };
+#pragma endregion
+
+#pragma region 変数
 // 変数//--------------------
 const int kSubdivision = 16;
 const int kNumVertices = kSubdivision * kSubdivision * 6;
 VertexData vertices[kNumVertices];
-//// --- 列挙体 ---
-// enum WaveType {
-//   WAVE_SINE,
-//   WAVE_CHAINSAW,
-//   WAVE_SQUARE,
-// };
-//
-// enum AnimationType {
-//   ANIM_RESET,
-//   ANIM_NONE,
-//   ANIM_COLOR,
-//   ANIM_SCALE,
-//   ANIM_ROTATE,
-//   ANIM_TRANSLATE,
-//   ANIM_TORNADO,
-//   ANIM_PULSE,
-//   ANIM_AURORA,
-//   ANIM_BOUNCE,
-//   ANIM_TWIST,
-//   ANIM_ALL
-//
-// };
-//
-// WaveType waveType = WAVE_SINE;
-// AnimationType animationType = ANIM_NONE;
-// float waveTime = 0.0f;
-//
-// enum TextureType { TEXTURE_UVCHECKER, TEXTURE_MONSTERBALL };
-//
-// static TextureType selectedTexture = TEXTURE_UVCHECKER;
+
+#pragma endregion
+
+#pragma region 行列関数
 
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
-#pragma region 行列関数
+//
 // 単位行列の作成
 Matrix4x4 MakeIdentity4x4() {
   Matrix4x4 result{};
@@ -338,6 +316,8 @@ Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height,
 }
 #pragma endregion
 
+#pragma region DX関数
+// クラッシュ時のダンプ出力処理00_06
 static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
   // 時刻を取得して、時刻を名前に入れたファイルを作成。Dumpsディレクトリ以下ぶ出力
   SYSTEMTIME time;
@@ -568,6 +548,82 @@ ID3D12Resource *CreateDepthStencilTextureResource(ID3D12Device *device,
   assert(SUCCEEDED(hr));
   return resource;
 }
+// CompileShader関数02_00
+IDxcBlob *CompileShader(
+    // CompilerするSHaderファイルへのパス02_00
+    const std::wstring &filepath,
+    // Compilerに使用するprofile02_00
+    const wchar_t *profile,
+    // 初期化で生成したものを3つ02_00
+    IDxcUtils *dxcUtils, IDxcCompiler3 *dxcCompiler,
+    IDxcIncludeHandler *includeHandler, std::ostream &os) {
+  // ここの中身を書いていく02_00
+  // 1.hlslファイルを読み込む02_00
+  // これからシェーダーをコンパイルする旨をログに出す02_00
+  Log(os, ConvertString(std::format(L"Begin CompileShader,path:{},profike:{}\n",
+                                    filepath, profile)));
+  // hlslファイルを読む02_00
+  IDxcBlobEncoding *shaderSource = nullptr;
+  HRESULT hr = dxcUtils->LoadFile(filepath.c_str(), nullptr, &shaderSource);
+  // 読めなかったら止める02_00
+  assert(SUCCEEDED(hr));
+  // 読み込んだファイルの内容を設定する02_00
+  DxcBuffer shaderSourceBuffer;
+  shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
+  shaderSourceBuffer.Size = shaderSource->GetBufferSize();
+  shaderSourceBuffer.Encoding =
+      DXC_CP_UTF8; // UTF8の文字コードであることを通知02_00
+  // 2.Compileする
+  LPCWSTR arguments[] = {
+      filepath.c_str(), // コンパイル対象のhlslファイル名02_00
+      L"-E",
+      L"main", // エントリーポイントの指定。基本的にmain以外にはしない02_00
+      L"-T",
+      profile, // shaderProfileの設定02_00
+      L"-Zi",
+      L"-Qembed_debug", // デバック用の設定を埋め込む02_00
+      L"-Od",           /// 最適化を外しておく02_00
+      L"-Zpr"           // メモリレイアウトは行優先02_00
+
+  };
+
+  // 実際にShaderをコンパイルする02_00
+  IDxcResult *shaderResult = nullptr;
+  hr = dxcCompiler->Compile(
+
+      &shaderSourceBuffer,        // 読み込んだファイル02_00
+      arguments,                  // コンパイルオプション02_00
+      _countof(arguments),        // コンパイルオプションの数02_00
+      includeHandler,             // includeが含まれた諸々02_00
+      IID_PPV_ARGS(&shaderResult) // コンパイル結果02_00
+  );
+  // コンパイルエラーではなくdxcが起動できないなど致命的な状況02_00
+  assert(SUCCEEDED(hr));
+  // 3.警告、エラーが出ていないか確認する02_00
+  // 警告.エラーが出ていたらログに出して止める02_00
+  IDxcBlobUtf8 *shaderError = nullptr;
+  shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
+  if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
+    Log(os, shaderError->GetStringPointer());
+    // 警告、エラーダメ絶対02_00
+    assert(false);
+  }
+  // 4.Compile結果を受け取って返す02_00
+  // コンパイル結果から実行用のバイナリ部分を取得02_00
+  IDxcBlob *shaderBlob = nullptr;
+  hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob),
+                               nullptr);
+  assert(SUCCEEDED(hr));
+  // 成功したログを出す02_00
+  Log(os,
+      ConvertString(std::format(L"Compile Succeeded, path:{}, profike:{}\n ",
+                                filepath, profile)));
+  // もう使わないリソースを解放02_00
+  shaderSource->Release();
+  shaderResult->Release();
+  // 実行用のバイナリを返却02_00
+  return shaderBlob;
+}
 
 void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
                             float radius) {
@@ -637,6 +693,8 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
 // 関数の生成ここまで//
 ////////////////////
 
+#pragma endregion
+
 // ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
@@ -656,110 +714,17 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   // 標準のメッセージ処理を行う
   return DefWindowProc(hwnd, msg, wparam, lparam);
 }
-// CompileShader関数02_00
-IDxcBlob *CompileShader(
-    // CompilerするSHaderファイルへのパス02_00
-    const std::wstring &filepath,
-    // Compilerに使用するprofile02_00
-    const wchar_t *profile,
-    // 初期化で生成したものを3つ02_00
-    IDxcUtils *dxcUtils, IDxcCompiler3 *dxcCompiler,
-    IDxcIncludeHandler *includeHandler, std::ostream &os) {
-  // ここの中身を書いていく02_00
-  // 1.hlslファイルを読み込む02_00
-  // これからシェーダーをコンパイルする旨をログに出す02_00
-  Log(os, ConvertString(std::format(L"Begin CompileShader,path:{},profike:{}\n",
-                                    filepath, profile)));
-  // hlslファイルを読む02_00
-  IDxcBlobEncoding *shaderSource = nullptr;
-  HRESULT hr = dxcUtils->LoadFile(filepath.c_str(), nullptr, &shaderSource);
-  // 読めなかったら止める02_00
-  assert(SUCCEEDED(hr));
-  // 読み込んだファイルの内容を設定する02_00
-  DxcBuffer shaderSourceBuffer;
-  shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
-  shaderSourceBuffer.Size = shaderSource->GetBufferSize();
-  shaderSourceBuffer.Encoding =
-      DXC_CP_UTF8; // UTF8の文字コードであることを通知02_00
-  // 2.Compileする
-  LPCWSTR arguments[] = {
-      filepath.c_str(), // コンパイル対象のhlslファイル名02_00
-      L"-E",
-      L"main", // エントリーポイントの指定。基本的にmain以外にはしない02_00
-      L"-T",
-      profile, // shaderProfileの設定02_00
-      L"-Zi",
-      L"-Qembed_debug", // デバック用の設定を埋め込む02_00
-      L"-Od",           /// 最適化を外しておく02_00
-      L"-Zpr"           // メモリレイアウトは行優先02_00
 
-  };
-  // 実際にShaderをコンパイルする02_00
-  IDxcResult *shaderResult = nullptr;
-  hr = dxcCompiler->Compile(
+////////////////
+// main関数/////
+///////////////
 
-      &shaderSourceBuffer,        // 読み込んだファイル02_00
-      arguments,                  // コンパイルオプション02_00
-      _countof(arguments),        // コンパイルオプションの数02_00
-      includeHandler,             // includeが含まれた諸々02_00
-      IID_PPV_ARGS(&shaderResult) // コンパイル結果02_00
-  );
-  // コンパイルエラーではなくdxcが起動できないなど致命的な状況02_00
-  assert(SUCCEEDED(hr));
-  // 3.警告、エラーが出ていないか確認する02_00
-  // 警告.エラーが出ていたらログに出して止める02_00
-  IDxcBlobUtf8 *shaderError = nullptr;
-  shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
-  if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
-    Log(os, shaderError->GetStringPointer());
-    // 警告、エラーダメ絶対02_00
-    assert(false);
-  }
-  // 4.Compile結果を受け取って返す02_00
-  // コンパイル結果から実行用のバイナリ部分を取得02_00
-  IDxcBlob *shaderBlob = nullptr;
-  hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob),
-                               nullptr);
-  assert(SUCCEEDED(hr));
-  // 成功したログを出す02_00
-  Log(os,
-      ConvertString(std::format(L"Compile Succeeded, path:{}, profike:{}\n ",
-                                filepath, profile)));
-  // もう使わないリソースを解放02_00
-  shaderSource->Release();
-  shaderResult->Release();
-  // 実行用のバイナリを返却02_00
-  return shaderBlob;
-}
-/////
-// main関数/////-------------------------------------------------------------------------------------------------
 //  Windwsアプリでの円とリポウント(main関数)
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   CoInitializeEx(0, COINIT_MULTITHREADED);
 
-  // 誰も補足しなかった場合(Unhandled),補足する関数を登録
-  // main関数はじまってすぐに登録するとよい
-  SetUnhandledExceptionFilter(ExportDump);
-  // ログのディレクトリを用意
-  std::filesystem::create_directory("logs");
-  // main関数の先頭02_04
-
-  // 現在時刻を取得(UTC時刻)
-  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-  // ログファイルの名前にコンマ何秒はいらないので削って秒にする
-  std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
-      nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-  // 日本時間(PCの設定時間)に変換
-  std::chrono::zoned_time loacalTime{std::chrono::current_zone(), nowSeconds};
-  // formatを使って年月日_時分秒の文字列に変換
-  std::string dateString = std::format("{:%Y%m%d_%H%M%S}", loacalTime);
-  // 時刻を使ってファイル名を決定
-  std::string logFilePath = std::string("logs/") + dateString + ".log";
-  // ファイルを作って書き込み準備
-  std::ofstream logStream(logFilePath);
   // 出力
-
   WNDCLASS wc{};
   // ウィンドウプロシージャ
   wc.lpfnWndProc = WindowProc;
@@ -794,6 +759,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                            wc.hInstance,         // インスタンスハンドル
                            nullptr);             // オプション
 
+// 01_01
 #ifdef _DEBUG
 
   ID3D12Debug1 *debugController = nullptr;
@@ -803,19 +769,54 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     // さらに6PU側でもチェックリストを行うようにする
     debugController->SetEnableGPUBasedValidation(TRUE);
   }
+
 #endif // _DEBUG
 
   // ウィンドウを表示する
   ShowWindow(hwnd, SW_SHOW);
 
-  // DXGIファクトリーの生成
+#pragma region 起動時ログ設定とクラッシュ対策 00_04,00_06
+  // 誰も補足しなかった場合(Unhandled),補足する関数を登録
+  // main関数はじまってすぐに登録するとよい
+  SetUnhandledExceptionFilter(ExportDump); // 00_06の関数ダンプ関数
+  // ログのディレクトリを用意
+  std::filesystem::create_directory("logs");
+  // main関数の先頭02_04
+
+  // 現在時刻を取得(UTC時刻)
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+  // ログファイルの名前にコンマ何秒はいらないので削って秒にする
+  std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
+      nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
+  // 日本時間(PCの設定時間)に変換
+  std::chrono::zoned_time loacalTime{std::chrono::current_zone(), nowSeconds};
+  // formatを使って年月日_時分秒の文字列に変換
+  std::string dateString = std::format("{:%Y%m%d_%H%M%S}", loacalTime);
+  // 時刻を使ってファイル名を決定
+  std::string logFilePath = std::string("logs/") + dateString + ".log";
+  // ファイルを作って書き込み準備
+  std::ofstream logStream(logFilePath);
+
+#pragma endregion
+
+#pragma region DirectX12の初期化（アダプターとデバイス作成）00_05
+
+  // DXGIファクトリーの生成00_05
   IDXGIFactory7 *dxgiFactory = nullptr;
   // HRESULTはWindows系のエラー子どであり
   // 関数が成功したか銅貨をSUCCEEDEDマクロで判定できる
   HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
   // 初期化の根本的な部分でエラーが出た場合はプログラムが間違っているか、どうにもできない場合が多いのでassertにしておく
   assert(SUCCEEDED(hr));
-  // 使用するアダプタ用の変数,最初にnullptrを入れておく
+  // 説明
+  // DXGIファクトリーってのは、「PCにあるグラフィック機能を調べるための係」みたいなもの。
+  // CreateDXGIFactory は、その係を呼び出してる。
+  // うまく呼び出せなかったら assert() でプログラムを止める。
+
+  //===============================================//
+
+  // どのグラフィックカードを使うか調べる
+  //  使用するアダプタ用の変数,最初にnullptrを入れておく
   IDXGIAdapter4 *useAdapter = nullptr;
   // よい順にアダプタを頼む
   for (UINT i = 0; dxgiFactory->EnumAdapterByGpuPreference(
@@ -837,6 +838,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   }
   // 適切なアダプタが見つからなかったので起動できない
   assert(useAdapter != nullptr);
+  // 説明
+  // PCの中にある**グラフィックカード（GPU）**を順番にチェック。
+  // グラボを見つけたら、それを使うやつに決定！
+  // なかったら、止める（＝DirectXは起動できない）
+
+  //===============================================//
+
+  // DirectXのデバイスを作る
   ID3D12Device *device = nullptr;
   // 昨日レベルとログ出力用の文字列
   D3D_FEATURE_LEVEL featureLevels[] = {
@@ -859,9 +868,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   assert(device != nullptr);
   Log(logStream,
       "Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
+  // 説明
+  // 「このグラボで、DirectX 12 のどのバージョンが使えるか？」をチェック。
+  // 一番強いバージョンから順に試す。
+  // 成功したらそのバージョンでデバイスDirectX本体を作る。
+  // 最後に「デバイス作れたよ！」ってログに出す。
 
+#pragma endregion
+
+// 01_01
 #ifdef _DEBUG
-
   ID3D12InfoQueue *infoQueue = nullptr;
   if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
     // やばいエラー時に止まる
@@ -890,19 +906,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #endif // DEBUG
 
+#pragma region コマンドキュー・アロケーター・リスト初期化01_00
   // コマンドキューを生成する
   ID3D12CommandQueue *commandQueue = nullptr;
   D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
   hr = device->CreateCommandQueue(&commandQueueDesc,
                                   IID_PPV_ARGS(&commandQueue));
-  // コマンドキューの生成が上手くいかなかったので起動できない
+  // 説明
+  //  GPU への命令を順番に並べて送る「列（キュー）」です。
+  //  コマンドキューの生成が上手くいかなかったので起動できない
   assert(SUCCEEDED(hr));
+
   // コマンドアロケーターを生成する
   ID3D12CommandAllocator *commandAllocator = nullptr;
   hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
                                       IID_PPV_ARGS(&commandAllocator));
   // コマンドキューアロケーターの生成があ上手くいかなかったので起動できない
   assert(SUCCEEDED(hr));
+  // 説明
+  // 命令（コマンド）を ためておくメモリ領域。
 
   // コマンドリストを生成する
   ID3D12GraphicsCommandList *commandList = nullptr;
@@ -911,7 +933,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                  IID_PPV_ARGS(&commandList));
   // コマンドリストの生成が上手くいかなかったので起動できない
   assert(SUCCEEDED(hr));
+// 説明
+// ここに描画命令を書き、最後にキューに送ります。
+#pragma endregion
 
+#pragma region スワップチェーンの生成処理01_00
   // スワップチェーンを生成する
   IDXGISwapChain4 *swapChain = nullptr;
   DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
@@ -931,6 +957,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandQueue, hwnd, &swapChainDesc, nullptr, nullptr,
       reinterpret_cast<IDXGISwapChain1 **>(&swapChain));
   assert(SUCCEEDED(hr));
+  // 説明
+  // スワップチェーンは「絵を描くキャンバスを2枚用意して、1枚に描いて、もう1枚をお客さんに見せる」仕組みです。
+  // これで「描いてる途中の絵」を見せないようにできるんだよ。
+#pragma endregion
+
+#pragma region RTVヒープ作成とスワップチェーンのRTV設定 01_00
 
   // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
   ID3D12DescriptorHeap *rtvDescriptorHeap =
@@ -938,16 +970,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   ID3D12DescriptorHeap *srvDescriptorHeap = CreateDescriptorHeap(
       device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
-
-  //// ディスクリプタヒープの生成
-  // ID3D12DescriptorHeap *rtvDescriptorHeap = nullptr;//1
-  // D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc{};//1
-  // rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;//1
-  // rtvDescriptorHeapDesc.NumDescriptors = 2;//1
-  // hr = device->CreateDescriptorHeap(&rtvDescriptorHeapDesc,
-  //                                   IID_PPV_ARGS(&rtvDescriptorHeap));//1
-  //// ディスクリプタヒープが作れなかったので起動できない
-  // assert(SUCCEEDED(hr));//1
 
   // SwapChainからResourceを引っ張ってくる
   ID3D12Resource *swapChainResources[2] = {nullptr};
@@ -978,6 +1000,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 2つ目を作る
   device->CreateRenderTargetView(swapChainResources[1], &rtvDesc,
                                  rtvHandles[1]);
+// 説明
+// 画面に描くためのレンダーターゲットビューを2つ用意してる（ダブルバッファ用）。
+// スワップチェーンのバッファをRTVでGPUが描画可能な形にしてヒープに登録している。
+// これによって「どのバッファに描くか」をGPUに教えられるようになる。
+#pragma endregion
+
   // 03_01の読み書きのやつ
   ID3D12Resource *depthStencilResource =
       CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
@@ -1228,37 +1256,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       &graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
   assert(SUCCEEDED(hr));
 
-  ID3D12Resource *vertexResource =
-      CreateBufferRespource(device, (sizeof(VertexData) * kSubdivision * kSubdivision * 6));
+  ID3D12Resource *vertexResource = CreateBufferRespource(
+      device, (sizeof(VertexData) * kSubdivision * kSubdivision * 6));
 
   // sprite用の頂点リソースを作る04_00
-  ID3D12Resource *vertexResourceSprite =
-      CreateBufferRespource(device, sizeof(VertexData) * kSubdivision * kSubdivision * 6);
-
-  //// 頂点リソース用のヒープの設定
-  // D3D12_HEAP_PROPERTIES uploadHeapProperties{};
-  // uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD; // Uploadheapを使う
-  //// 頂点リソースの設定
-  // D3D12_RESOURCE_DESC vertexResourceDesc{};
-  //// バッファリソース。テクスチャの場合はまた別の設定をする
-  // vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-  // vertexResourceDesc.Width = sizeof(Vector4) * 3; // リソースのサイズ　
-  //// バッファの場合はこれらは１にする決まり
-  // vertexResourceDesc.Height = 1;
-  // vertexResourceDesc.DepthOrArraySize = 1;
-  // vertexResourceDesc.MipLevels = 1;
-  // vertexResourceDesc.SampleDesc.Count = 1;
-  //// バッファの場合はこれにする決まり
-  // vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-  // ID3D12Resource *vertexresource =
-  //     CreateBufferRespource(device, sizeof(Vector4) * 3);
-  //// 実際に頂点リソースを作る
-  // ID3D12Resource *vertexResource = nullptr;
-  // hr = device->CreateCommittedResource(
-  //     &uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &vertexResourceDesc,
-  //     D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
-  //     IID_PPV_ARGS(&vertexResource));
-  // assert(SUCCEEDED(hr));
+  ID3D12Resource *vertexResourceSprite = CreateBufferRespource(
+      device, sizeof(VertexData) * kSubdivision * kSubdivision * 6);
 
   // 頂点バッファビューを作成する
   D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
@@ -1421,52 +1424,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
       ImGui::ColorEdit4("Color", &(*materialData).x);
 
-      // ImGui::SliderFloat3("Scale", &transformSprite.scale.x, 0.1f, 5.0f);
-      // ImGui::SliderAngle("RotateX", &transformSprite.rotate.x, -180.0f,
-      // 180.0f); ImGui::SliderAngle("RotateY", &transformSprite.rotate.y,
-      // -180.0f, 180.0f); ImGui::SliderAngle("RotateZ",
-      // &transformSprite.rotate.z, -180.0f, 180.0f);
-      // ImGui::SliderFloat3("Translate", &transformSprite.translate.x,
-      // -5.0f,5.0f);
-      //// --- アニメーション選択 ---
-      // ImGui::Text("Animation");
-      // if (ImGui::Button("None"))
-      //   animationType = ANIM_NONE;
-      // if (ImGui::Button("RESET"))
-      //   animationType = ANIM_RESET;
-      // ImGui::SameLine();
-      // if (ImGui::Button("Color"))
-      //   animationType = ANIM_COLOR;
-      // ImGui::SameLine();
-      // if (ImGui::Button("Scale"))
-      //   animationType = ANIM_SCALE;
-      // if (ImGui::Button("Rotate"))
-      //   animationType = ANIM_ROTATE;
-      // ImGui::SameLine();
-      // if (ImGui::Button("Translate"))
-      //   animationType = ANIM_TRANSLATE;
-      // ImGui::SameLine();
-      // if (ImGui::Button("All"))
-      //   animationType = ANIM_ALL;
-      // ImGui::SameLine();
-      // if (ImGui::Button("Pulse"))
-      //   animationType = ANIM_PULSE;
-      // ImGui::SameLine();
-      // if (ImGui::Button("Aurora"))
-      //   animationType = ANIM_AURORA;
-      // if (ImGui::Button("Bounce"))
-      //   animationType = ANIM_BOUNCE;
-      // ImGui::SameLine();
-      // if (ImGui::Button("Twist"))
-      //   animationType = ANIM_TWIST;
-
-      // ImGui::Text("changeTexture:");
-      // if (ImGui::Button("uvChecker")) {
-      //   selectedTexture = TEXTURE_UVCHECKER;
-      // }
-      // if (ImGui::Button("monsterBall")) {
-      //   selectedTexture = TEXTURE_MONSTERBALL;
-      // }
       ImGui::End();
 
       // ImGuiの内部コマンドを生成する02_03
@@ -1477,94 +1434,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ID3D12DescriptorHeap *descriptorHeaps[] = {srvDescriptorHeap};
       commandList->SetDescriptorHeaps(1, descriptorHeaps);
 
-      //  ゲームの処理02_02
-      //  02_02
-      // waveTime += 0.05f;
 
-      //// アニメーション切り替え
-      // switch (animationType) {
-      // case ANIM_NONE:
-
-      //  break;
-      // case ANIM_RESET:
-      //  // トランスフォームの初期化
-      //  transform.translate = {0.0f, 0.0f, 0.0f};
-      //  transform.rotate = {0.0f, 0.0f, 0.0f};
-      //  transform.scale = {1.0f, 1.0f, 1.0f};
-
-      //  // 色の初期化（
-      //  materialData->x = 1.0f;
-      //  materialData->y = 1.0f;
-      //  materialData->z = 1.0f;
-      //  materialData->w = 1.0f;
-      //  animationType = ANIM_RESET;
-      //  break;
-
-      // case ANIM_COLOR:
-      //   materialData->x = fabsf(sinf(waveTime));
-      //   materialData->y = fabsf(sinf(waveTime + 1.0f));
-      //   materialData->z = fabsf(sinf(waveTime + 2.0f));
-      //   break;
-
-      // case ANIM_SCALE:
-      //   transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
-      //   transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
-      //   break;
-
-      // case ANIM_TRANSLATE:
-      //   transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
-      //   break;
-      // case ANIM_ROTATE:
-
-      //  transform.rotate.y += 0.02f;
-
-      //  transform.rotate.y += 0.1f;
-
-      //  transform.rotate.y += 0.05f;
-
-      //  break;
-
-      // case ANIM_ALL:
-      //   materialData->x = fabsf(sinf(waveTime));
-      //   materialData->y = fabsf(sinf(waveTime + 1.0f));
-      //   materialData->z = fabsf(sinf(waveTime + 2.0f));
-      //   transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
-      //   transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
-      //   transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
-      //   switch (waveType) {
-      //   case WAVE_SINE:
-      //     transform.rotate.y += 0.02f;
-      //     break;
-      //   case WAVE_CHAINSAW:
-      //     transform.rotate.y += 0.1f;
-      //     break;
-      //   case WAVE_SQUARE:
-      //     transform.rotate.y += 0.05f;
-      //     break;
-      //   }
-
-      // case ANIM_PULSE: {
-      //   float pulse = sinf(waveTime * 5.0f) * 0.2f + 1.0f;
-      //   transform.scale.x = pulse;
-      //   transform.scale.y = pulse;
-      // } break;
-
-      // case ANIM_AURORA:
-      //   materialData->x = 0.2f + 0.2f * sinf(waveTime);
-      //   materialData->y = 0.2f + 0.2f * sinf(waveTime + 1.5f);
-      //   materialData->z = 0.2f + 0.2f * sinf(waveTime + 3.0f);
-      //   break;
-
-      // case ANIM_BOUNCE:
-      //   transform.translate.y = fabsf(sinf(waveTime * 2.0f)) * 1.1f;
-      //   break;
-
-      // case ANIM_TWIST:
-      //   transform.rotate.z = sinf(waveTime * 1.0f);
-      //   transform.rotate.x = sinf(waveTime * 1.5f);
-      //   transform.rotate.y = sinf(waveTime * 2.0f);
-      //   break;
-      // }
 
       // メイクアフィンマトリックス02_02
       Matrix4x4 worldMatrix = MakeAffineMatrix(
@@ -1596,32 +1466,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                    Multiply(viewMatrixSprite, projectionMatrixSprite));
       *transformationMatrixDataSprite = woroldViewProjectionMatrixSprite;
 
-      // 画面のクリア処理
+#pragma region 描画処理_クリアから描画まで
+      // 画面のクリア処理//
       //   これから書き込むバックバッファのインデックスを取得
       UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
-      // TransitionBarrieの設定01_02
+      // TransitionBarrieの設定(Present->RenderTarget)01_02
       D3D12_RESOURCE_BARRIER barrier{};
-      // 今回のバリアはTransion
       barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-      // Noneにしておく
       barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-      // バリアをはる対象のリソース。現在のバックバッファに対して行う
       barrier.Transition.pResource = swapChainResources[backBufferIndex];
-      // 遷移前(現在)のResourceState
       barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-      // 遷移後のResourceState
       barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-      // TransitionBarrierを張る
       commandList->ResourceBarrier(1, &barrier);
 
-      // 描画先のRTVうぃ設定する
-      commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
-                                      nullptr);
-      /// 03_01
+      ///  描画先を設定（色と深度の両方）03_01
       D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
           dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-      // 03_01
       commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
                                       &dsvHandle);
       // 指定した色で画面全体をクリアする
@@ -1631,45 +1492,39 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                  /// //これ最初の文字1.0fにするとピンク画面になる
       commandList->ClearRenderTargetView(rtvHandles[backBufferIndex],
                                          clearColor, 0, nullptr);
-      // 03_01
       commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH,
                                          1.0f, 0, 0, nullptr);
-      // 描画
+
+      // 描画設定
       commandList->RSSetViewports(1, &viewport);       // viewportを設定
       commandList->RSSetScissorRects(1, &scissorRect); // Scirssorを設定
-      // RootSignatureを設定。PS0に設定しているけど別途設定が必要
       commandList->SetGraphicsRootSignature(rootSignature);
       commandList->SetPipelineState(graphicsPinelineState);     // PS0を設定
       commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // VBVを設定
-
-      // 形状を設定。PS0に設定しているものとはまた別。同じものを設定すると考えていけばよい
       commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+      // シェーダー用リソース設定
       commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-
       // commandList->SetGraphicsRootDescriptorTable(2, textureBallSrvGPU);
-
       // マテリアルCbufferの場所を設定
       commandList->SetGraphicsRootConstantBufferView(
           0, materialResource->GetGPUVirtualAddress());
-
       // wvp用のCBufferの場所を設定02_02
       commandList->SetGraphicsRootConstantBufferView(
           1, wvpResource->GetGPUVirtualAddress());
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
-      commandList->DrawInstanced(kSubdivision * kSubdivision *6, 1, 0, 0);
+      commandList->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
+      // ここから描画↓↓↓
 
-      // spriteの描画04_00
+      //  spriteの描画04_00
       commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
       commandList->SetGraphicsRootConstantBufferView(
           1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
       commandList->DrawInstanced(6, 1, 0, 0);
+      // ここまで描画↑↑↑
 
-      // 描画
-
-      // 描画の最後です//----------------------------------------------------
-      //  実際のcommandListのImGuiの描画コマンドを積む
+      //   実際のcommandListのImGuiの描画コマンドを積む
       ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 
       //  画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
@@ -1677,7 +1532,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
       // TransitionBarrierを張る
       commandList->ResourceBarrier(1, &barrier);
-
       // コマンドリストの内容を確定させる。すべ手のコマンドを積んでからCloseすること
       hr = commandList->Close();
       assert(SUCCEEDED(hr));
@@ -1707,6 +1561,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       assert(SUCCEEDED(hr));
     }
   }
+#pragma endregion
 
   // ImGuiの終了処理。詳細はさして重要ではないので解説は省略する。
   // こういうもんである。初期化と逆順に行う
