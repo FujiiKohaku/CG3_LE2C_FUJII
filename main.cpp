@@ -1275,11 +1275,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     } else {
-      // 描画先のRTVとDSVを設定する
-      D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
-          dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-      commandList->OMSetRenderTargets(1, &rtvHandles[],
-                                      false & dsvHandle);
+
       // ここがframeの先頭02_03
       ImGui_ImplDX12_NewFrame();
       ImGui_ImplWin32_NewFrame();
@@ -1463,6 +1459,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // 描画先のRTVうぃ設定する
       commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
                                       nullptr);
+      // 描画先のRTVとDSVを設定する
+      D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
+          dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+      commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
+                                      &dsvHandle);
       // 指定した色で画面全体をクリアする
       float clearColor[] = {
           0.1f, 0.25f, 0.5f,
@@ -1535,10 +1536,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   }
 
 
-
-  // 指定した深度で画面全体をクリアする
-  commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0,
-                                     0, nullptr);
   // ImGuiの終了処理。詳細はさして重要ではないので解説は省略する。
   // こういうもんである。初期化と逆順に行う
   ImGui_ImplDX12_Shutdown();
