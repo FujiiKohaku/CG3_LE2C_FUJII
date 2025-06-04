@@ -1350,7 +1350,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   vertexDataSprite[5].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下04_00
   vertexDataSprite[5].texcoord = {1.0f, 1.0f};
   // スフィア
-  GenerateSphereVertices(vertexData, kSubdivision, 1.0f);
+  GenerateSphereVertices(vertexData, kSubdivision, 0.5f);
   //  ビューポート
   D3D12_VIEWPORT viewport{};
   // クライアント領域のサイズと一緒にして画面全体に表示/
@@ -1448,7 +1448,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
       ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
       ImGui::ColorEdit4("Color", &(*materialData).x);
-      ImGui::SliderFloat3("TranslateSprite", &transformSprite.translate.x, -500.0f, 500.0f);
+      ImGui::SliderFloat3("TranslateSprite", &transformSprite.translate.x, -50.0f, 500.0f);
 
 
       ImGui::End();
