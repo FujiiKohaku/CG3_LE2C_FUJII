@@ -1278,7 +1278,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   wvpResource->Map(0, nullptr, reinterpret_cast<void **>(&wvpData));
   // 単位行列を書き込んでおく02_02
   *wvpData = MakeIdentity4x4(); // WVPリソースを作る
-
+  // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
+  // 1つ分のサイズを用意する04_00
+  ID3D12Resource *transformationMatrixResourceSprite =
+     CreateBufferResource(device, sizeof(Matrix4x4));
+  // sprite用のデータを書き込む04_00
+  Matrix4x4 *transformationMatrixDataSprite = nullptr;
+  // sprite用の書き込むためのアドレスを取得04_00
+  transformationMatrixResourceSprite->Map(
+      0, nullptr, reinterpret_cast<void **>(&transformationMatrixDataSprite));
+  // 単位行列を書き込んでおく04_00
+  *transformationMatrixDataSprite = MakeIdentity4x4();
   // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
   // こういうもんである02_03
   IMGUI_CHECKVERSION();
