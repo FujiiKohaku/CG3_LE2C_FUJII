@@ -1138,6 +1138,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ID3D12Resource *vertexResource =
       CreateBufferResource(device, sizeof(VertexData) * 6);
 
+  // sprite用の頂点リソースを作る04_00
+  ID3D12Resource *vertexResourceSprite =
+      CreateBufferResource(device, sizeof(VertexData) * 6);
   //// 頂点リソース用のヒープの設定
   // D3D12_HEAP_PROPERTIES uploadHeapProperties{};
   // uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD; // Uploadheapを使う
@@ -1164,7 +1167,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // assert(SUCCEEDED(hr));
 
   // 03_01_Other
-  ID3D12Resource *depthStencillResource =CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
+  ID3D12Resource *depthStencillResource =
+      CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
 
   // DSVの設定
   D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
