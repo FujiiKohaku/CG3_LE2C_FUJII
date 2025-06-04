@@ -1188,6 +1188,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 1頂点あたりのサイズ
   vertexBufferView.StrideInBytes = sizeof(VertexData);
 
+  // sprite用の頂点バッファビューを作成する04_00
+  D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite{};
+  // sprite用のリソースの先頭のアドレスから使う04_00
+  vertexBufferViewSprite.BufferLocation =
+      vertexResourceSprite->GetGPUVirtualAddress();
+  // sprite用の使用するリーソースのサイズは頂点6つ分のサイズ04_00
+  vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 6;
+  // sprite用の１頂点当たりのサイズ04_00
+  vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
   // 頂点リソースにデータを書き込む
   VertexData *vertexData = nullptr;
 
