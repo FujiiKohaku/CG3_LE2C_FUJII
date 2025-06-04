@@ -1223,6 +1223,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 右下２
   vertexData[5].position = {0.5f, -0.5f, -0.5f, 1.0f};
   vertexData[5].texcoord = {1.0f, 1.0f};
+
+  //  書き込むためのアドレスを取得----------------------04_00
+  vertexResourceSprite->Map(
+      0, nullptr,
+      reinterpret_cast<void **>(&vertexDataSprite)); // 04_00
+  // 1枚目の三角形
+  vertexDataSprite[0].position = {0.0f, 360.0f, 0.0f, 1.0f}; // 左下04_00
+  vertexDataSprite[0].texcoord = {0.0f, 1.0f};
+  vertexDataSprite[1].position = {0.0f, 0.0f, 0.0f, 1.0f}; // 左上04_00
+  vertexDataSprite[1].texcoord = {0.0f, 0.0f};
+  vertexDataSprite[2].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下04_00
+  vertexDataSprite[2].texcoord = {1.0f, 1.0f};
+  // ２枚目の三角形
+  vertexDataSprite[3].position = {0.0f, 0.0f, 0.0f, 1.0f}; // 左下04_00
+  vertexDataSprite[3].texcoord = {0.0f, 0.0f};
+  vertexDataSprite[4].position = {640.0f, 0.0f, 0.0f, 1.0f}; // 左上04_00
+  vertexDataSprite[4].texcoord = {1.0f, 0.0f};
+  vertexDataSprite[5].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下04_00
+  vertexDataSprite[5].texcoord = {1.0f, 1.0f};
+
   //   ビューポート
   D3D12_VIEWPORT viewport{};
   // クライアント領域のサイズと一緒にして画面全体に表示/
