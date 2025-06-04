@@ -1199,7 +1199,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
   // 頂点リソースにデータを書き込む
   VertexData *vertexData = nullptr;
-
+  // sprite用の頂点リソースにデータを書き込む04_00
+  VertexData *vertexDataSprite = nullptr;
   // 書き込むためのアドレスを取得----------------------03_00
   vertexResource->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
   // 左下
