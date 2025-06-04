@@ -1128,6 +1128,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // どのように画面に色を打ち込むかの設定(気にしなくて良い)
   graphicsPipelineStateDesc.SampleDesc.Count = 1;
   graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
   // 実際に生成
   ID3D12PipelineState *graphicsPinelineState = nullptr;
   hr = device->CreateGraphicsPipelineState(
@@ -1163,9 +1164,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // assert(SUCCEEDED(hr));
 
   // 03_01_Other
-  ID3D12Resource *depthStencillResource =
-
-      CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
+  ID3D12Resource *depthStencillResource =CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
 
   // DSVの設定
   D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
