@@ -1471,7 +1471,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                  /// //これ最初の文字1.0fにするとピンク画面になる
       commandList->ClearRenderTargetView(rtvHandles[backBufferIndex],
                                          clearColor, 0, nullptr);
-
+      // 03_01
+      commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH,
+                                         1.0f, 0, 0, nullptr);
       // 描画
       commandList->RSSetViewports(1, &viewport);       // viewportを設定
       commandList->RSSetScissorRects(1, &scissorRect); // Scirssorを設定
@@ -1535,7 +1537,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     }
   }
 
-
   // ImGuiの終了処理。詳細はさして重要ではないので解説は省略する。
   // こういうもんである。初期化と逆順に行う
   ImGui_ImplDX12_Shutdown();
@@ -1573,7 +1574,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   mipImages.Release();             // 03_00
   intermediateResource->Release(); // 03_00EX
   depthStencillResource->Release();
-
+  dsvDescriptorHeap->Release();
+  includHandler->Release();
+  dxcCompiler->Release();
+  dxcUtils->Release();
   CoInitialize(nullptr);
 #endif
   CloseWindow(hwnd);
