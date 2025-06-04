@@ -67,7 +67,8 @@ struct Fragment {
 //
 // 16分割
 const int kSubdivision = 16;
-
+// 頂点数
+int kNumVertices = kSubdivision * kSubdivision * 6;
 #pragma endregion
 
 #pragma region 行列関数
@@ -639,7 +640,6 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
     for (int lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
       float lon = kLonEvery * lonIndex;
 
-
       // 初期位置
       uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
 
@@ -664,7 +664,7 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
       vertices[startIndex + 1].texcoord.x =
           static_cast<float>(lonIndex) / kSubdivision;
       vertices[startIndex + 1].texcoord.y =
-          1.0f - static_cast<float>(latIndex+1) / kSubdivision;
+          1.0f - static_cast<float>(latIndex + 1) / kSubdivision;
       // c
       vertices[startIndex + 2].position.x =
           radius * cosf(lat) * cosf(lon + kLonEvery);
@@ -673,7 +673,7 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
           radius * cosf(lat) * sinf(lon + kLonEvery);
       vertices[startIndex + 2].position.w = 1.0f;
       vertices[startIndex + 2].texcoord.x =
-          static_cast<float>(lonIndex+1) / kSubdivision;
+          static_cast<float>(lonIndex + 1) / kSubdivision;
       vertices[startIndex + 2].texcoord.y =
           1.0f - static_cast<float>(latIndex) / kSubdivision;
 
@@ -686,7 +686,7 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
           radius * cosf(lat) * sinf(lon + kLonEvery);
       vertices[startIndex + 3].position.w = 1.0f;
       vertices[startIndex + 3].texcoord.x =
-          static_cast<float>(lonIndex+1) / kSubdivision;
+          static_cast<float>(lonIndex + 1) / kSubdivision;
       vertices[startIndex + 3].texcoord.y =
           1.0f - static_cast<float>(latIndex) / kSubdivision;
       // d
@@ -697,9 +697,9 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
           radius * cosf(lat + kLatEvery) * sinf(lon + kLonEvery);
       vertices[startIndex + 5].position.w = 1.0f;
       vertices[startIndex + 5].texcoord.x =
-          static_cast<float>(lonIndex+1) / kSubdivision;
+          static_cast<float>(lonIndex + 1) / kSubdivision;
       vertices[startIndex + 5].texcoord.y =
-          1.0f - static_cast<float>(latIndex+1) / kSubdivision;
+          1.0f - static_cast<float>(latIndex + 1) / kSubdivision;
       // b
       vertices[startIndex + 4].position.x =
           radius * cosf(lat + kLatEvery) * cosf(lon);
@@ -710,7 +710,7 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
       vertices[startIndex + 4].texcoord.x =
           static_cast<float>(lonIndex) / kSubdivision;
       vertices[startIndex + 4].texcoord.y =
-          1.0f - static_cast<float>(latIndex+1) / kSubdivision;
+          1.0f - static_cast<float>(latIndex + 1) / kSubdivision;
     }
   }
 }
@@ -1281,19 +1281,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       &graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
   assert(SUCCEEDED(hr));
 
-  ID3D12Resource *vertexResource = CreateBufferRespource(
-      device, (sizeof(VertexData) * kSubdivision * kSubdivision * 6));
+  ID3D12Resource *vertexResource =
+      CreateBufferRespource(device, sizeof(VertexData) * kNumVertices);
 
   // sprite用の頂点リソースを作る04_00
-  ID3D12Resource *vertexResourceSprite = CreateBufferRespource(
-      device, sizeof(VertexData) * kSubdivision * kSubdivision * 6);
+  ID3D12Resource *vertexResourceSprite =
+      CreateBufferRespource(device, sizeof(VertexData) * kNumVertices);
 
   // 頂点バッファビューを作成する
   D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
   // リソースの先頭のアドレスから使う
   vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
   // 使用するリソースのサイズは頂点３つ分のサイズ
-  vertexBufferView.SizeInBytes = sizeof(VertexData) * 16 * 16 * 6;
+  vertexBufferView.SizeInBytes = sizeof(VertexData) * kNumVertices;
   // 1頂点あたりのサイズ
   vertexBufferView.StrideInBytes = sizeof(VertexData);
 
@@ -1303,7 +1303,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   vertexBufferViewSprite.BufferLocation =
       vertexResourceSprite->GetGPUVirtualAddress();
   // sprite用の使用するリーソースのサイズは頂点6つ分のサイズ04_00
-  vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 6;
+  vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * kNumVertices;
   // sprite用の１頂点当たりのサイズ04_00
   vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
 
@@ -1537,7 +1537,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           1, wvpResource->GetGPUVirtualAddress());
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
-      commandList->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
+      commandList->DrawInstanced(kNumVertices, 1, 0, 0);
       // ここから描画↓↓↓
 
       //  spriteの描画04_00
