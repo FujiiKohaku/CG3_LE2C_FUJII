@@ -64,9 +64,9 @@ struct Fragment {
 
 #pragma region 変数
 // 変数//--------------------
+//
+// 16分割
 const int kSubdivision = 16;
-const int kNumVertices = kSubdivision * kSubdivision * 6;
-VertexData vertices[kNumVertices];
 
 #pragma endregion
 
@@ -625,67 +625,92 @@ IDxcBlob *CompileShader(
   return shaderBlob;
 }
 
+// 球の頂点生成関数
 void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
                             float radius) {
-  const float kLonEvery = (float)(M_PI * 2.0) / (float)kSubdivision;
-  const float kLatEvery = (float)(M_PI) / (float)kSubdivision;
+  // 経度(360)
+  const float kLonEvery = static_cast<float>(M_PI * 2.0f) / kSubdivision;
+  // 緯度(180)
+  const float kLatEvery = static_cast<float>(M_PI) / kSubdivision;
 
   for (int latIndex = 0; latIndex < kSubdivision; ++latIndex) {
-    float lat = -(float)M_PI / 2.0f + kLatEvery * latIndex;
-    float nextLat = lat + kLatEvery;
+    float lat = -static_cast<float>(M_PI) / 2.0f + kLatEvery * latIndex;
 
     for (int lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
       float lon = kLonEvery * lonIndex;
-      float nextLon = lon + kLonEvery;
+
+
+      // 初期位置
+      uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
+
+      // 三角形1
 
       // a
-      float ax = radius * cosf(lat) * cosf(lon);
-      float ay = radius * sinf(lat);
-      float az = radius * cosf(lat) * sinf(lon);
-
+      vertices[startIndex + 0].position.x = radius * cosf(lat) * cosf(lon);
+      vertices[startIndex + 0].position.y = radius * sinf(lat);
+      vertices[startIndex + 0].position.z = radius * cosf(lat) * sinf(lon);
+      vertices[startIndex + 0].position.w = 1.0f;
+      vertices[startIndex + 0].texcoord.x =
+          static_cast<float>(lonIndex) / kSubdivision;
+      vertices[startIndex + 0].texcoord.y =
+          1.0f - static_cast<float>(latIndex) / kSubdivision;
       // b
-      float bx = radius * cosf(nextLat) * cosf(lon);
-      float by = radius * sinf(nextLat);
-      float bz = radius * cosf(nextLat) * sinf(lon);
-
+      vertices[startIndex + 1].position.x =
+          radius * cosf(lat + kLatEvery) * cosf(lon);
+      vertices[startIndex + 1].position.y = radius * sinf(lat + kLatEvery);
+      vertices[startIndex + 1].position.z =
+          radius * cosf(lat + kLatEvery) * sinf(lon);
+      vertices[startIndex + 1].position.w = 1.0f;
+      vertices[startIndex + 1].texcoord.x =
+          static_cast<float>(lonIndex) / kSubdivision;
+      vertices[startIndex + 1].texcoord.y =
+          1.0f - static_cast<float>(latIndex+1) / kSubdivision;
       // c
-      float cx = radius * cosf(lat) * cosf(nextLon);
-      float cy = radius * sinf(lat);
-      float cz = radius * cosf(lat) * sinf(nextLon);
+      vertices[startIndex + 2].position.x =
+          radius * cosf(lat) * cosf(lon + kLonEvery);
+      vertices[startIndex + 2].position.y = radius * sinf(lat);
+      vertices[startIndex + 2].position.z =
+          radius * cosf(lat) * sinf(lon + kLonEvery);
+      vertices[startIndex + 2].position.w = 1.0f;
+      vertices[startIndex + 2].texcoord.x =
+          static_cast<float>(lonIndex+1) / kSubdivision;
+      vertices[startIndex + 2].texcoord.y =
+          1.0f - static_cast<float>(latIndex) / kSubdivision;
 
+      // 三角形2:
+      // c
+      vertices[startIndex + 3].position.x =
+          radius * cosf(lat) * cosf(lon + kLonEvery);
+      vertices[startIndex + 3].position.y = radius * sinf(lat);
+      vertices[startIndex + 3].position.z =
+          radius * cosf(lat) * sinf(lon + kLonEvery);
+      vertices[startIndex + 3].position.w = 1.0f;
+      vertices[startIndex + 3].texcoord.x =
+          static_cast<float>(lonIndex+1) / kSubdivision;
+      vertices[startIndex + 3].texcoord.y =
+          1.0f - static_cast<float>(latIndex) / kSubdivision;
       // d
-      float dx = radius * cosf(nextLat) * cosf(nextLon);
-      float dy = radius * sinf(nextLat);
-      float dz = radius * cosf(nextLat) * sinf(nextLon);
-
-      // テクスチャ座標
-      float u0 = (float)lonIndex / kSubdivision;
-      float u1 = (float)(lonIndex + 1) / kSubdivision;
-      float v0 = 1.0f - (float)latIndex / kSubdivision;
-      float v1 = 1.0f - (float)(latIndex + 1) / kSubdivision;
-
-      // 書き込み開始位置
-      int start = (latIndex * kSubdivision + lonIndex) * 6;
-
-      // 三角形 abc
-      vertices[start + 0].position = {ax, ay, az, 1.0f};
-      vertices[start + 0].texcoord = {u0, v0};
-
-      vertices[start + 1].position = {bx, by, bz, 1.0f};
-      vertices[start + 1].texcoord = {u0, v1};
-
-      vertices[start + 2].position = {cx, cy, cz, 1.0f};
-      vertices[start + 2].texcoord = {u1, v0};
-
-      // 三角形 cbd
-      vertices[start + 3].position = {cx, cy, cz, 1.0f};
-      vertices[start + 3].texcoord = {u1, v0};
-
-      vertices[start + 4].position = {bx, by, bz, 1.0f};
-      vertices[start + 4].texcoord = {u0, v1};
-
-      vertices[start + 5].position = {dx, dy, dz, 1.0f};
-      vertices[start + 5].texcoord = {u1, v1};
+      vertices[startIndex + 5].position.x =
+          radius * cosf(lat + kLatEvery) * cosf(lon + kLonEvery);
+      vertices[startIndex + 5].position.y = radius * sinf(lat + kLatEvery);
+      vertices[startIndex + 5].position.z =
+          radius * cosf(lat + kLatEvery) * sinf(lon + kLonEvery);
+      vertices[startIndex + 5].position.w = 1.0f;
+      vertices[startIndex + 5].texcoord.x =
+          static_cast<float>(lonIndex+1) / kSubdivision;
+      vertices[startIndex + 5].texcoord.y =
+          1.0f - static_cast<float>(latIndex+1) / kSubdivision;
+      // b
+      vertices[startIndex + 4].position.x =
+          radius * cosf(lat + kLatEvery) * cosf(lon);
+      vertices[startIndex + 4].position.y = radius * sinf(lat + kLatEvery);
+      vertices[startIndex + 4].position.z =
+          radius * cosf(lat + kLatEvery) * sinf(lon);
+      vertices[startIndex + 4].position.w = 1.0f;
+      vertices[startIndex + 4].texcoord.x =
+          static_cast<float>(lonIndex) / kSubdivision;
+      vertices[startIndex + 4].texcoord.y =
+          1.0f - static_cast<float>(latIndex+1) / kSubdivision;
     }
   }
 }
@@ -1433,8 +1458,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // 描画用のDescrriptorHeapの設定02_03
       ID3D12DescriptorHeap *descriptorHeaps[] = {srvDescriptorHeap};
       commandList->SetDescriptorHeaps(1, descriptorHeaps);
-
-
 
       // メイクアフィンマトリックス02_02
       Matrix4x4 worldMatrix = MakeAffineMatrix(
