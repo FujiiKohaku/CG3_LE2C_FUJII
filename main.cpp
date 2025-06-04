@@ -1448,6 +1448,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
       ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
       ImGui::ColorEdit4("Color", &(*materialData).x);
+      ImGui::SliderFloat3("TranslateSprite", &transformSprite.translate.x, -500.0f, 500.0f);
+
 
       ImGui::End();
 
