@@ -871,6 +871,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ID3D12DescriptorHeap *rtvDescriptorHeap =
       CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
 
+  // DSV用のヒープでディスクリプタの数は１。DSVはshader内で触るものではないので,ShaderVisibleはfalse
+  ID3D12DescriptorHeap *dsvDescriptorHeap =
+      CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
+
   ID3D12DescriptorHeap *srvDescriptorHeap = CreateDescriptorHeap(
       device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
@@ -1102,6 +1106,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       pixelShaderBlob->GetBufferSize()};                      // PixelShader
   graphicsPipelineStateDesc.BlendState = blendDesc;           // BlensState
   graphicsPipelineStateDesc.RasterizerState = rasterizerDesc; // RasterizerState
+
+  // DepthStencillStateの設定
+  D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
+  // depthの機能を有効かする
+  depthStencilDesc.DepthEnable = true;
+  // 書き込みします
+  depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+  // 比較関数はLessEqual。つまり、近ければ描画される
+  depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+  // depthStenncillの設定
+  graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+  graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
   // 書き込むRTVの情報
   graphicsPipelineStateDesc.NumRenderTargets = 1;
   graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
@@ -1147,7 +1164,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   // 03_01_Other
   ID3D12Resource *depthStencillResource =
+
       CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
+
+  // DSVの設定
+  D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+  dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+  dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+  // DSVHeapの先端にDSVを作る
+  device->CreateDepthStencilView(
+      depthStencillResource, &dsvDesc,
+      dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
   // 頂点バッファビューを作成する
   D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
   // リソースの先頭のアドレスから使う
@@ -1247,7 +1275,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     } else {
-
+      // 描画先のRTVとDSVを設定する
+      D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
+          dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+      commandList->OMSetRenderTargets(1, &rtvHandles[],
+                                      false & dsvHandle);
       // ここがframeの先頭02_03
       ImGui_ImplDX12_NewFrame();
       ImGui_ImplWin32_NewFrame();
@@ -1502,6 +1534,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     }
   }
 
+
+
+  // 指定した深度で画面全体をクリアする
+  commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0,
+                                     0, nullptr);
   // ImGuiの終了処理。詳細はさして重要ではないので解説は省略する。
   // こういうもんである。初期化と逆順に行う
   ImGui_ImplDX12_Shutdown();
