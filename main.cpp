@@ -1638,6 +1638,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   includHandler->Release();
   dxcCompiler->Release();
   dxcUtils->Release();
+  
   CoInitialize(nullptr);
 #endif
   CloseWindow(hwnd);
