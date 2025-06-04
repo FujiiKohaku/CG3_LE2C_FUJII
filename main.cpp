@@ -1268,7 +1268,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 書き込むためのアドレスを取得
   materialResource->Map(0, nullptr, reinterpret_cast<void **>(&materialData));
   // 今回は赤を書き込んでみる
-  *materialData = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+  *materialData = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 
   // WVPリソースを作る02_02
   ID3D12Resource *wvpResource = CreateBufferResource(device, sizeof(Matrix4x4));
@@ -1638,7 +1638,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   includHandler->Release();
   dxcCompiler->Release();
   dxcUtils->Release();
-  
+  vertexResourceSprite->Release();
+  transformationMatrixResourceSprite->Release();
+
   CoInitialize(nullptr);
 #endif
   CloseWindow(hwnd);
