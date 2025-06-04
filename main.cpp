@@ -1281,7 +1281,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
   // 1つ分のサイズを用意する04_00
   ID3D12Resource *transformationMatrixResourceSprite =
-     CreateBufferResource(device, sizeof(Matrix4x4));
+      CreateBufferResource(device, sizeof(Matrix4x4));
   // sprite用のデータを書き込む04_00
   Matrix4x4 *transformationMatrixDataSprite = nullptr;
   // sprite用の書き込むためのアドレスを取得04_00
@@ -1483,6 +1483,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // CBVのバッファに書き込む02_02
       *wvpData = worldViewProjectionMatrix;
 
+      // Sprite用のworldviewProjectionMatrixを作る04_00
+      Matrix4x4 worldMatrixSprite =
+          MakeAffineMatrix(transformSprite.scale, transformSprite.rotate,
+                           transformSprite.translate);
+      Matrix4x4 viewMatrixSprite = MakeIdentity4x4();
+      Matrix4x4 projectionMatrixSprite = MakeOrthographicMatrix(
+          0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
+      Matrix4x4 woroldViewProjectionMatrixSprite =
+          Multiply(worldMatrixSprite,
+                   Multiply(viewMatrixSprite, projectionMatrixSprite));
+      *transformationMatrixDataSprite = woroldViewProjectionMatrixSprite;
       // 画面のクリア処理
       //   これから書き込むバックバッファのインデックスを取得
       UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
