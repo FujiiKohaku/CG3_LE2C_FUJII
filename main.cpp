@@ -715,27 +715,6 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
   }
 }
 
-// DescriptorHandleを取得する関数CG_05_01_page_5
-
-// CPUHandle
-D3D12_CPU_DESCRIPTOR_HANDLE
-GetCPUDescrptorHandle(ID3D12DescriptorHeap *descriptorHeap,
-                      uint32_t descriptorSize, uint32_t index) {
-  D3D12_CPU_DESCRIPTOR_HANDLE handleCPU =
-      descriptorHeap->GetCPUDescriptorHandleForHeapStart();
-  handleCPU.ptr += (descriptorSize * index);
-  return handleCPU;
-}
-// GPUHandle
-D3D12_GPU_DESCRIPTOR_HANDLE
-GetGPUDescriptorHandle(ID3D12DescriptorHeap *descriptorHeap,
-                       uint32_t descriptorSize, uint32_t index) {
-  D3D12_GPU_DESCRIPTOR_HANDLE handleGPU =
-      descriptorHeap->GetGPUDescriptorHandleForHeapStart();
-  handleGPU.ptr += (descriptorSize * index);
-  return handleGPU;
-}
-
 ////////////////////
 // 関数の生成ここまで//
 ////////////////////
@@ -921,15 +900,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 成功したらそのバージョンでデバイスDirectX本体を作る。
   // 最後に「デバイス作れたよ！」ってログに出す。
 
-#pragma endregion
-
-#pragma region ディスクリプタサイズ取得 CG2_05_01_page6
-  const uint32_t descriptorSizeSRV = device->GetDescriptorHandleIncrementSize(
-      D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-  const uint32_t descriptorSizeRTV =
-      device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-  const uint32_t descriptorSizeDSV =
-      device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 #pragma endregion
 
 // 01_01
@@ -1195,7 +1165,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   const DirectX::TexMetadata &metadataBall = mipImagesBall.GetMetadata();
   ID3D12Resource *textureBall = CreateTextureResource(device, metadataBall);
   UploadTextureData(textureBall, mipImagesBall);
-
   // === SRV共通の設定 ===
   UINT incrementSize = device->GetDescriptorHandleIncrementSize(
       D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -1207,11 +1176,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
   srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
 
-  // SRVを作成するDescriptorHeapの場所を決めるCG2_05_01_page_6
+  // SRVを作成するDescriptorHeapの場所を決める
   D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
-      GetCPUDescrptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
+      srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
   D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU =
-      GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
+      srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
 
   // 先頭はImGuiが使っているのでその次を使う
   textureSrvHandleCPU.ptr += device->GetDescriptorHandleIncrementSize(
@@ -1480,8 +1449,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
       ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
       ImGui::ColorEdit4("Color", &(*materialData).x);
-      ImGui::SliderFloat3("TranslateSprite", &transformSprite.translate.x,
-                          -50.0f, 500.0f);
+      ImGui::SliderFloat3("TranslateSprite", &transformSprite.translate.x, -50.0f, 500.0f);
+
 
       ImGui::End();
 
@@ -1510,6 +1479,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
       // CBVのバッファに書き込む02_02
       *wvpData = worldViewProjectionMatrix;
+
 
       // Sprite用のworldviewProjectionMatrixを作る04_00
       Matrix4x4 worldMatrixSprite =
