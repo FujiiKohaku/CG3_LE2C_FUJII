@@ -1,6 +1,7 @@
 #include "object3d.hlsli"
 
 //‰‚ß‚Ä‚ÌVertexShader/CG2_02_00
+
 ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0);
 
 

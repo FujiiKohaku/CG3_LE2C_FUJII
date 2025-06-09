@@ -67,6 +67,7 @@ struct VertexData {
 struct Material {
   Vector4 color;
   int32_t enableLighting;
+  int32_t padding[3]; // 12バイトの余白（合計32バイトにするため）
 };
 
 // 頂点変換用の行列セット_05_03
@@ -1482,13 +1483,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   scissorRect.bottom = kClientHeight;
   // マテリアル用のリソースを作る今回はcolor一つ分のサイズを用意する
   ID3D12Resource *materialResource =
-      CreateBufferRespource(device, sizeof(Vector4));
+      CreateBufferRespource(device, sizeof(Material));
   // マテリアルにデータを書き込む
-  Vector4 *materialData = nullptr;
+  Material *materialData = nullptr;
   // 書き込むためのアドレスを取得
   materialResource->Map(0, nullptr, reinterpret_cast<void **>(&materialData));
   // 今回は赤を書き込んでみる
-  *materialData = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+  materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  materialData->enableLighting = true;
 
   // Sprite用のマテリアルリソースを作る05_03
   ID3D12Resource *materialResourceSprite =
@@ -1500,7 +1502,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                               reinterpret_cast<void **>(&materialDataSprite));
   // 今回は白を設定
   materialDataSprite->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-  materialDataSprite->enableLighting = false;
+  materialDataSprite->enableLighting = false; // kokomonstrball?
 
   // WVPリソースを作る02_02
   ID3D12Resource *wvpResource =
@@ -1518,14 +1520,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
   // 1つ分のサイズを用意する04_00
   ID3D12Resource *transformationMatrixResourceSprite =
-      CreateBufferRespource(device, sizeof(Matrix4x4));
+      CreateBufferRespource(device, sizeof(TransformationMatrix));
   // sprite用のデータを書き込む04_00
-  Matrix4x4 *transformationMatrixDataSprite = nullptr;
+  TransformationMatrix *transformationMatrixDataSprite = nullptr;
   // sprite用の書き込むためのアドレスを取得04_00
   transformationMatrixResourceSprite->Map(
       0, nullptr, reinterpret_cast<void **>(&transformationMatrixDataSprite));
-  // 単位行列を書き込んでおく04_00
-  *transformationMatrixDataSprite = MakeIdentity4x4();
 
   // 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
   ID3D12Resource *directionalLightResource =
@@ -1588,11 +1588,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
       ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
       ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
-      ImGui::ColorEdit4("Color", &(*materialData).x);
       ImGui::SliderFloat3("TranslateSprite", &transformSprite.translate.x,
                           -50.0f, 500.0f);
       ImGui::Checkbox("useMonstarBall", &useMonstarBall);
       ImGui::Text("useMonstarBall: %s", useMonstarBall ? "true" : "false");
+      ImGui::SliderFloat3("Light Direction", &directionalLightData->direction.x, -1.0f, 1.0f);
       ImGui::End();
 
       // ImGuiの内部コマンドを生成する02_03
@@ -1628,8 +1628,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       Matrix4x4 worldViewProjectionMatrixSprite =
           Multiply(worldMatrixSprite,
                    Multiply(viewMatrixSprite, projectionMatrixSprite));
-      *transformationMatrixDataSprite = worldViewProjectionMatrixSprite;
 
+      // 単位行列を書き込んでおく04_00
+      transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
+      transformationMatrixDataSprite->World = worldMatrixSprite;
 #pragma region 描画処理_クリアから描画まで
       // 画面のクリア処理//
       //   これから書き込むバックバッファのインデックスを取得
@@ -1670,18 +1672,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // マテリアルCbufferの場所を設定05_03変更
       commandList->SetGraphicsRootConstantBufferView(
           0, materialResourceSprite->GetGPUVirtualAddress());
+
       // wvp用のCBufferの場所を設定02_02
       commandList->SetGraphicsRootConstantBufferView(
           1, wvpResource->GetGPUVirtualAddress());
       // 平行光源用のCbufferの場所を設定05_03
       commandList->SetGraphicsRootConstantBufferView(
           3, directionalLightResource->GetGPUVirtualAddress());
+
+
       // シェーダー用リソース設定
       // SRV設定（ここで描画前にテクスチャ指定）
       if (useMonstarBall) {
-        commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU2);
+       
+        commandList->SetGraphicsRootConstantBufferView(
+            0, materialResource->GetGPUVirtualAddress());
       } else {
-        commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+       
+        commandList->SetGraphicsRootConstantBufferView(
+            0, materialResourceSprite->GetGPUVirtualAddress());
       }
       // 球の描画（SRVが monsterBall または uvChecker）
       commandList->SetGraphicsRootDescriptorTable(
