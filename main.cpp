@@ -59,7 +59,10 @@ struct Fragment {
   bool active;
 };
 // 変数//--------------------
-
+// 16分割
+const int kSubdivision = 16;
+// 頂点数
+int kNumVertices = kSubdivision * kSubdivision * 6;
 // --- 列挙体 ---
 enum WaveType {
   WAVE_SINE,
