@@ -571,7 +571,8 @@ ID3D12Resource *CreateDepthStencilTextureResource(ID3D12Device *device,
   assert(SUCCEEDED(hr));
   return resource;
 }
-// 球の頂点生成関数_05_00
+
+// 球の頂点生成関数_05_00_OTHER新しい書き方
 void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
                             float radius) {
   // 経度(360)
@@ -584,9 +585,6 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
 
     for (int lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
       float lon = kLonEvery * lonIndex;
-
-      // 初期位置
-      uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
 
       // 三角形1//こういう書き方もある
       // verA
@@ -607,24 +605,34 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
            1.0f - static_cast<float>(latIndex + 1) / kSubdivision}};
 
       VertexData vertC = {
-          radius * cosf(lat) * cosf(lon + kLonEvery), // x
-          radius * sinf(lat),                         // y
-          radius * cosf(lat) * sinf(lon + kLonEvery), // z
-          1.0f,                                       // w
+          cosf(lat) * cosf(lon + kLonEvery), // x
+          sinf(lat),                         // y
+          cosf(lat) * sinf(lon + kLonEvery), // z
+          1.0f,                              // w
           {
               static_cast<float>(lonIndex + 1) / kSubdivision,   // u
               1.0f - static_cast<float>(latIndex) / kSubdivision // v
           }};
 
       VertexData vertD = {
-          radius * cosf(lat + kLatEvery) * cosf(lon + kLonEvery), // x
-          radius * sinf(lat + kLatEvery),                         // y
-          radius * cosf(lat + kLatEvery) * sinf(lon + kLonEvery), // z
-          1.0f,                                                   // w
+          cosf(lat + kLatEvery) * cosf(lon + kLonEvery), // x
+          sinf(lat + kLatEvery),                         // y
+          cosf(lat + kLatEvery) * sinf(lon + kLonEvery), // z
+          1.0f,                                          // w
           {
               static_cast<float>(lonIndex + 1) / kSubdivision,       // u
               1.0f - static_cast<float>(latIndex + 1) / kSubdivision // v
           }};
+
+      // 初期位置
+      uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
+
+      vertices[startIndex + 0] = vertA;
+      vertices[startIndex + 1] = vertB;
+      vertices[startIndex + 2] = vertC;
+      vertices[startIndex + 3] = vertC;
+      vertices[startIndex + 4] = vertD;
+      vertices[startIndex + 5] = vertB;
       // a
       /*vertices[startIndex + 0].position.x = radius * cosf(lat) * cosf(lon);
       vertices[startIndex + 0].position.y = radius * sinf(lat);
