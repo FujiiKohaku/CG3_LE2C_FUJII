@@ -567,7 +567,94 @@ ID3D12Resource *CreateDepthStencilTextureResource(ID3D12Device *device,
   assert(SUCCEEDED(hr));
   return resource;
 }
+// 球の頂点生成関数
+void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
+                            float radius) {
+  // 経度(360)
+  const float kLonEvery = static_cast<float>(M_PI * 2.0f) / kSubdivision;
+  // 緯度(180)
+  const float kLatEvery = static_cast<float>(M_PI) / kSubdivision;
 
+  for (int latIndex = 0; latIndex < kSubdivision; ++latIndex) {
+    float lat = -static_cast<float>(M_PI) / 2.0f + kLatEvery * latIndex;
+
+    for (int lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
+      float lon = kLonEvery * lonIndex;
+
+      // 初期位置
+      uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
+
+      // 三角形1
+
+      // a
+      vertices[startIndex + 0].position.x = radius * cosf(lat) * cosf(lon);
+      vertices[startIndex + 0].position.y = radius * sinf(lat);
+      vertices[startIndex + 0].position.z = radius * cosf(lat) * sinf(lon);
+      vertices[startIndex + 0].position.w = 1.0f;
+      vertices[startIndex + 0].texcoord.x =
+          static_cast<float>(lonIndex) / kSubdivision;
+      vertices[startIndex + 0].texcoord.y =
+          1.0f - static_cast<float>(latIndex) / kSubdivision;
+      // b
+      vertices[startIndex + 1].position.x =
+          radius * cosf(lat + kLatEvery) * cosf(lon);
+      vertices[startIndex + 1].position.y = radius * sinf(lat + kLatEvery);
+      vertices[startIndex + 1].position.z =
+          radius * cosf(lat + kLatEvery) * sinf(lon);
+      vertices[startIndex + 1].position.w = 1.0f;
+      vertices[startIndex + 1].texcoord.x =
+          static_cast<float>(lonIndex) / kSubdivision;
+      vertices[startIndex + 1].texcoord.y =
+          1.0f - static_cast<float>(latIndex + 1) / kSubdivision;
+      // c
+      vertices[startIndex + 2].position.x =
+          radius * cosf(lat) * cosf(lon + kLonEvery);
+      vertices[startIndex + 2].position.y = radius * sinf(lat);
+      vertices[startIndex + 2].position.z =
+          radius * cosf(lat) * sinf(lon + kLonEvery);
+      vertices[startIndex + 2].position.w = 1.0f;
+      vertices[startIndex + 2].texcoord.x =
+          static_cast<float>(lonIndex + 1) / kSubdivision;
+      vertices[startIndex + 2].texcoord.y =
+          1.0f - static_cast<float>(latIndex) / kSubdivision;
+
+      // 三角形2:
+      // c
+      vertices[startIndex + 3].position.x =
+          radius * cosf(lat) * cosf(lon + kLonEvery);
+      vertices[startIndex + 3].position.y = radius * sinf(lat);
+      vertices[startIndex + 3].position.z =
+          radius * cosf(lat) * sinf(lon + kLonEvery);
+      vertices[startIndex + 3].position.w = 1.0f;
+      vertices[startIndex + 3].texcoord.x =
+          static_cast<float>(lonIndex + 1) / kSubdivision;
+      vertices[startIndex + 3].texcoord.y =
+          1.0f - static_cast<float>(latIndex) / kSubdivision;
+      // d
+      vertices[startIndex + 5].position.x =
+          radius * cosf(lat + kLatEvery) * cosf(lon + kLonEvery);
+      vertices[startIndex + 5].position.y = radius * sinf(lat + kLatEvery);
+      vertices[startIndex + 5].position.z =
+          radius * cosf(lat + kLatEvery) * sinf(lon + kLonEvery);
+      vertices[startIndex + 5].position.w = 1.0f;
+      vertices[startIndex + 5].texcoord.x =
+          static_cast<float>(lonIndex + 1) / kSubdivision;
+      vertices[startIndex + 5].texcoord.y =
+          1.0f - static_cast<float>(latIndex + 1) / kSubdivision;
+      // b
+      vertices[startIndex + 4].position.x =
+          radius * cosf(lat + kLatEvery) * cosf(lon);
+      vertices[startIndex + 4].position.y = radius * sinf(lat + kLatEvery);
+      vertices[startIndex + 4].position.z =
+          radius * cosf(lat + kLatEvery) * sinf(lon);
+      vertices[startIndex + 4].position.w = 1.0f;
+      vertices[startIndex + 4].texcoord.x =
+          static_cast<float>(lonIndex) / kSubdivision;
+      vertices[startIndex + 4].texcoord.y =
+          1.0f - static_cast<float>(latIndex + 1) / kSubdivision;
+    }
+  }
+}
 ////////////////////
 // 関数の生成ここまで//
 ////////////////////
