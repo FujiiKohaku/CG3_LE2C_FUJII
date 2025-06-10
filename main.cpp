@@ -1,3 +1,4 @@
+#define USE_MATH_DIFFINE
 #include <Windows.h>
 #include <cassert>
 #include <chrono>
@@ -1615,7 +1616,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           1, wvpResource->GetGPUVirtualAddress());
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
-      commandList->DrawInstanced(6, 1, 0, 0);
+      commandList->DrawInstanced(kNumVertices, 1, 0, 0);
       // 描画
       // spriteの描画04_00
       commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
