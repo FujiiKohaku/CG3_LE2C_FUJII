@@ -599,7 +599,7 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
       // a
       vertices[startIndex + 0].position.x = radius * cosf(lat) * cosf(lon);
       vertices[startIndex + 0].position.y = radius * sinf(lat);
-      vertices[startIndex + 0].position.z = radius * cosf(lat) * sinf(lon);
+      vertices[startIndex + 0].position.z = radius * cosf(lat) * sinf(lon); 
       vertices[startIndex + 0].position.w = 1.0f;
       vertices[startIndex + 0].texcoord.x =static_cast<float>(lonIndex) / kSubdivision;
       vertices[startIndex + 0].texcoord.y =
