@@ -571,7 +571,7 @@ ID3D12Resource *CreateDepthStencilTextureResource(ID3D12Device *device,
   assert(SUCCEEDED(hr));
   return resource;
 }
-// 球の頂点生成関数
+// 球の頂点生成関数_05_00
 void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
                             float radius) {
   // 経度(360)
@@ -1309,6 +1309,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   vertexDataSprite[5].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下04_00
   vertexDataSprite[5].texcoord = {1.0f, 1.0f};
 
+  // スフィア作成_05_00_OTHER
+  GenerateSphereVertices(vertexData, kSubdivision, 0.5f);
   //   ビューポート
   D3D12_VIEWPORT viewport{};
   // クライアント領域のサイズと一緒にして画面全体に表示/
@@ -1615,7 +1617,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootConstantBufferView(
           1, wvpResource->GetGPUVirtualAddress());
 
-      // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後
+      // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
       commandList->DrawInstanced(kNumVertices, 1, 0, 0);
       // 描画
       // spriteの描画04_00
