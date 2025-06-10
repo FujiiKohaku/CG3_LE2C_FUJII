@@ -588,15 +588,20 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
       // 初期位置
       uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
 
-      // 三角形1
+      // 三角形1//こういう書き方もある
+     /* VertexData vertA = {cosf(lat) * cosf(lon),
+                          sinf(lat),
+                          cosf(lat) * sinf(lon),
+                          1.0f,
+                          {float(lonIndex) / float(kSubdivision),
+                           1.0f - float(latIndex) / float(kSubdivision)}};*/
 
       // a
       vertices[startIndex + 0].position.x = radius * cosf(lat) * cosf(lon);
       vertices[startIndex + 0].position.y = radius * sinf(lat);
       vertices[startIndex + 0].position.z = radius * cosf(lat) * sinf(lon);
       vertices[startIndex + 0].position.w = 1.0f;
-      vertices[startIndex + 0].texcoord.x =
-          static_cast<float>(lonIndex) / kSubdivision;
+      vertices[startIndex + 0].texcoord.x =static_cast<float>(lonIndex) / kSubdivision;
       vertices[startIndex + 0].texcoord.y =
           1.0f - static_cast<float>(latIndex) / kSubdivision;
       // b
