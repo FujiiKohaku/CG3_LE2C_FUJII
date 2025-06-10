@@ -1,4 +1,4 @@
-#define USE_MATH_DIFFINE
+#define _USE_MATH_DEFINES
 #include <Windows.h>
 #include <cassert>
 #include <chrono>
