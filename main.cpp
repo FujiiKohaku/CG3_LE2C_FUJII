@@ -1751,7 +1751,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   dxcUtils->Release();
   vertexResourceSprite->Release();
   transformationMatrixResourceSprite->Release();
-
   CoInitialize(nullptr);
 #endif
   CloseWindow(hwnd);
