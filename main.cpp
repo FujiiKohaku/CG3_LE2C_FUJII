@@ -1592,7 +1592,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                           -50.0f, 500.0f);
       ImGui::Checkbox("useMonstarBall", &useMonstarBall);
       ImGui::Text("useMonstarBall: %s", useMonstarBall ? "true" : "false");
-      ImGui::SliderFloat3("Light Direction", &directionalLightData->direction.x, -1.0f, 1.0f);
+      ImGui::SliderFloat3("Light Direction", &directionalLightData->direction.x,
+                          -1.0f, 1.0f);
       ImGui::End();
 
       // ImGuiの内部コマンドを生成する02_03
@@ -1680,15 +1681,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootConstantBufferView(
           3, directionalLightResource->GetGPUVirtualAddress());
 
-
       // シェーダー用リソース設定
       // SRV設定（ここで描画前にテクスチャ指定）
       if (useMonstarBall) {
-       
+
         commandList->SetGraphicsRootConstantBufferView(
             0, materialResource->GetGPUVirtualAddress());
       } else {
-       
+
         commandList->SetGraphicsRootConstantBufferView(
             0, materialResourceSprite->GetGPUVirtualAddress());
       }
@@ -1790,9 +1790,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   depthStencilResource->Release(); // 03_01
   textureResource2->Release();
   materialResourceSprite->Release();
-
   vertexResourceSprite->Release();
   transformationMatrixResourceSprite->Release();
+  directionalLightResource->Release();
   CoInitialize(nullptr);
 #endif
   CloseWindow(hwnd);
