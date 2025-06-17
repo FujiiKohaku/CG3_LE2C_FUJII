@@ -60,7 +60,14 @@ struct Fragment {
   float alpha;
   bool active;
 };
+struct Material {
+  Vector4 color;
+  int32_t enableLighting;
+};
 // 変数//--------------------
+//Lightingを有効にする
+// 
+
 // 16分割
 const int kSubdivision = 16;
 // 頂点数
@@ -583,82 +590,43 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
 
   for (int latIndex = 0; latIndex < kSubdivision; ++latIndex) {
     float lat = -static_cast<float>(M_PI) / 2.0f + kLatEvery * latIndex;
+    float nextLat = lat + kLatEvery;
 
     for (int lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
       float lon = kLonEvery * lonIndex;
+      float nextLon = lon + kLonEvery;
 
-      // 三角形1//こういう書き方もある
       // verA
       VertexData vertA;
       vertA.position = {cosf(lat) * cosf(lon), sinf(lat), cosf(lat) * sinf(lon),
                         1.0f};
+      vertA.texcoord = {static_cast<float>(lonIndex) / kSubdivision,
+                        1.0f - static_cast<float>(latIndex) / kSubdivision};
+      vertA.normal = {vertA.position.x, vertA.position.y, vertA.position.z};
 
-      vertA.texcoord = {float(lonIndex) / float(kSubdivision),
-                        1.0f - float(latIndex) / float(kSubdivision)};
-
-      vertA.normal.x = vertA.position.x;
-      vertA.normal.y = vertA.position.y;
-      vertA.normal.z = vertA.position.z;
       // verB
       VertexData vertB;
-
-      float nextLat = lat + kLatEvery;
-
       vertB.position = {cosf(nextLat) * cosf(lon), sinf(nextLat),
                         cosf(nextLat) * sinf(lon), 1.0f};
-
       vertB.texcoord = {static_cast<float>(lonIndex) / kSubdivision,
                         1.0f - static_cast<float>(latIndex + 1) / kSubdivision};
-
-      // 法線ベクトル（位置ベクトルを正規化せずそのままコピー）
-      vertB.normal.x = vertB.position.x;
-      vertB.normal.y = vertB.position.y;
-      vertB.normal.z = vertB.position.z;
+      vertB.normal = {vertB.position.x, vertB.position.y, vertB.position.z};
 
       // vertC
       VertexData vertC;
-
-      float nextLon = lon + kLonEvery;
-
-      vertC.position = {
-          cosf(lat) * cosf(nextLon), // x
-          sinf(lat),                 // y
-          cosf(lat) * sinf(nextLon), // z
-          1.0f                       // w
-      };
-
-      vertC.texcoord = {
-          static_cast<float>(lonIndex + 1) / kSubdivision,   // u
-          1.0f - static_cast<float>(latIndex) / kSubdivision // v
-      };
-
-      // 法線ベクトル（位置ベクトルをコピー）
-      vertC.normal.x = vertC.position.x;
-      vertC.normal.y = vertC.position.y;
-      vertC.normal.z = vertC.position.z;
+      vertC.position = {cosf(lat) * cosf(nextLon), sinf(lat),
+                        cosf(lat) * sinf(nextLon), 1.0f};
+      vertC.texcoord = {static_cast<float>(lonIndex + 1) / kSubdivision,
+                        1.0f - static_cast<float>(latIndex) / kSubdivision};
+      vertC.normal = {vertC.position.x, vertC.position.y, vertC.position.z};
 
       // vertD
       VertexData vertD;
-
-       nextLat = lat + kLatEvery;
-       nextLon = lon + kLonEvery;
-
-      vertD.position = {
-          cosf(nextLat) * cosf(nextLon), // x
-          sinf(nextLat),                 // y
-          cosf(nextLat) * sinf(nextLon), // z
-          1.0f                           // w
-      };
-
-      vertD.texcoord = {
-          static_cast<float>(lonIndex + 1) / kSubdivision,       // u
-          1.0f - static_cast<float>(latIndex + 1) / kSubdivision // v
-      };
-
-      // 法線ベクトル（位置ベクトルをコピー）
-      vertD.normal.x = vertD.position.x;
-      vertD.normal.y = vertD.position.y;
-      vertD.normal.z = vertD.position.z;
+      vertD.position = {cosf(nextLat) * cosf(nextLon), sinf(nextLat),
+                        cosf(nextLat) * sinf(nextLon), 1.0f};
+      vertD.texcoord = {static_cast<float>(lonIndex + 1) / kSubdivision,
+                        1.0f - static_cast<float>(latIndex + 1) / kSubdivision};
+      vertD.normal = {vertD.position.x, vertD.position.y, vertD.position.z};
 
       // 初期位置//
       uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
@@ -669,8 +637,6 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
       vertices[startIndex + 3] = vertC;
       vertices[startIndex + 4] = vertD;
       vertices[startIndex + 5] = vertB;
-
-      
     }
   }
 }
@@ -1442,6 +1408,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       0, nullptr, reinterpret_cast<void **>(&transformationMatrixDataSprite));
   // 単位行列を書き込んでおく04_00
   *transformationMatrixDataSprite = MakeIdentity4x4();
+
+
+
+
   // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
   // こういうもんである02_03
   IMGUI_CHECKVERSION();
