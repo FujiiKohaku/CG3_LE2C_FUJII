@@ -1389,6 +1389,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 今回は赤を書き込んでみる
   *materialData = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 
+    // Sprite用のマテリアルリソースを作る05_03
+  ID3D12Resource *materialResourceSprite =
+      CreateBufferResource(device, sizeof(Material));
+  // Sprite用のマテリアルにデータを書き込む
+  Material *materialDataSprite = nullptr;
+  // 書き込むためのアドレスを取得
+  materialResourceSprite->Map(0, nullptr,
+                              reinterpret_cast<void **>(&materialDataSprite));
+  // 今回は白を設定
+  materialDataSprite->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  materialDataSprite->enableLighting = false; // kokomonstrball?
+
+
   // WVPリソースを作る02_02
   ID3D12Resource *wvpResource = CreateBufferResource(device, sizeof(Matrix4x4));
   // データを書き込む02_02
