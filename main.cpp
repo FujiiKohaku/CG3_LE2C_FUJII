@@ -589,45 +589,78 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
 
       // 三角形1//こういう書き方もある
       // verA
-      VertexData vertA = {
-          cosf(lat) * cosf(lon), /// 改行が気持ち悪いのでここにたくさん文字
-          sinf(lat),
-          cosf(lat) * sinf(lon),
-          1.0f,
-          {float(lonIndex) / float(kSubdivision),
-           1.0f - float(latIndex) / float(kSubdivision)}
+      VertexData vertA;
+      vertA.position = {cosf(lat) * cosf(lon), sinf(lat), cosf(lat) * sinf(lon),
+                        1.0f};
 
+      vertA.texcoord = {float(lonIndex) / float(kSubdivision),
+                        1.0f - float(latIndex) / float(kSubdivision)};
+
+      vertA.normal.x = vertA.position.x;
+      vertA.normal.y = vertA.position.y;
+      vertA.normal.z = vertA.position.z;
+      // verB
+      VertexData vertB;
+
+      float nextLat = lat + kLatEvery;
+
+      vertB.position = {cosf(nextLat) * cosf(lon), sinf(nextLat),
+                        cosf(nextLat) * sinf(lon), 1.0f};
+
+      vertB.texcoord = {static_cast<float>(lonIndex) / kSubdivision,
+                        1.0f - static_cast<float>(latIndex + 1) / kSubdivision};
+
+      // 法線ベクトル（位置ベクトルを正規化せずそのままコピー）
+      vertB.normal.x = vertB.position.x;
+      vertB.normal.y = vertB.position.y;
+      vertB.normal.z = vertB.position.z;
+
+      // vertC
+      VertexData vertC;
+
+      float nextLon = lon + kLonEvery;
+
+      vertC.position = {
+          cosf(lat) * cosf(nextLon), // x
+          sinf(lat),                 // y
+          cosf(lat) * sinf(nextLon), // z
+          1.0f                       // w
       };
 
-      VertexData vertB = {
-          cosf(lat + kLatEvery) * cosf(lon),
-          sinf(lat + kLatEvery),
-          cosf(lat + kLatEvery) * sinf(lon),
-          1.0f,
-          {static_cast<float>(lonIndex) / kSubdivision,
-           1.0f - static_cast<float>(latIndex + 1) / kSubdivision}};
+      vertC.texcoord = {
+          static_cast<float>(lonIndex + 1) / kSubdivision,   // u
+          1.0f - static_cast<float>(latIndex) / kSubdivision // v
+      };
 
-      VertexData vertC = {
-          cosf(lat) * cosf(lon + kLonEvery), // x
-          sinf(lat),                         // y
-          cosf(lat) * sinf(lon + kLonEvery), // z
-          1.0f,                              // w
-          {
-              static_cast<float>(lonIndex + 1) / kSubdivision,   // u
-              1.0f - static_cast<float>(latIndex) / kSubdivision // v
-          }};
+      // 法線ベクトル（位置ベクトルをコピー）
+      vertC.normal.x = vertC.position.x;
+      vertC.normal.y = vertC.position.y;
+      vertC.normal.z = vertC.position.z;
 
-      VertexData vertD = {
-          cosf(lat + kLatEvery) * cosf(lon + kLonEvery), // x
-          sinf(lat + kLatEvery),                         // y
-          cosf(lat + kLatEvery) * sinf(lon + kLonEvery), // z
-          1.0f,                                          // w
-          {
-              static_cast<float>(lonIndex + 1) / kSubdivision,       // u
-              1.0f - static_cast<float>(latIndex + 1) / kSubdivision // v
-          }};
+      // vertD
+      VertexData vertD;
 
-      // 初期位置
+      float nextLat = lat + kLatEvery;
+      float nextLon = lon + kLonEvery;
+
+      vertD.position = {
+          cosf(nextLat) * cosf(nextLon), // x
+          sinf(nextLat),                 // y
+          cosf(nextLat) * sinf(nextLon), // z
+          1.0f                           // w
+      };
+
+      vertD.texcoord = {
+          static_cast<float>(lonIndex + 1) / kSubdivision,       // u
+          1.0f - static_cast<float>(latIndex + 1) / kSubdivision // v
+      };
+
+      // 法線ベクトル（位置ベクトルをコピー）
+      vertD.normal.x = vertD.position.x;
+      vertD.normal.y = vertD.position.y;
+      vertD.normal.z = vertD.position.z;
+
+      // 初期位置//
       uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
 
       vertices[startIndex + 0] = vertA;
