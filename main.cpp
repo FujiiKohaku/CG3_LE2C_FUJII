@@ -65,8 +65,8 @@ struct Material {
   int32_t enableLighting;
 };
 // 変数//--------------------
-//Lightingを有効にする
-// 
+// Lightingを有効にする
+//
 
 // 16分割
 const int kSubdivision = 16;
@@ -1390,7 +1390,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
   materialData->enableLighting = true;
 
-    // Sprite用のマテリアルリソースを作る05_03
+  // Sprite用のマテリアルリソースを作る05_03
   ID3D12Resource *materialResourceSprite =
       CreateBufferResource(device, sizeof(Material));
   // Sprite用のマテリアルにデータを書き込む
@@ -1402,7 +1402,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   materialDataSprite->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
   materialDataSprite->enableLighting = false; // kokomonstrball?
 
-
   // WVPリソースを作る02_02
   ID3D12Resource *wvpResource = CreateBufferResource(device, sizeof(Matrix4x4));
   // データを書き込む02_02
@@ -1411,8 +1410,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   wvpResource->Map(0, nullptr, reinterpret_cast<void **>(&wvpData));
   // 単位行列を書き込んでおく02_02
   *wvpData = MakeIdentity4x4(); // WVPリソースを作る
-
-
 
   // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
   // 1つ分のサイズを用意する04_00
@@ -1425,9 +1422,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       0, nullptr, reinterpret_cast<void **>(&transformationMatrixDataSprite));
   // 単位行列を書き込んでおく04_00
   *transformationMatrixDataSprite = MakeIdentity4x4();
-
-
-
 
   // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
   // こういうもんである02_03
@@ -1478,7 +1472,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
       ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
       ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
-      ImGui::ColorEdit4("Color", &(*materialData).x);
+   /*   ImGui::ColorEdit4("Color", &(*materialData).x);*/
       ImGui::Text("useMonstarBall");
       ImGui::Checkbox("useMonstarBall", &useMonstarBall);
 
@@ -1526,90 +1520,90 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       //  02_02
       waveTime += 0.05f;
 
-      // アニメーション切り替え
-      switch (animationType) {
-      case ANIM_NONE:
+      //// アニメーション切り替え
+      //switch (animationType) {
+      //case ANIM_NONE:
 
-        break;
-      case ANIM_RESET:
-        // トランスフォームの初期化
-        transform.translate = {0.0f, 0.0f, 0.0f};
-        transform.rotate = {0.0f, 0.0f, 0.0f};
-        transform.scale = {1.0f, 1.0f, 1.0f};
+      //  break;
+      //case ANIM_RESET:
+      //  // トランスフォームの初期化
+      //  transform.translate = {0.0f, 0.0f, 0.0f};
+      //  transform.rotate = {0.0f, 0.0f, 0.0f};
+      //  transform.scale = {1.0f, 1.0f, 1.0f};
 
-        // 色の初期化（
-        materialData->x = 1.0f;
-        materialData->y = 1.0f;
-        materialData->z = 1.0f;
-        materialData->w = 1.0f;
-        animationType = ANIM_RESET;
-        break;
+      //  // 色の初期化（
+      //  materialData->x = 1.0f;
+      //  materialData->y = 1.0f;
+      //  materialData->z = 1.0f;
+      //  materialData->w = 1.0f;
+      //  animationType = ANIM_RESET;
+      //  break;
 
-      case ANIM_COLOR:
-        materialData->x = fabsf(sinf(waveTime));
-        materialData->y = fabsf(sinf(waveTime + 1.0f));
-        materialData->z = fabsf(sinf(waveTime + 2.0f));
-        break;
+      //case ANIM_COLOR:
+      //  materialData->x = fabsf(sinf(waveTime));
+      //  materialData->y = fabsf(sinf(waveTime + 1.0f));
+      //  materialData->z = fabsf(sinf(waveTime + 2.0f));
+      //  break;
 
-      case ANIM_SCALE:
-        transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
-        transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
-        break;
+      //case ANIM_SCALE:
+      //  transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
+      //  transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
+      //  break;
 
-      case ANIM_TRANSLATE:
-        transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
-        break;
-      case ANIM_ROTATE:
+      //case ANIM_TRANSLATE:
+      //  transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
+      //  break;
+      //case ANIM_ROTATE:
 
-        transform.rotate.y += 0.02f;
+      //  transform.rotate.y += 0.02f;
 
-        transform.rotate.y += 0.1f;
+      //  transform.rotate.y += 0.1f;
 
-        transform.rotate.y += 0.05f;
+      //  transform.rotate.y += 0.05f;
 
-        break;
+      //  break;
 
-      case ANIM_ALL:
-        materialData->x = fabsf(sinf(waveTime));
-        materialData->y = fabsf(sinf(waveTime + 1.0f));
-        materialData->z = fabsf(sinf(waveTime + 2.0f));
-        transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
-        transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
-        transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
-        switch (waveType) {
-        case WAVE_SINE:
-          transform.rotate.y += 0.02f;
-          break;
-        case WAVE_CHAINSAW:
-          transform.rotate.y += 0.1f;
-          break;
-        case WAVE_SQUARE:
-          transform.rotate.y += 0.05f;
-          break;
-        }
+      //case ANIM_ALL:
+      //  materialData->x = fabsf(sinf(waveTime));
+      //  materialData->y = fabsf(sinf(waveTime + 1.0f));
+      //  materialData->z = fabsf(sinf(waveTime + 2.0f));
+      //  transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
+      //  transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
+      //  transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
+      //  switch (waveType) {
+      //  case WAVE_SINE:
+      //    transform.rotate.y += 0.02f;
+      //    break;
+      //  case WAVE_CHAINSAW:
+      //    transform.rotate.y += 0.1f;
+      //    break;
+      //  case WAVE_SQUARE:
+      //    transform.rotate.y += 0.05f;
+      //    break;
+      //  }
 
-      case ANIM_PULSE: {
-        float pulse = sinf(waveTime * 5.0f) * 0.2f + 1.0f;
-        transform.scale.x = pulse;
-        transform.scale.y = pulse;
-      } break;
+      //case ANIM_PULSE: {
+      //  float pulse = sinf(waveTime * 5.0f) * 0.2f + 1.0f;
+      //  transform.scale.x = pulse;
+      //  transform.scale.y = pulse;
+      //} break;
 
-      case ANIM_AURORA:
-        materialData->color.x= 0.2f + 0.2f * sinf(waveTime);
-        materialData->color.y = 0.2f + 0.2f * sinf(waveTime + 1.5f);
-        materialData->color.z= 0.2f + 0.2f * sinf(waveTime + 3.0f);
-        break;
+      //case ANIM_AURORA:
+      //  materialData->color.x = 0.2f + 0.2f * sinf(waveTime);
+      //  materialData->color.y = 0.2f + 0.2f * sinf(waveTime + 1.5f);
+      //  materialData->color.z = 0.2f + 0.2f * sinf(waveTime + 3.0f);
+      //  break;
 
-      case ANIM_BOUNCE:
-        transform.translate.y = fabsf(sinf(waveTime * 2.0f)) * 1.1f;
-        break;
+      //case ANIM_BOUNCE:
+      //  transform.translate.y = fabsf(sinf(waveTime * 2.0f)) * 1.1f;
+      //  break;
 
-      case ANIM_TWIST:
-        transform.rotate.z = sinf(waveTime * 1.0f);
-        transform.rotate.x = sinf(waveTime * 1.5f);
-        transform.rotate.y = sinf(waveTime * 2.0f);
-        break;
-      }
+      //case ANIM_TWIST:
+      //  transform.rotate.z = sinf(waveTime * 1.0f);
+      //  transform.rotate.x = sinf(waveTime * 1.5f);
+      //  transform.rotate.y = sinf(waveTime * 2.0f);
+      //  break;
+      //}
       // メイクアフィンマトリックス02_02
       Matrix4x4 worldMatrix = MakeAffineMatrix(
           transform.scale, transform.rotate, transform.translate);
@@ -1690,7 +1684,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
       // マテリアルCbufferの場所を設定
       commandList->SetGraphicsRootConstantBufferView(
-          0, materialResource->GetGPUVirtualAddress());
+          0, materialResourceSprite->GetGPUVirtualAddress());
 
       // wvp用のCBufferの場所を設定02_02
       commandList->SetGraphicsRootConstantBufferView(
@@ -1789,10 +1783,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   dxcUtils->Release();
   vertexResourceSprite->Release();
   transformationMatrixResourceSprite->Release();
-  intermediateResource->Release();  // 05_01
-  intermediateResource2->Release(); // 05_01
-  textureResource2->Release();      // 05_01
-
+  intermediateResource->Release();   // 05_01
+  intermediateResource2->Release();  // 05_01
+  textureResource2->Release();       // 05_01
+  materialResourceSprite->Release(); // 05_03
   CoInitialize(nullptr);
 #endif
   CloseWindow(hwnd);
