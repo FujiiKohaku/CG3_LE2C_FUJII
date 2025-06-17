@@ -1423,9 +1423,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
   // 1つ分のサイズを用意する04_00
   ID3D12Resource *transformationMatrixResourceSprite =
-      CreateBufferResource(device, sizeof(Matrix4x4));
+      CreateBufferResource(device, sizeof(TransformationMatrix));
   // sprite用のデータを書き込む04_00
-  Matrix4x4 *transformationMatrixDataSprite = nullptr;
+  TransformationMatrix *transformationMatrixDataSprite = nullptr;
   // sprite用の書き込むためのアドレスを取得04_00
   transformationMatrixResourceSprite->Map(
       0, nullptr, reinterpret_cast<void **>(&transformationMatrixDataSprite));
