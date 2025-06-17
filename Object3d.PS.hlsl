@@ -23,7 +23,7 @@ PixelShaderOutput main(VertexShaderOutput input)
 
    
     
-    if (gMaterial.enableLigting != 0)//Lighting‚·‚éê‡
+    if (gMaterial.enableLighting != 0)//Lighting‚·‚éê‡
     {
         float cos = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
         output.color = gMaterial.color * textureColor * gDirectionalLight.color * cos * gDirectionalLight.intensity;
