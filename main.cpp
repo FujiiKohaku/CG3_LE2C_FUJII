@@ -50,6 +50,7 @@ struct Transform {
 struct VertexData {
   Vector4 position;
   Vector2 texcoord;
+  Vector3 normal;
 };
 struct Fragment {
   Vector3 position;
@@ -595,7 +596,6 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
           1.0f,
           {float(lonIndex) / float(kSubdivision),
            1.0f - float(latIndex) / float(kSubdivision)}};
-
 
       VertexData vertB = {
           cosf(lat + kLatEvery) * cosf(lon),
@@ -1722,7 +1722,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // 形状を設定。PS0に設定しているものとはまた別。同じものを設定すると考えていけばよい
       commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-
       commandList->SetGraphicsRootDescriptorTable(
           2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
@@ -1737,12 +1736,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
       commandList->DrawInstanced(kNumVertices, 1, 0, 0);
       // 描画
-      commandList->SetGraphicsRootDescriptorTable(2,textureSrvHandleGPU);
+      commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
       // spriteの描画04_00
       commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
       commandList->SetGraphicsRootConstantBufferView(
           1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
-      //UvChecker
+      // UvChecker
       commandList->DrawInstanced(6, 1, 0, 0);
       // 描画の最後です//----------------------------------------------------
       //  実際のcommandListのImGuiの描画コマンドを積む
