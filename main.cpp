@@ -1723,14 +1723,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootDescriptorTable(
           2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
-      // マテリアルCbufferの場所を設定
+        // マテリアルCbufferの場所を設定05_03変更
       commandList->SetGraphicsRootConstantBufferView(
           0, materialResourceSprite->GetGPUVirtualAddress());
 
       // wvp用のCBufferの場所を設定02_02
       commandList->SetGraphicsRootConstantBufferView(
           1, wvpResource->GetGPUVirtualAddress());
-      //
       // 平行光源用のCbufferの場所を設定05_03
       commandList->SetGraphicsRootConstantBufferView(
           3, directionalLightResource->GetGPUVirtualAddress());
