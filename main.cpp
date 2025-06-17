@@ -1498,7 +1498,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui_ImplWin32_NewFrame();
       ImGui::NewFrame();
       //
-      開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
+     // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
       ImGui::
           ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
 
