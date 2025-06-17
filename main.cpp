@@ -1198,6 +1198,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
   srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
 
+  // metaData2を基にSRVの設定CG2_05_01_page_9
+  D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2{};
+  srvDesc2.Format = metadata2.format;
+  srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+  srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
+  srvDesc2.Texture2D.MipLevels = UINT(metadata2.mipLevels);
+
   // SRVを作成するDescriptorHeapの場所を決める
   D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
       srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
