@@ -64,6 +64,11 @@ struct Material {
   Vector4 color;
   int32_t enableLighting;
 };
+struct TraansformationMatrix {
+  Matrix4x4 WVP;
+  Matrix4x4 World;
+};
+
 // 変数//--------------------
 // Lightingを有効にする
 //
@@ -1444,7 +1449,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // カメラトランスフォーム
   Transform cameraTransform{
       {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -5.0f}};
-  
 
   // Textureの切り替え
   bool useMonstarBall = true;

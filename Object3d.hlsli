@@ -13,3 +13,9 @@ struct Material
     int32_t enableLighting;
     
 };
+//05_03
+struct TransformationMatrix
+{
+    float32_t4x4 WVP;
+    float32_t4x4 World;
+};

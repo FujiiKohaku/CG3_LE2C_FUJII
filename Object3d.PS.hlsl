@@ -1,13 +1,13 @@
 #include "object3d.hlsli"
 
-struct Material
-{
-    float32_t4 color;
+//struct Material
+//{
+//    float32_t4 color; //‘—¿‚Å‚Íhlsl‚É‘‚¯‚Æ‚ ‚Á‚½‚Ì‚Åhlsl‚É‚ ‚é‚æ
     
-};
+//};
 ConstantBuffer<Material> gMaterial : register(b0);
 //I don't know where to write from here
-Texture2D< float32_t4> gTexture : register(t0);
+Texture2D<float32_t4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 struct PixelShaderOutput
 {
