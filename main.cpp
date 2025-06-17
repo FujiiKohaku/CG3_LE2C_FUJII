@@ -1666,7 +1666,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       Matrix4x4 viewMatrixSprite = MakeIdentity4x4();
       Matrix4x4 projectionMatrixSprite = MakeOrthographicMatrix(
           0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
-      Matrix4x4 woroldViewProjectionMatrixSprite =
+      Matrix4x4 worldViewProjectionMatrixSprite =
           Multiply(worldMatrixSprite,
                    Multiply(viewMatrixSprite, projectionMatrixSprite));
       // 単位行列を書き込んでおく04_00
