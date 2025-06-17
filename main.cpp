@@ -1411,6 +1411,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   wvpResource->Map(0, nullptr, reinterpret_cast<void **>(&wvpData));
   // 単位行列を書き込んでおく02_02
   *wvpData = MakeIdentity4x4(); // WVPリソースを作る
+
+
+
   // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
   // 1つ分のサイズを用意する04_00
   ID3D12Resource *transformationMatrixResourceSprite =
