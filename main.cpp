@@ -640,8 +640,8 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
       // vertD
       VertexData vertD;
 
-      float nextLat = lat + kLatEvery;
-      float nextLon = lon + kLonEvery;
+       nextLat = lat + kLatEvery;
+       nextLon = lon + kLonEvery;
 
       vertD.position = {
           cosf(nextLat) * cosf(nextLon), // x
@@ -670,72 +670,7 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
       vertices[startIndex + 4] = vertD;
       vertices[startIndex + 5] = vertB;
 
-      // a
-      /*vertices[startIndex + 0].position.x = radius * cosf(lat) * cosf(lon);
-      vertices[startIndex + 0].position.y = radius * sinf(lat);
-      vertices[startIndex + 0].position.z = radius * cosf(lat) * sinf(lon);
-      vertices[startIndex + 0].position.w = 1.0f;
-      vertices[startIndex + 0].texcoord.x =
-          static_cast<float>(lonIndex) / kSubdivision;
-      vertices[startIndex + 0].texcoord.y =
-          1.0f - static_cast<float>(latIndex) / kSubdivision;*/
-      // b
-      /* vertices[startIndex + 1].position.x =
-           radius * cosf(lat + kLatEvery) * cosf(lon);
-       vertices[startIndex + 1].position.y = radius * sinf(lat + kLatEvery);
-       vertices[startIndex + 1].position.z =
-           radius * cosf(lat + kLatEvery) * sinf(lon);
-       vertices[startIndex + 1].position.w = 1.0f;
-       vertices[startIndex + 1].texcoord.x =
-           static_cast<float>(lonIndex) / kSubdivision;
-       vertices[startIndex + 1].texcoord.y =
-           1.0f - static_cast<float>(latIndex + 1) / kSubdivision;*/
-      // c
-      /* vertices[startIndex + 2].position.x =
-           radius * cosf(lat) * cosf(lon + kLonEvery);
-       vertices[startIndex + 2].position.y = radius * sinf(lat);
-       vertices[startIndex + 2].position.z =
-           radius * cosf(lat) * sinf(lon + kLonEvery);
-       vertices[startIndex + 2].position.w = 1.0f;
-       vertices[startIndex + 2].texcoord.x =
-           static_cast<float>(lonIndex + 1) / kSubdivision;
-       vertices[startIndex + 2].texcoord.y =
-           1.0f - static_cast<float>(latIndex) / kSubdivision;*/
-
-      // 三角形2:
-      // c
-      /*vertices[startIndex + 3].position.x =
-          radius * cosf(lat) * cosf(lon + kLonEvery);
-      vertices[startIndex + 3].position.y = radius * sinf(lat);
-      vertices[startIndex + 3].position.z =
-          radius * cosf(lat) * sinf(lon + kLonEvery);
-      vertices[startIndex + 3].position.w = 1.0f;
-      vertices[startIndex + 3].texcoord.x =
-          static_cast<float>(lonIndex + 1) / kSubdivision;
-      vertices[startIndex + 3].texcoord.y =
-          1.0f - static_cast<float>(latIndex) / kSubdivision;*/
-      // d
-      /* vertices[startIndex + 5].position.x =
-           radius * cosf(lat + kLatEvery) * cosf(lon + kLonEvery);
-       vertices[startIndex + 5].position.y = radius * sinf(lat + kLatEvery);
-       vertices[startIndex + 5].position.z =
-           radius * cosf(lat + kLatEvery) * sinf(lon + kLonEvery);
-       vertices[startIndex + 5].position.w = 1.0f;
-       vertices[startIndex + 5].texcoord.x =
-           static_cast<float>(lonIndex + 1) / kSubdivision;
-       vertices[startIndex + 5].texcoord.y =
-           1.0f - static_cast<float>(latIndex + 1) / kSubdivision;*/
-      // b
-      /*vertices[startIndex + 4].position.x =
-          radius * cosf(lat + kLatEvery) * cosf(lon);
-      vertices[startIndex + 4].position.y = radius * sinf(lat + kLatEvery);
-      vertices[startIndex + 4].position.z =
-          radius * cosf(lat + kLatEvery) * sinf(lon);
-      vertices[startIndex + 4].position.w = 1.0f;
-      vertices[startIndex + 4].texcoord.x =
-          static_cast<float>(lonIndex) / kSubdivision;
-      vertices[startIndex + 4].texcoord.y =
-          1.0f - static_cast<float>(latIndex + 1) / kSubdivision;*/
+      
     }
   }
 }
