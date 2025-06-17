@@ -1179,18 +1179,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   DirectX::ScratchImage mipImages = LoadTexture("resources/uvChecker.png");
   const DirectX::TexMetadata &metadata = mipImages.GetMetadata();
   ID3D12Resource *textureResource = CreateTextureResource(device, metadata);
-  UploadTextureData(textureResource, mipImages, device, commandList); //?
-  
+  ID3D12Resource *intermediateResource =
+      UploadTextureData(textureResource, mipImages, device, commandList); //?
+
   // 2枚目のTextureを読んで転送するCG2_05_01_page_8
   DirectX::ScratchImage mipImages2 = LoadTexture("resources/monsterBall.png");
   const DirectX::TexMetadata &metadata2 = mipImages2.GetMetadata();
   ID3D12Resource *textureResource2 = CreateTextureResource(device, metadata2);
-  UploadTextureData(textureResource2, mipImages2, device, commandList);
+  ID3D12Resource *intermediateResource2 =
+      UploadTextureData(textureResource2, mipImages2, device, commandList);
 
   // 03_00EX
-  ID3D12Resource *intermediateResource =
-      UploadTextureData(textureResource, mipImages, device, commandList);
-  
+  // ID3D12Resource *intermediateResource =
+  //    UploadTextureData(textureResource, mipImages, device, commandList);
+
 #pragma region ディスクリプタサイズを取得する（SRV/RTV/DSV）
   // DescriptorSizeを取得しておくCG2_05_01_page_6
   const uint32_t descriptorSizeSRV = device->GetDescriptorHandleIncrementSize(
@@ -1228,10 +1230,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 2);
 
   //// SRVを作成するDescriptorHeapの場所を決める
-  //D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
-  //    srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-  //D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU =
-  //    srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+  // D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
+  //     srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+  // D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU =
+  //     srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
 
   // 先頭はImGuiが使っているのでその次を使う
   // textureSrvHandleCPU.ptr += device->GetDescriptorHandleIncrementSize(
@@ -1240,15 +1242,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   //    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
   //// SRVを作成するDescriptorHeapの場所を決める//変更CG2_05_01_0page6
-  //D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
-  //    GetCPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
-  //D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU =
-  //    GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
+  // D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
+  //     GetCPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
+  // D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU =
+  //     GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
 
   // SRVの生成03_00
   device->CreateShaderResourceView(textureResource, &srvDesc,
                                    textureSrvHandleCPU);
-  //05_01
+  // 05_01
   device->CreateShaderResourceView(textureResource2, &srvDesc2,
                                    textureSrvHandleCPU2);
   // InputLayout
@@ -1813,6 +1815,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   dxcUtils->Release();
   vertexResourceSprite->Release();
   transformationMatrixResourceSprite->Release();
+  intermediateResource->Release();
+  intermediateResource2->Release();
+
   CoInitialize(nullptr);
 #endif
   CloseWindow(hwnd);
