@@ -1179,8 +1179,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   DirectX::ScratchImage mipImages = LoadTexture("resources/uvChecker.png");
   const DirectX::TexMetadata &metadata = mipImages.GetMetadata();
   ID3D12Resource *textureResource = CreateTextureResource(device, metadata);
-  // UploadTextureData(textureResource, mipImages);
-  // 
+  UploadTextureData(textureResource, mipImages);
+  //
   // 2枚目のTextureを読んで転送するCG2_05_01_page_8
   DirectX::ScratchImage mipImages2 = LoadTexture("resources/monsterBall.png");
   const DirectX::TexMetadata &metadata2 = mipImages2.GetMetadata();
@@ -1205,9 +1205,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
 
   // 先頭はImGuiが使っているのでその次を使う
-  //textureSrvHandleCPU.ptr += device->GetDescriptorHandleIncrementSize(
+  // textureSrvHandleCPU.ptr += device->GetDescriptorHandleIncrementSize(
   //    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-  //textureSrvHandleGPU.ptr += device->GetDescriptorHandleIncrementSize(
+  // textureSrvHandleGPU.ptr += device->GetDescriptorHandleIncrementSize(
   //    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 #pragma region ディスクリプタサイズを取得する（SRV/RTV/DSV）
   // DescriptorSizeを取得しておくCG2_05_01_page_6
@@ -1314,8 +1314,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // sprite用の頂点リソースを作る04_00
   ID3D12Resource *vertexResourceSprite =
       CreateBufferResource(device, sizeof(VertexData) * kNumVertices);
-
-
 
   // 03_01_Other
   ID3D12Resource *depthStencillResource =
