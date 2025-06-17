@@ -1379,15 +1379,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   scissorRect.right = kClientWidth;
   scissorRect.top = 0;
   scissorRect.bottom = kClientHeight;
-  // マテリアル用のリソースを作る今回はcolor一つ分のサイズを用意する
+  // マテリアル用のリソースを作る今回はcolor一つ分のサイズを用意する05_03
   ID3D12Resource *materialResource =
-      CreateBufferResource(device, sizeof(Vector4));
+      CreateBufferResource(device, sizeof(Material));
   // マテリアルにデータを書き込む
-  Vector4 *materialData = nullptr;
+  Material *materialData = nullptr;
   // 書き込むためのアドレスを取得
   materialResource->Map(0, nullptr, reinterpret_cast<void **>(&materialData));
   // 今回は赤を書き込んでみる
-  *materialData = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  materialData->enableLighting = true;
 
     // Sprite用のマテリアルリソースを作る05_03
   ID3D12Resource *materialResourceSprite =
