@@ -1404,14 +1404,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 
   // WVPリソースを作る02_02
-  ID3D12Resource *wvpResource = CreateBufferResource(device, sizeof(Matrix4x4));
+  ID3D12Resource *wvpResource =
+      CreateBufferRespource(device, sizeof(TransformationMatrix));
   // データを書き込む02_02
-  Matrix4x4 *wvpData = nullptr;
+  TransformationMatrix *wvpData = nullptr;
   // 書き込むためのアドレスを取得02_02
   wvpResource->Map(0, nullptr, reinterpret_cast<void **>(&wvpData));
   // 単位行列を書き込んでおく02_02
-  *wvpData = MakeIdentity4x4(); // WVPリソースを作る
-
+  Matrix4x4 identity = MakeIdentity4x4();
+  // 05_03
+  memcpy(&wvpData->WVP, &identity, sizeof(Matrix4x4));
+  memcpy(&wvpData->World, &identity, sizeof(Matrix4x4));
 
 
   // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
