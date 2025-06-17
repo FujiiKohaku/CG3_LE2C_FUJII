@@ -1725,7 +1725,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
         // マテリアルCbufferの場所を設定05_03変更
       commandList->SetGraphicsRootConstantBufferView(
-          0, materialResourceSprite->GetGPUVirtualAddress());
+          0, materialResource->GetGPUVirtualAddress());//ここでmaterialResource使え
 
       // wvp用のCBufferの場所を設定02_02
       commandList->SetGraphicsRootConstantBufferView(
