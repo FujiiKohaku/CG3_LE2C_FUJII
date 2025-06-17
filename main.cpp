@@ -1669,7 +1669,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       Matrix4x4 woroldViewProjectionMatrixSprite =
           Multiply(worldMatrixSprite,
                    Multiply(viewMatrixSprite, projectionMatrixSprite));
-      *transformationMatrixDataSprite = woroldViewProjectionMatrixSprite;
+      // 単位行列を書き込んでおく04_00
+      transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
+      transformationMatrixDataSprite->World = worldMatrixSprite;
       // 画面のクリア処理
       //   これから書き込むバックバッファのインデックスを取得
       UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
