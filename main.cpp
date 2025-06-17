@@ -1073,7 +1073,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
   // RootParameter作成。複数設定できるので配列。今回は結果１つだけなので長さ１の配列
   // PixelShaderのMaterialとVertexShaderのTransform
-  D3D12_ROOT_PARAMETER rootParameters[3] = {};
+  D3D12_ROOT_PARAMETER rootParameters[4] = {};
   rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // CBVを使う
   rootParameters[0].ShaderVisibility =
       D3D12_SHADER_VISIBILITY_PIXEL;               // PixelShaderで使う
@@ -1106,8 +1106,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       descriptorRange; // Tableの中身の配列を指定
   rootParameters[2].DescriptorTable.NumDescriptorRanges =
       _countof(descriptorRange); // Tableで利用する数
-  // ここまで[3]
-
+  // ここまで[3]//05_03追加しろー
+  rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // CBVを使う
+  rootParameters[3].ShaderVisibility =
+      D3D12_SHADER_VISIBILITY_PIXEL;               // PxelShaderで使う
+  rootParameters[3].Descriptor.ShaderRegister = 1; // レジスタ番号１を使う
   // ==== シリアライズしてバイナリにする（GPUが読める形に変換） ====
   // バイナリになるデータを入れるための箱02_00
   ID3DBlob *signatureBlob = nullptr; // ルートシグネチャ本体
@@ -1445,8 +1448,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 単位行列を書き込んでおく04_00//これいったん消しました05_03
   // *transformationMatrixDataSprite = MakeIdentity4x4();
 
-
-    // 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
+  // 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
   ID3D12Resource *directionalLightResource =
       CreateBufferResource(device, sizeof(DirectionalLight));
   // 平行光源用のデータを書き込み
@@ -1498,7 +1500,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui_ImplWin32_NewFrame();
       ImGui::NewFrame();
       //
-     // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
+      // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
       ImGui::
           ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
 
@@ -1826,6 +1828,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   intermediateResource2->Release();  // 05_01
   textureResource2->Release();       // 05_01
   materialResourceSprite->Release(); // 05_03
+  directionalLightResource->Release();
   CoInitialize(nullptr);
 #endif
   CloseWindow(hwnd);
