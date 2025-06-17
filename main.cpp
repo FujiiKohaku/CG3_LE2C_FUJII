@@ -1179,13 +1179,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   DirectX::ScratchImage mipImages = LoadTexture("resources/uvChecker.png");
   const DirectX::TexMetadata &metadata = mipImages.GetMetadata();
   ID3D12Resource *textureResource = CreateTextureResource(device, metadata);
-  UploadTextureData(textureResource, mipImages);
+  UploadTextureData(textureResource, mipImages, device, commandList); //?
   //
   // 2枚目のTextureを読んで転送するCG2_05_01_page_8
   DirectX::ScratchImage mipImages2 = LoadTexture("resources/monsterBall.png");
   const DirectX::TexMetadata &metadata2 = mipImages2.GetMetadata();
   ID3D12Resource *textureResource2 = CreateTextureResource(device, metadata2);
-  UploadTextureData(textureResource2, mipImages2);
+  UploadTextureData(textureResource2, mipImages2, device, commandList);
 
   // 03_00EX
   ID3D12Resource *intermediateResource =
