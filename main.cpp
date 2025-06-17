@@ -1730,6 +1730,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // wvp用のCBufferの場所を設定02_02
       commandList->SetGraphicsRootConstantBufferView(
           1, wvpResource->GetGPUVirtualAddress());
+      //
+      commandList->SetGraphicsRootConstantBufferView(
+          1, directionalLightResource->GetGPUVirtualAddress());
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
       commandList->DrawInstanced(kNumVertices, 1, 0, 0);
