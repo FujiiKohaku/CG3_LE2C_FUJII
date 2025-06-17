@@ -1294,6 +1294,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ID3D12Resource *vertexResourceSprite =
       CreateBufferResource(device, sizeof(VertexData) * kNumVertices);
 
+#pragma region ディスクリプタサイズを取得する（SRV/RTV/DSV）
+  // DescriptorSizeを取得しておくCG2_05_01_page_6
+  const uint32_t descriptorSizeSRV = device->GetDescriptorHandleIncrementSize(
+      D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+  const uint32_t descriptorSizeRTV =
+      device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+  const uint32_t descriptorSizeDSV =
+      device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+#pragma endregion
   // 03_01_Other
   ID3D12Resource *depthStencillResource =
       CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
