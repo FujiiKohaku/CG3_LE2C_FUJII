@@ -1485,6 +1485,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // カメラトランスフォーム
   Transform cameraTransform{
       {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -5.0f}};
+
+  // Textureの切り替え
+  bool useMonstarBall = true;
   MSG msg{};
 
   // ウィンドウの×ボタンが押されるまでループ
@@ -1511,6 +1514,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
       ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
       ImGui::ColorEdit4("Color", &(*materialData).x);
+      ImGui::Text("useMonstarBall");
+      ImGui::Checkbox("useMonstarBall", &useMonstarBall);
 
       // --- アニメーション選択 ---
       ImGui::Text("Animation");
@@ -1714,7 +1719,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // VBVを設定
       // 形状を設定。PS0に設定しているものとはまた別。同じものを設定すると考えていけばよい
       commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-      commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU2);
+
+
+      commandList->SetGraphicsRootDescriptorTable(
+          2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
       // マテリアルCbufferの場所を設定
       commandList->SetGraphicsRootConstantBufferView(
@@ -1815,8 +1823,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   dxcUtils->Release();
   vertexResourceSprite->Release();
   transformationMatrixResourceSprite->Release();
-  intermediateResource->Release();
-  intermediateResource2->Release();
+  intermediateResource->Release();  // 05_01
+  intermediateResource2->Release(); // 05_01
+  textureResource2->Release();      // 05_01
 
   CoInitialize(nullptr);
 #endif
