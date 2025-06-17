@@ -633,6 +633,7 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
       vertices[startIndex + 3] = vertC;
       vertices[startIndex + 4] = vertD;
       vertices[startIndex + 5] = vertB;
+
       // a
       /*vertices[startIndex + 0].position.x = radius * cosf(lat) * cosf(lon);
       vertices[startIndex + 0].position.y = radius * sinf(lat);
