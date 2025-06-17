@@ -1239,11 +1239,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // textureSrvHandleGPU.ptr += device->GetDescriptorHandleIncrementSize(
   //    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-  // SRVを作成するDescriptorHeapの場所を決める//変更CG2_05_01_0page6
-  D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
-      GetCPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
-  D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU =
-      GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
+  //// SRVを作成するDescriptorHeapの場所を決める//変更CG2_05_01_0page6
+  //D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
+  //    GetCPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
+  //D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU =
+  //    GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
 
   // SRVの生成03_00
   device->CreateShaderResourceView(textureResource, &srvDesc,
