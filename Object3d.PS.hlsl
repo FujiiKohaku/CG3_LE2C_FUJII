@@ -1,14 +1,14 @@
 #include "object3d.hlsli"
 
-//struct Material
-//{
-//    float32_t4 color; //‘—¿‚Å‚Íhlsl‚É‘‚¯‚Æ‚ ‚Á‚½‚Ì‚Åhlsl‚É‚ ‚é‚æ
-    
-//};
+
 ConstantBuffer<Material> gMaterial : register(b0);
-//I don't know where to write from here
+
+
+ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
+
 Texture2D<float32_t4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
+
 struct PixelShaderOutput
 {
     float32_t4 color : SV_Target0;
@@ -21,8 +21,19 @@ PixelShaderOutput main(VertexShaderOutput input)
 
     float32_t4 textureColor = gTexture.Sample(gSampler, input.texcoord);
 
-    output.color = gMaterial.color * textureColor;
+   
+    
+    if (gMaterial.enableLigting != 0)//Lighting‚·‚éê‡
+    {
+        float cos = saturate(dot(normalize(input.normal), -gDirectionalLight.direction));
+        output.color = gMaterial.color * textureColor * gDirectionalLight.color * cos * gDirectionalLight.intensity;
+
+    }
+    else
+    { //Lighting‚µ‚È‚¢ê‡‘O‰ñ‚Ü‚Å‚Æ“¯‚¶ŒvZ
+        output.color = gMaterial.color * textureColor;
+    }
+    
     
     return output;
 }
-
