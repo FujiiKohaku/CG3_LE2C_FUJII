@@ -1444,6 +1444,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // カメラトランスフォーム
   Transform cameraTransform{
       {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -5.0f}};
+  
 
   // Textureの切り替え
   bool useMonstarBall = true;
@@ -1472,7 +1473,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
       ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
       ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
-   /*   ImGui::ColorEdit4("Color", &(*materialData).x);*/
+      /*   ImGui::ColorEdit4("Color", &(*materialData).x);*/
       ImGui::Text("useMonstarBall");
       ImGui::Checkbox("useMonstarBall", &useMonstarBall);
 
@@ -1521,11 +1522,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       waveTime += 0.05f;
 
       //// アニメーション切り替え
-      //switch (animationType) {
-      //case ANIM_NONE:
+      // switch (animationType) {
+      // case ANIM_NONE:
 
       //  break;
-      //case ANIM_RESET:
+      // case ANIM_RESET:
       //  // トランスフォームの初期化
       //  transform.translate = {0.0f, 0.0f, 0.0f};
       //  transform.rotate = {0.0f, 0.0f, 0.0f};
@@ -1539,21 +1540,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       //  animationType = ANIM_RESET;
       //  break;
 
-      //case ANIM_COLOR:
-      //  materialData->x = fabsf(sinf(waveTime));
-      //  materialData->y = fabsf(sinf(waveTime + 1.0f));
-      //  materialData->z = fabsf(sinf(waveTime + 2.0f));
-      //  break;
+      // case ANIM_COLOR:
+      //   materialData->x = fabsf(sinf(waveTime));
+      //   materialData->y = fabsf(sinf(waveTime + 1.0f));
+      //   materialData->z = fabsf(sinf(waveTime + 2.0f));
+      //   break;
 
-      //case ANIM_SCALE:
-      //  transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
-      //  transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
-      //  break;
+      // case ANIM_SCALE:
+      //   transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
+      //   transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
+      //   break;
 
-      //case ANIM_TRANSLATE:
-      //  transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
-      //  break;
-      //case ANIM_ROTATE:
+      // case ANIM_TRANSLATE:
+      //   transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
+      //   break;
+      // case ANIM_ROTATE:
 
       //  transform.rotate.y += 0.02f;
 
@@ -1563,48 +1564,48 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
       //  break;
 
-      //case ANIM_ALL:
-      //  materialData->x = fabsf(sinf(waveTime));
-      //  materialData->y = fabsf(sinf(waveTime + 1.0f));
-      //  materialData->z = fabsf(sinf(waveTime + 2.0f));
-      //  transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
-      //  transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
-      //  transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
-      //  switch (waveType) {
-      //  case WAVE_SINE:
-      //    transform.rotate.y += 0.02f;
-      //    break;
-      //  case WAVE_CHAINSAW:
-      //    transform.rotate.y += 0.1f;
-      //    break;
-      //  case WAVE_SQUARE:
-      //    transform.rotate.y += 0.05f;
-      //    break;
-      //  }
+      // case ANIM_ALL:
+      //   materialData->x = fabsf(sinf(waveTime));
+      //   materialData->y = fabsf(sinf(waveTime + 1.0f));
+      //   materialData->z = fabsf(sinf(waveTime + 2.0f));
+      //   transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
+      //   transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
+      //   transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
+      //   switch (waveType) {
+      //   case WAVE_SINE:
+      //     transform.rotate.y += 0.02f;
+      //     break;
+      //   case WAVE_CHAINSAW:
+      //     transform.rotate.y += 0.1f;
+      //     break;
+      //   case WAVE_SQUARE:
+      //     transform.rotate.y += 0.05f;
+      //     break;
+      //   }
 
-      //case ANIM_PULSE: {
-      //  float pulse = sinf(waveTime * 5.0f) * 0.2f + 1.0f;
-      //  transform.scale.x = pulse;
-      //  transform.scale.y = pulse;
-      //} break;
+      // case ANIM_PULSE: {
+      //   float pulse = sinf(waveTime * 5.0f) * 0.2f + 1.0f;
+      //   transform.scale.x = pulse;
+      //   transform.scale.y = pulse;
+      // } break;
 
-      //case ANIM_AURORA:
-      //  materialData->color.x = 0.2f + 0.2f * sinf(waveTime);
-      //  materialData->color.y = 0.2f + 0.2f * sinf(waveTime + 1.5f);
-      //  materialData->color.z = 0.2f + 0.2f * sinf(waveTime + 3.0f);
-      //  break;
+      // case ANIM_AURORA:
+      //   materialData->color.x = 0.2f + 0.2f * sinf(waveTime);
+      //   materialData->color.y = 0.2f + 0.2f * sinf(waveTime + 1.5f);
+      //   materialData->color.z = 0.2f + 0.2f * sinf(waveTime + 3.0f);
+      //   break;
 
-      //case ANIM_BOUNCE:
-      //  transform.translate.y = fabsf(sinf(waveTime * 2.0f)) * 1.1f;
-      //  break;
+      // case ANIM_BOUNCE:
+      //   transform.translate.y = fabsf(sinf(waveTime * 2.0f)) * 1.1f;
+      //   break;
 
-      //case ANIM_TWIST:
-      //  transform.rotate.z = sinf(waveTime * 1.0f);
-      //  transform.rotate.x = sinf(waveTime * 1.5f);
-      //  transform.rotate.y = sinf(waveTime * 2.0f);
-      //  break;
-      //}
-      // メイクアフィンマトリックス02_02
+      // case ANIM_TWIST:
+      //   transform.rotate.z = sinf(waveTime * 1.0f);
+      //   transform.rotate.x = sinf(waveTime * 1.5f);
+      //   transform.rotate.y = sinf(waveTime * 2.0f);
+      //   break;
+      // }
+      //  メイクアフィンマトリックス02_02
       Matrix4x4 worldMatrix = MakeAffineMatrix(
           transform.scale, transform.rotate, transform.translate);
       // カメラのメイクアフィンマトリックス02_02
