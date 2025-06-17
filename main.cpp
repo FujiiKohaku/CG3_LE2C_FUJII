@@ -1656,7 +1656,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       Matrix4x4 worldViewProjectionMatrix =
           Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
       // CBVのバッファに書き込む02_02
-      *wvpData = worldViewProjectionMatrix;
+      // CBVに正しい行列を書き込む
+      memcpy(&wvpData->WVP, &worldViewProjectionMatrix, sizeof(Matrix4x4));
 
       // Sprite用のworldviewProjectionMatrixを作る04_00
       Matrix4x4 worldMatrixSprite =
