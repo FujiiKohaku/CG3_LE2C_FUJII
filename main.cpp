@@ -595,7 +595,9 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
           cosf(lat) * sinf(lon),
           1.0f,
           {float(lonIndex) / float(kSubdivision),
-           1.0f - float(latIndex) / float(kSubdivision)}};
+           1.0f - float(latIndex) / float(kSubdivision)}
+
+      };
 
       VertexData vertB = {
           cosf(lat + kLatEvery) * cosf(lon),
