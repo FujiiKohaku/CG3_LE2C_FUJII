@@ -1595,9 +1595,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       } break;
 
       case ANIM_AURORA:
-        materialData->x = 0.2f + 0.2f * sinf(waveTime);
-        materialData->y = 0.2f + 0.2f * sinf(waveTime + 1.5f);
-        materialData->z = 0.2f + 0.2f * sinf(waveTime + 3.0f);
+        materialData->color.x= 0.2f + 0.2f * sinf(waveTime);
+        materialData->color.y = 0.2f + 0.2f * sinf(waveTime + 1.5f);
+        materialData->color.z= 0.2f + 0.2f * sinf(waveTime + 3.0f);
         break;
 
       case ANIM_BOUNCE:
