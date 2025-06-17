@@ -1731,8 +1731,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootConstantBufferView(
           1, wvpResource->GetGPUVirtualAddress());
       //
+      // 平行光源用のCbufferの場所を設定05_03
       commandList->SetGraphicsRootConstantBufferView(
-          1, directionalLightResource->GetGPUVirtualAddress());
+          3, directionalLightResource->GetGPUVirtualAddress());
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
       commandList->DrawInstanced(kNumVertices, 1, 0, 0);
