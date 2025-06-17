@@ -1303,6 +1303,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   const uint32_t descriptorSizeDSV =
       device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 #pragma endregion
+
   // 03_01_Other
   ID3D12Resource *depthStencillResource =
       CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
