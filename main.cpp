@@ -351,6 +351,13 @@ Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height,
 
   return m;
 }
+// 正規化関数
+Vector3 Normalize(const Vector3 &v) {
+  float length = std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+  if (length == 0.0f)
+    return {0.0f, 0.0f, 0.0f};
+  return {v.x / length, v.y / length, v.z / length};
+}
 #pragma endregion
 
 static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
