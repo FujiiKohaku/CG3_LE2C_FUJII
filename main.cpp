@@ -1438,6 +1438,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 単位行列を書き込んでおく04_00//これいったん消しました05_03
   // *transformationMatrixDataSprite = MakeIdentity4x4();
 
+
+    // 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
+  ID3D12Resource *directionalLightResource =
+      CreateBufferResource(device, sizeof(DirectionalLight));
+  // 平行光源用のデータを書き込み
+  DirectionalLight *directionalLightData = nullptr;
+  directionalLightResource->Map(
+      0, nullptr, reinterpret_cast<void **>(&directionalLightData));
+  directionalLightData->color = {1.0f, 1.0f, 1.0f, 1.0f}; // 白色光
+  directionalLightData->direction =
+      Normalize({0.0f, -1.0f, 0.0f});     // 真上から下方向
+  directionalLightData->intensity = 1.0f; // 標準の明るさ
+
   // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
   // こういうもんである02_03
   IMGUI_CHECKVERSION();
