@@ -1190,6 +1190,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 03_00EX
   ID3D12Resource *intermediateResource =
       UploadTextureData(textureResource, mipImages, device, commandList);
+  
+#pragma region ディスクリプタサイズを取得する（SRV/RTV/DSV）
+  // DescriptorSizeを取得しておくCG2_05_01_page_6
+  const uint32_t descriptorSizeSRV = device->GetDescriptorHandleIncrementSize(
+      D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+  const uint32_t descriptorSizeRTV =
+      device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+  const uint32_t descriptorSizeDSV =
+      device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+#pragma endregion
 
   // metaDataを基にSRVの設定03_00
   D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
@@ -1205,26 +1215,29 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
   srvDesc2.Texture2D.MipLevels = UINT(metadata2.mipLevels);
 
-  // SRVを作成するDescriptorHeapの場所を決める
+  // SRVを作成するDescriptorHeapの場所を決める//変更CG2_05_01_0page6
   D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
-      srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+      GetCPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
   D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU =
-      srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+      GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
+
+  // SRVを作成するDescriptorHeapの場所を決めるCG2_05_01_page_9
+  D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 =
+      GetCPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 2);
+  D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 =
+      GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 2);
+
+  //// SRVを作成するDescriptorHeapの場所を決める
+  //D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
+  //    srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+  //D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU =
+  //    srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
 
   // 先頭はImGuiが使っているのでその次を使う
   // textureSrvHandleCPU.ptr += device->GetDescriptorHandleIncrementSize(
   //    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
   // textureSrvHandleGPU.ptr += device->GetDescriptorHandleIncrementSize(
   //    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-#pragma region ディスクリプタサイズを取得する（SRV/RTV/DSV）
-  // DescriptorSizeを取得しておくCG2_05_01_page_6
-  const uint32_t descriptorSizeSRV = device->GetDescriptorHandleIncrementSize(
-      D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-  const uint32_t descriptorSizeRTV =
-      device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-  const uint32_t descriptorSizeDSV =
-      device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-#pragma endregion
 
   // SRVを作成するDescriptorHeapの場所を決める//変更CG2_05_01_0page6
   D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
@@ -1697,7 +1710,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // VBVを設定
       // 形状を設定。PS0に設定しているものとはまた別。同じものを設定すると考えていけばよい
       commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-      commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+      commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU2);
 
       // マテリアルCbufferの場所を設定
       commandList->SetGraphicsRootConstantBufferView(
