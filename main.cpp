@@ -1398,8 +1398,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   vertexDataSprite[2].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下
   vertexDataSprite[2].texcoord = {1.0f, 1.0f};
 
-  vertexDataSprite[3].position = {640.0f, 0.0f, 0.0f,
-                                  1.0f}; 
+  vertexDataSprite[3].position = {640.0f, 0.0f, 0.0f, 1.0f};
   vertexDataSprite[3].texcoord = {1.0f, 0.0f};
 
   // スフィア作成_05_00_OTHER
@@ -1466,6 +1465,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // sprite用の書き込むためのアドレスを取得04_00
   transformationMatrixResourceSprite->Map(
       0, nullptr, reinterpret_cast<void **>(&transformationMatrixDataSprite));
+
   // 単位行列を書き込んでおく04_00//これいったん消しました05_03
   // *transformationMatrixDataSprite = MakeIdentity4x4();
 
@@ -1531,9 +1531,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
       ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
       ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
+
       /*   ImGui::ColorEdit4("Color", &(*materialData).x);*/
       ImGui::Text("useMonstarBall");
       ImGui::Checkbox("useMonstarBall", &useMonstarBall);
+      ImGui::Text("LIgthng");
+      ImGui::SliderFloat("x", &directionalLightData->direction.x, -10.0f,
+                         10.0f);
+      ImGui::SliderFloat("y", &directionalLightData->direction.y, -10.0f,
+                         10.0f);
+      ImGui::SliderFloat("z", &directionalLightData->direction.z, -10.0f,
+                         10.0f);
       ImGui::End();
 
       // ImGuiの内部コマンドを生成する02_03
@@ -1546,7 +1554,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       //  ゲームの処理02_02
       //  02_02
       waveTime += 0.05f;
-
 
       //  メイクアフィンマトリックス02_02
       Matrix4x4 worldMatrix = MakeAffineMatrix(
