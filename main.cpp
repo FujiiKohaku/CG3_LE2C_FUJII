@@ -1302,7 +1302,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   // sprite用の頂点リソースを作る04_00
   ID3D12Resource *vertexResourceSprite =
-      CreateBufferResource(device, sizeof(VertexData) * kNumVertices);
+      CreateBufferResource(device, sizeof(VertexData) * 4);
 
   // 03_01_Other
   ID3D12Resource *depthStencillResource =
@@ -1353,8 +1353,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // sprite用のリソースの先頭のアドレスから使う04_00
   vertexBufferViewSprite.BufferLocation =
       vertexResourceSprite->GetGPUVirtualAddress();
-  // sprite用の使用するリーソースのサイズは頂点6つ分のサイズ04_00
-  vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 6;
+  // sprite用の使用するリーソースのサイズは頂点6つ分のサイズ04_00//06_00ここ４にしました
+  vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 4;
   // sprite用の１頂点当たりのサイズ04_00
   vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
   // 頂点リソースにデータを書き込む
