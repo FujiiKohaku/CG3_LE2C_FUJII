@@ -987,16 +987,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ID3D12DescriptorHeap *srvDescriptorHeap = CreateDescriptorHeap(
       device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
-  //// ディスクリプタヒープの生成
-  // ID3D12DescriptorHeap *rtvDescriptorHeap = nullptr;//1
-  // D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc{};//1
-  // rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;//1
-  // rtvDescriptorHeapDesc.NumDescriptors = 2;//1
-  // hr = device->CreateDescriptorHeap(&rtvDescriptorHeapDesc,
-  //                                   IID_PPV_ARGS(&rtvDescriptorHeap));//1
-  //// ディスクリプタヒープが作れなかったので起動できない
-  // assert(SUCCEEDED(hr));//1
-
   // SwapChainからResourceを引っ張ってくる
   ID3D12Resource *swapChainResources[2] = {nullptr};
   hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
@@ -1188,24 +1178,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 =
       GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 2);
 
-  //// SRVを作成するDescriptorHeapの場所を決める
-  // D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
-  //     srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-  // D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU =
-  //     srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
-
-  // 先頭はImGuiが使っているのでその次を使う
-  // textureSrvHandleCPU.ptr += device->GetDescriptorHandleIncrementSize(
-  //    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-  // textureSrvHandleGPU.ptr += device->GetDescriptorHandleIncrementSize(
-  //    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-  //// SRVを作成するDescriptorHeapの場所を決める//変更CG2_05_01_0page6
-  // D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU =
-  //     GetCPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
-  // D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU =
-  //     GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, 1);
-
   // SRVの生成03_00
   device->CreateShaderResourceView(textureResource, &srvDesc,
                                    textureSrvHandleCPU);
@@ -1292,7 +1264,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   graphicsPipelineStateDesc.SampleDesc.Count = 1;
   graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 
-  // 実際に生成
+  //////////////
+  // 実際に生成//
+  //////////////
+  //--------------------------
+  // 通常モデル用リソース
+  //--------------------------
   ID3D12PipelineState *graphicsPinelineState = nullptr;
   hr = device->CreateGraphicsPipelineState(
       &graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
