@@ -855,7 +855,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // DXGIファクトリーの生成
   IDXGIFactory7 *dxgiFactory = nullptr;
   // HRESULTはWindows系のエラー子どであり
-  // 関数が成功したか銅貨をSUCCEEDEDマクロで判定できる
+  // 関数が成功したかをSUCCEEDEDマクロで判定できる
   HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
   // 初期化の根本的な部分でエラーが出た場合はプログラムが間違っているか、どうにもできない場合が多いのでassertにしておく
   assert(SUCCEEDED(hr));
