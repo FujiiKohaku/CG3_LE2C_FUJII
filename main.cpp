@@ -1307,6 +1307,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 03_01_Other
   ID3D12Resource *depthStencillResource =
       CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
+  // 06_00_page6
+  ID3D12Resource *indexResourceSprite =
+      CreateBufferResource(device, sizeof(uint32_t) * 6);
+  // Viewを作成する06_00_page6
+  D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite{};
+  // リソースの先頭のアドレスから使う
+  indexBufferViewSprite.BufferLocation =
+      indexResourceSprite->GetGPUVirtualAddress();
+  // 使用するリソースのサイズはインデックス６つ分のサイズ
+  indexBufferViewSprite.SizeInBytes = sizeof(uint32_t) * 6;
+  // インデックスはuint32_tとする
+  indexBufferViewSprite.Format = DXGI_FORMAT_R32_UINT;
+  // インデックスリソースにデータを書き込む
+  uint32_t *indexDataSprite = nullptr;
+  indexResourceSprite->Map(0, nullptr,
+                           reinterpret_cast<void **>(&indexDataSprite));
+  indexDataSprite[0] = 0;
+  indexDataSprite[1] = 1;
+  indexDataSprite[2] = 2;
+  indexDataSprite[3] = 1;
+  indexDataSprite[4] = 3;
+  indexDataSprite[5] = 2;
 
   // DSVの設定
   D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
@@ -1366,20 +1388,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   vertexResourceSprite->Map(
       0, nullptr,
       reinterpret_cast<void **>(&vertexDataSprite)); // 04_00
-  // 1枚目の三角形
-  vertexDataSprite[0].position = {0.0f, 360.0f, 0.0f, 1.0f}; // 左下04_00
+  // 6頂点を4頂点にする
+  vertexDataSprite[0].position = {0.0f, 360.0f, 0.0f, 1.0f}; // 左下
   vertexDataSprite[0].texcoord = {0.0f, 1.0f};
-  vertexDataSprite[1].position = {0.0f, 0.0f, 0.0f, 1.0f}; // 左上04_00
+
+  vertexDataSprite[1].position = {0.0f, 0.0f, 0.0f, 1.0f}; // 左上
   vertexDataSprite[1].texcoord = {0.0f, 0.0f};
-  vertexDataSprite[2].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下04_00
+
+  vertexDataSprite[2].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下
   vertexDataSprite[2].texcoord = {1.0f, 1.0f};
-  // ２枚目の三角形
-  vertexDataSprite[3].position = {0.0f, 0.0f, 0.0f, 1.0f}; // 左下04_00
-  vertexDataSprite[3].texcoord = {0.0f, 0.0f};
-  vertexDataSprite[4].position = {640.0f, 0.0f, 0.0f, 1.0f}; // 左上04_00
-  vertexDataSprite[4].texcoord = {1.0f, 0.0f};
-  vertexDataSprite[5].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下04_00
-  vertexDataSprite[5].texcoord = {1.0f, 1.0f};
+
+  vertexDataSprite[3].position = {640.0f, 0.0f, 0.0f,
+                                  1.0f}; 
+  vertexDataSprite[3].texcoord = {1.0f, 0.0f};
 
   // スフィア作成_05_00_OTHER
   GenerateSphereVertices(vertexData, kSubdivision, 0.5f);
@@ -1513,38 +1534,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       /*   ImGui::ColorEdit4("Color", &(*materialData).x);*/
       ImGui::Text("useMonstarBall");
       ImGui::Checkbox("useMonstarBall", &useMonstarBall);
-
-      // --- アニメーション選択 ---
-      ImGui::Text("Animation");
-      if (ImGui::Button("None"))
-        animationType = ANIM_NONE;
-      if (ImGui::Button("RESET"))
-        animationType = ANIM_RESET;
-      ImGui::SameLine();
-      if (ImGui::Button("Color"))
-        animationType = ANIM_COLOR;
-      ImGui::SameLine();
-      if (ImGui::Button("Scale"))
-        animationType = ANIM_SCALE;
-      if (ImGui::Button("Rotate"))
-        animationType = ANIM_ROTATE;
-      ImGui::SameLine();
-      if (ImGui::Button("Translate"))
-        animationType = ANIM_TRANSLATE;
-      ImGui::SameLine();
-      if (ImGui::Button("All"))
-        animationType = ANIM_ALL;
-      ImGui::SameLine();
-      if (ImGui::Button("Pulse"))
-        animationType = ANIM_PULSE;
-      ImGui::SameLine();
-      if (ImGui::Button("Aurora"))
-        animationType = ANIM_AURORA;
-      if (ImGui::Button("Bounce"))
-        animationType = ANIM_BOUNCE;
-      ImGui::SameLine();
-      if (ImGui::Button("Twist"))
-        animationType = ANIM_TWIST;
       ImGui::End();
 
       // ImGuiの内部コマンドを生成する02_03
@@ -1558,90 +1547,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       //  02_02
       waveTime += 0.05f;
 
-      //// アニメーション切り替え
-      // switch (animationType) {
-      // case ANIM_NONE:
 
-      //  break;
-      // case ANIM_RESET:
-      //  // トランスフォームの初期化
-      //  transform.translate = {0.0f, 0.0f, 0.0f};
-      //  transform.rotate = {0.0f, 0.0f, 0.0f};
-      //  transform.scale = {1.0f, 1.0f, 1.0f};
-
-      //  // 色の初期化（
-      //  materialData->x = 1.0f;
-      //  materialData->y = 1.0f;
-      //  materialData->z = 1.0f;
-      //  materialData->w = 1.0f;
-      //  animationType = ANIM_RESET;
-      //  break;
-
-      // case ANIM_COLOR:
-      //   materialData->x = fabsf(sinf(waveTime));
-      //   materialData->y = fabsf(sinf(waveTime + 1.0f));
-      //   materialData->z = fabsf(sinf(waveTime + 2.0f));
-      //   break;
-
-      // case ANIM_SCALE:
-      //   transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
-      //   transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
-      //   break;
-
-      // case ANIM_TRANSLATE:
-      //   transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
-      //   break;
-      // case ANIM_ROTATE:
-
-      //  transform.rotate.y += 0.02f;
-
-      //  transform.rotate.y += 0.1f;
-
-      //  transform.rotate.y += 0.05f;
-
-      //  break;
-
-      // case ANIM_ALL:
-      //   materialData->x = fabsf(sinf(waveTime));
-      //   materialData->y = fabsf(sinf(waveTime + 1.0f));
-      //   materialData->z = fabsf(sinf(waveTime + 2.0f));
-      //   transform.scale.x = 1.0f + 0.1f * sinf(waveTime * 2.0f);
-      //   transform.scale.y = 1.0f + 0.1f * cosf(waveTime * 2.0f);
-      //   transform.translate.z = sinf(waveTime * 0.5f) * 1.0f;
-      //   switch (waveType) {
-      //   case WAVE_SINE:
-      //     transform.rotate.y += 0.02f;
-      //     break;
-      //   case WAVE_CHAINSAW:
-      //     transform.rotate.y += 0.1f;
-      //     break;
-      //   case WAVE_SQUARE:
-      //     transform.rotate.y += 0.05f;
-      //     break;
-      //   }
-
-      // case ANIM_PULSE: {
-      //   float pulse = sinf(waveTime * 5.0f) * 0.2f + 1.0f;
-      //   transform.scale.x = pulse;
-      //   transform.scale.y = pulse;
-      // } break;
-
-      // case ANIM_AURORA:
-      //   materialData->color.x = 0.2f + 0.2f * sinf(waveTime);
-      //   materialData->color.y = 0.2f + 0.2f * sinf(waveTime + 1.5f);
-      //   materialData->color.z = 0.2f + 0.2f * sinf(waveTime + 3.0f);
-      //   break;
-
-      // case ANIM_BOUNCE:
-      //   transform.translate.y = fabsf(sinf(waveTime * 2.0f)) * 1.1f;
-      //   break;
-
-      // case ANIM_TWIST:
-      //   transform.rotate.z = sinf(waveTime * 1.0f);
-      //   transform.rotate.x = sinf(waveTime * 1.5f);
-      //   transform.rotate.y = sinf(waveTime * 2.0f);
-      //   break;
-      // }
       //  メイクアフィンマトリックス02_02
       Matrix4x4 worldMatrix = MakeAffineMatrix(
           transform.scale, transform.rotate, transform.translate);
@@ -1723,9 +1629,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootDescriptorTable(
           2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
-        // マテリアルCbufferの場所を設定05_03変更
+      // マテリアルCbufferの場所を設定05_03変更
       commandList->SetGraphicsRootConstantBufferView(
-          0, materialResource->GetGPUVirtualAddress());//ここでmaterialResource使え
+          0, materialResource
+                 ->GetGPUVirtualAddress()); // ここでmaterialResource使え
 
       // wvp用のCBufferの場所を設定02_02
       commandList->SetGraphicsRootConstantBufferView(
@@ -1740,10 +1647,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
       // spriteの描画04_00
       commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+      // IBVを設定
+      commandList->IASetIndexBuffer(&indexBufferViewSprite);
+
       commandList->SetGraphicsRootConstantBufferView(
           1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
       // UvChecker
-      commandList->DrawInstanced(6, 1, 0, 0);
+      commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
       // 描画の最後です//----------------------------------------------------
       //  実際のcommandListのImGuiの描画コマンドを積む
       ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
@@ -1832,6 +1742,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   textureResource2->Release();       // 05_01
   materialResourceSprite->Release(); // 05_03
   directionalLightResource->Release();
+  indexResourceSprite->Release();
   CoInitialize(nullptr);
 #endif
   CloseWindow(hwnd);
