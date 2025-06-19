@@ -1270,76 +1270,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   //--------------------------
   // 通常モデル用リソース
   //--------------------------
-  ID3D12PipelineState *graphicsPinelineState = nullptr;
-  hr = device->CreateGraphicsPipelineState(
-      &graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
-  assert(SUCCEEDED(hr));
   ID3D12Resource *vertexResource =
       CreateBufferResource(device, sizeof(VertexData) * kNumVertices);
-
-  // sprite用の頂点リソースを作る04_00
-  ID3D12Resource *vertexResourceSprite =
-      CreateBufferResource(device, sizeof(VertexData) * 4);
-
-  // 03_01_Other
-  ID3D12Resource *depthStencillResource =
-      CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
-  // 06_00_page6
-  ID3D12Resource *indexResourceSprite =
-      CreateBufferResource(device, sizeof(uint32_t) * 6);
-  // Viewを作成する06_00_page6
-  D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite{};
-  // リソースの先頭のアドレスから使う
-  indexBufferViewSprite.BufferLocation =
-      indexResourceSprite->GetGPUVirtualAddress();
-  // 使用するリソースのサイズはインデックス６つ分のサイズ
-  indexBufferViewSprite.SizeInBytes = sizeof(uint32_t) * 6;
-  // インデックスはuint32_tとする
-  indexBufferViewSprite.Format = DXGI_FORMAT_R32_UINT;
-  // インデックスリソースにデータを書き込む
-  uint32_t *indexDataSprite = nullptr;
-  indexResourceSprite->Map(0, nullptr,
-                           reinterpret_cast<void **>(&indexDataSprite));
-  indexDataSprite[0] = 0;
-  indexDataSprite[1] = 1;
-  indexDataSprite[2] = 2;
-  indexDataSprite[3] = 1;
-  indexDataSprite[4] = 3;
-  indexDataSprite[5] = 2;
-
-  // DSVの設定
-  D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-  dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-  dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-  // DSVHeapの先端にDSVを作る
-  device->CreateDepthStencilView(
-      depthStencillResource, &dsvDesc,
-      dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-  // 頂点バッファビューを作成する
-  D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
-  // リソースの先頭のアドレスから使う
-  vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
-  // 使用するリソースのサイズは頂点３つ分のサイズ
-  vertexBufferView.SizeInBytes = sizeof(VertexData) * kNumVertices;
-  // 1頂点あたりのサイズ
-  vertexBufferView.StrideInBytes = sizeof(VertexData);
-
-  // sprite用の頂点バッファビューを作成する04_00
-  D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite{};
-  // sprite用のリソースの先頭のアドレスから使う04_00
-  vertexBufferViewSprite.BufferLocation =
-      vertexResourceSprite->GetGPUVirtualAddress();
-  // sprite用の使用するリーソースのサイズは頂点6つ分のサイズ04_00//06_00ここ４にしました
-  vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 4;
-  // sprite用の１頂点当たりのサイズ04_00
-  vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
-  // 頂点リソースにデータを書き込む
   VertexData *vertexData = nullptr;
-  // sprite用の頂点リソースにデータを書き込む04_00
-  VertexData *vertexDataSprite = nullptr;
-  // 書き込むためのアドレスを取得----------------------03_00
   vertexResource->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
+  //--------------------------
+  // 三角形の頂点データ
+  //--------------------------
   // 左下
   vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
   vertexData[0].texcoord = {0.0f, 1.0f};
@@ -1360,8 +1297,54 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 右下２
   vertexData[5].position = {0.5f, -0.5f, -0.5f, 1.0f};
   vertexData[5].texcoord = {1.0f, 1.0f};
-
-  //  書き込むためのアドレスを取得----------------------04_00
+  //--------------------------
+  // 頂点バッファービュー
+  //--------------------------
+  //   頂点バッファビューを作成する
+  D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
+  // リソースの先頭のアドレスから使う
+  vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
+  // 使用するリソースのサイズは頂点３つ分のサイズ
+  vertexBufferView.SizeInBytes = sizeof(VertexData) * kNumVertices;
+  // 1頂点あたりのサイズ
+  vertexBufferView.StrideInBytes = sizeof(VertexData);
+  //--------------------------
+  // マテリアル
+  //--------------------------
+  //  マテリアル用のリソースを作る今回はcolor一つ分のサイズを用意する05_03
+  ID3D12Resource *materialResource =
+      CreateBufferResource(device, sizeof(Material));
+  // マテリアルにデータを書き込む
+  Material *materialData = nullptr;
+  // 書き込むためのアドレスを取得
+  materialResource->Map(0, nullptr, reinterpret_cast<void **>(&materialData));
+  // 今回は赤を書き込んでみる
+  materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  materialData->enableLighting = true;
+  //--------------------------
+  // WVP行列
+  //--------------------------
+  // WVPリソースを作る02_02
+  ID3D12Resource *wvpResource =
+      CreateBufferResource(device, sizeof(TransformationMatrix));
+  // データを書き込む02_02
+  TransformationMatrix *wvpData = nullptr;
+  // 書き込むためのアドレスを取得02_02
+  wvpResource->Map(0, nullptr, reinterpret_cast<void **>(&wvpData));
+  // 単位行列を書き込んでおく02_02
+  Matrix4x4 identity = MakeIdentity4x4();
+  // 05_03
+  memcpy(&wvpData->WVP, &identity, sizeof(Matrix4x4));
+  memcpy(&wvpData->World, &identity, sizeof(Matrix4x4));
+  //--------------------------
+  // Sprite用リソース
+  //--------------------------
+  // sprite用の頂点リソースを作る04_00
+  ID3D12Resource *vertexResourceSprite =
+      CreateBufferResource(device, sizeof(VertexData) * 4);
+  // sprite用の頂点リソースにデータを書き込む04_00
+  VertexData *vertexDataSprite = nullptr;
+  //  書き込むためのアドレスを取得04_00
   vertexResourceSprite->Map(
       0, nullptr,
       reinterpret_cast<void **>(&vertexDataSprite)); // 04_00
@@ -1378,8 +1361,94 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   vertexDataSprite[3].position = {640.0f, 0.0f, 0.0f, 1.0f};
   vertexDataSprite[3].texcoord = {1.0f, 0.0f};
 
-  // スフィア作成_05_00_OTHER
-  GenerateSphereVertices(vertexData, kSubdivision, 0.5f);
+  // sprite用の頂点バッファビューを作成する04_00
+  D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite{};
+  // sprite用のリソースの先頭のアドレスから使う04_00
+  vertexBufferViewSprite.BufferLocation =
+      vertexResourceSprite->GetGPUVirtualAddress();
+  // sprite用の使用するリーソースのサイズは頂点6つ分のサイズ04_00//06_00ここ４にしました
+  vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 4;
+  // sprite用の１頂点当たりのサイズ04_00
+  vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
+
+  // 06_00_page6
+  ID3D12Resource *indexResourceSprite =
+      CreateBufferResource(device, sizeof(uint32_t) * 6);
+  uint32_t *indexDataSprite = nullptr;
+  // インデックスリソースにデータを書き込む uint32_t *indexDataSprite = nullptr;
+  indexResourceSprite->Map(0, nullptr,
+                           reinterpret_cast<void **>(&indexDataSprite));
+  indexDataSprite[0] = 0;
+  indexDataSprite[1] = 1;
+  indexDataSprite[2] = 2;
+  indexDataSprite[3] = 1;
+  indexDataSprite[4] = 3;
+  indexDataSprite[5] = 2;
+
+  // Viewを作成する06_00_page6
+  D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite{};
+  // リソースの先頭のアドレスから使う
+  indexBufferViewSprite.BufferLocation =
+      indexResourceSprite->GetGPUVirtualAddress();
+  // 使用するリソースのサイズはインデックス６つ分のサイズ
+  indexBufferViewSprite.SizeInBytes = sizeof(uint32_t) * 6;
+  // インデックスはuint32_tとする
+  indexBufferViewSprite.Format = DXGI_FORMAT_R32_UINT;
+
+  // Sprite用のマテリアルリソースを作る05_03
+  ID3D12Resource *materialResourceSprite =
+      CreateBufferResource(device, sizeof(Material));
+  // Sprite用のマテリアルにデータを書き込む
+  Material *materialDataSprite = nullptr;
+  // 書き込むためのアドレスを取得
+  materialResourceSprite->Map(0, nullptr,
+                              reinterpret_cast<void **>(&materialDataSprite));
+  // 今回は白を設定
+  materialDataSprite->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  materialDataSprite->enableLighting = false; // kokomonstrball?
+
+  // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
+  // 1つ分のサイズを用意する04_00
+  ID3D12Resource *transformationMatrixResourceSprite =
+      CreateBufferResource(device, sizeof(TransformationMatrix));
+  // sprite用のデータを書き込む04_00
+  TransformationMatrix *transformationMatrixDataSprite = nullptr;
+  // sprite用の書き込むためのアドレスを取得04_00
+  transformationMatrixResourceSprite->Map(
+      0, nullptr, reinterpret_cast<void **>(&transformationMatrixDataSprite));
+  // 単位行列を書き込んでおく04_00//これいったん消しました05_03
+  // *transformationMatrixDataSprite = MakeIdentity4x4();
+
+  //--------------------------
+  // 共通リソース
+  //--------------------------
+  // 03_01_Other
+  ID3D12Resource *depthStencillResource =
+      CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
+  // DSVの設定
+  D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+  dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+  dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+  // DSVHeapの先端にDSVを作る
+  device->CreateDepthStencilView(
+      depthStencillResource, &dsvDesc,
+      dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+  // 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
+  ID3D12Resource *directionalLightResource =
+      CreateBufferResource(device, sizeof(DirectionalLight));
+  // 平行光源用のデータを書き込み
+  DirectionalLight *directionalLightData = nullptr;
+  directionalLightResource->Map(
+      0, nullptr, reinterpret_cast<void **>(&directionalLightData));
+  directionalLightData->color = {1.0f, 1.0f, 1.0f, 1.0f}; // 白色光
+  directionalLightData->direction =
+      Normalize({0.0f, -1.0f, 0.0f});     // 真上から下方向
+  directionalLightData->intensity = 1.0f; // 標準の明るさ
+
+  //--------------------------
+  // その他リソース
+  //--------------------------
   //   ビューポート
   D3D12_VIEWPORT viewport{};
   // クライアント領域のサイズと一緒にして画面全体に表示/
@@ -1397,77 +1466,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   scissorRect.right = kClientWidth;
   scissorRect.top = 0;
   scissorRect.bottom = kClientHeight;
-  // マテリアル用のリソースを作る今回はcolor一つ分のサイズを用意する05_03
-  ID3D12Resource *materialResource =
-      CreateBufferResource(device, sizeof(Material));
-  // マテリアルにデータを書き込む
-  Material *materialData = nullptr;
-  // 書き込むためのアドレスを取得
-  materialResource->Map(0, nullptr, reinterpret_cast<void **>(&materialData));
-  // 今回は赤を書き込んでみる
-  materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-  materialData->enableLighting = true;
-
-  // Sprite用のマテリアルリソースを作る05_03
-  ID3D12Resource *materialResourceSprite =
-      CreateBufferResource(device, sizeof(Material));
-  // Sprite用のマテリアルにデータを書き込む
-  Material *materialDataSprite = nullptr;
-  // 書き込むためのアドレスを取得
-  materialResourceSprite->Map(0, nullptr,
-                              reinterpret_cast<void **>(&materialDataSprite));
-  // 今回は白を設定
-  materialDataSprite->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-  materialDataSprite->enableLighting = false; // kokomonstrball?
-
-  // WVPリソースを作る02_02
-  ID3D12Resource *wvpResource =
-      CreateBufferResource(device, sizeof(TransformationMatrix));
-  // データを書き込む02_02
-  TransformationMatrix *wvpData = nullptr;
-  // 書き込むためのアドレスを取得02_02
-  wvpResource->Map(0, nullptr, reinterpret_cast<void **>(&wvpData));
-  // 単位行列を書き込んでおく02_02
-  Matrix4x4 identity = MakeIdentity4x4();
-  // 05_03
-  memcpy(&wvpData->WVP, &identity, sizeof(Matrix4x4));
-  memcpy(&wvpData->World, &identity, sizeof(Matrix4x4));
-
-  // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
-  // 1つ分のサイズを用意する04_00
-  ID3D12Resource *transformationMatrixResourceSprite =
-      CreateBufferResource(device, sizeof(TransformationMatrix));
-  // sprite用のデータを書き込む04_00
-  TransformationMatrix *transformationMatrixDataSprite = nullptr;
-  // sprite用の書き込むためのアドレスを取得04_00
-  transformationMatrixResourceSprite->Map(
-      0, nullptr, reinterpret_cast<void **>(&transformationMatrixDataSprite));
-
-  // 単位行列を書き込んでおく04_00//これいったん消しました05_03
-  // *transformationMatrixDataSprite = MakeIdentity4x4();
-
-  // 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
-  ID3D12Resource *directionalLightResource =
-      CreateBufferResource(device, sizeof(DirectionalLight));
-  // 平行光源用のデータを書き込み
-  DirectionalLight *directionalLightData = nullptr;
-  directionalLightResource->Map(
-      0, nullptr, reinterpret_cast<void **>(&directionalLightData));
-  directionalLightData->color = {1.0f, 1.0f, 1.0f, 1.0f}; // 白色光
-  directionalLightData->direction =
-      Normalize({0.0f, -1.0f, 0.0f});     // 真上から下方向
-  directionalLightData->intensity = 1.0f; // 標準の明るさ
-
-  // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
-  // こういうもんである02_03
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGui::StyleColorsClassic();
-  ImGui_ImplWin32_Init(hwnd);
-  ImGui_ImplDX12_Init(device, swapChainDesc.BufferCount, rtvDesc.Format,
-                      srvDescriptorHeap,
-                      srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-                      srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
   // 変数//
   // spriteトランスフォーム
@@ -1482,6 +1480,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   // Textureの切り替え
   bool useMonstarBall = true;
+
+  ID3D12PipelineState *graphicsPinelineState = nullptr;
+  hr = device->CreateGraphicsPipelineState(
+      &graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
+  assert(SUCCEEDED(hr));
+
+  // スフィア作成_05_00_OTHER
+  GenerateSphereVertices(vertexData, kSubdivision, 0.5f);
+
+  // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
+  // こういうもんである02_03
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGui::StyleColorsClassic();
+  ImGui_ImplWin32_Init(hwnd);
+  ImGui_ImplDX12_Init(device, swapChainDesc.BufferCount, rtvDesc.Format,
+                      srvDescriptorHeap,
+                      srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+                      srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+
   MSG msg{};
 
   // ウィンドウの×ボタンが押されるまでループ
@@ -1627,6 +1645,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
       commandList->DrawInstanced(kNumVertices, 1, 0, 0);
+
+      // マテリアルCbufferの場所を設定05_03変更これ書くとUvChackerがちゃんとする
+      commandList->SetGraphicsRootConstantBufferView(
+          0, materialResourceSprite
+                 ->GetGPUVirtualAddress()); // ここでmaterialResource使え
+
       // 描画
       commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
       // spriteの描画04_00
