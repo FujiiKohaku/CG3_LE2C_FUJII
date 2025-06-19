@@ -42,6 +42,9 @@ struct Vector3 {
 struct Matrix4x4 {
   float m[4][4];
 };
+struct Matrix3x3 {
+  float m[3][3];
+};
 struct Transform {
   Vector3 scale;
   Vector3 rotate;
@@ -63,6 +66,8 @@ struct Fragment {
 struct Material {
   Vector4 color;
   int32_t enableLighting;
+  float padding[3];
+  Matrix4x4 uvTransform;
 };
 struct TransformationMatrix {
   Matrix4x4 WVP;
@@ -1320,6 +1325,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   materialResource->Map(0, nullptr, reinterpret_cast<void **>(&materialData));
   // 今回は赤を書き込んでみる
   materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+  materialData->uvTransform =
+      MakeIdentity4x4(); // 06_01_UuvTransform行列を単位行列で初期化
   materialData->enableLighting = true;
   //--------------------------
   // WVP行列
@@ -1405,7 +1412,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                               reinterpret_cast<void **>(&materialDataSprite));
   // 今回は白を設定
   materialDataSprite->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-  materialDataSprite->enableLighting = false; // kokomonstrball?
+  materialDataSprite->uvTransform = MakeIdentity4x4(); // 06_01//同じ
+  materialDataSprite->enableLighting = false;          // kokomonstrball?
 
   // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
   // 1つ分のサイズを用意する04_00
@@ -1477,6 +1485,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // カメラトランスフォーム
   Transform cameraTransform{
       {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -5.0f}};
+  // UVTransform用の変数を用意
+  Transform uvTransformSprite{
+      {1.0f, 1.0f, 1.0f},
+      {0.0f, 0.0f, 0.0f},
+      {0.0f, 0.0f, 0.0f},
+  };
 
   // Textureの切り替え
   bool useMonstarBall = true;
@@ -1537,6 +1551,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                          10.0f);
       ImGui::SliderFloat("z", &directionalLightData->direction.z, -10.0f,
                          10.0f);
+      ImGui::Text("UVTransform");
+      ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f,
+                        -10.0f, 10.0f);
+      ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f,
+                        10.0f);
+      ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
+
       ImGui::End();
 
       // ImGuiの内部コマンドを生成する02_03
@@ -1582,6 +1603,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // 単位行列を書き込んでおく04_00
       transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
       transformationMatrixDataSprite->World = worldMatrixSprite;
+
+      //-------------------------
+      // UVTransform用の行列生成
+      //-------------------------
+      Matrix4x4 uvTransformMatrix =
+          Matrix4x4MakeScaleMatrix(uvTransformSprite.scale);
+      uvTransformMatrix = Multiply(
+          uvTransformMatrix, MakeRotateZMatrix(uvTransformSprite.rotate.z));
+      uvTransformMatrix = Multiply(
+          uvTransformMatrix, MakeTranslateMatrix(uvTransformSprite.translate));
+      materialDataSprite->uvTransform = uvTransformMatrix;
+
       // 画面のクリア処理
       //   これから書き込むバックバッファのインデックスを取得
       UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
