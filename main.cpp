@@ -666,6 +666,7 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
     }
   }
 }
+
 // std::stringは文字列を扱う
 // 06_02
 ModelData LoadOjFile(const std::string &directoryPath,
@@ -734,9 +735,6 @@ ModelData LoadOjFile(const std::string &directoryPath,
   // 4.ModelDataを返す
 }
 
-////////////////////
-// 関数の生成ここまで//
-////////////////////
 
 // ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -851,6 +849,9 @@ GetGPUDescriptorHandle(ID3D12DescriptorHeap *descriptorHeap,
   handleGPU.ptr += (descriptorSize * index);
   return handleGPU;
 }
+
+
+
 /////
 // main関数/////-------------------------------------------------------------------------------------------------
 //  Windwsアプリでの円とリポウント(main関数)
@@ -924,7 +925,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     debugController->SetEnableGPUBasedValidation(TRUE);
   }
 #endif // _DEBUG
-
+  
   // ウィンドウを表示する
   ShowWindow(hwnd, SW_SHOW);
 
@@ -979,7 +980,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   assert(device != nullptr);
   Log(logStream,
       "Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
-
+  
 #ifdef _DEBUG
 
   ID3D12InfoQueue *infoQueue = nullptr;
@@ -1007,8 +1008,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     // 解放
     infoQueue->Release();
   }
-
+  
 #endif // DEBUG
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   // コマンドキューを生成する
   ID3D12CommandQueue *commandQueue = nullptr;
@@ -1023,7 +1037,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                       IID_PPV_ARGS(&commandAllocator));
   // コマンドキューアロケーターの生成があ上手くいかなかったので起動できない
   assert(SUCCEEDED(hr));
-
+  
   // コマンドリストを生成する
   ID3D12GraphicsCommandList *commandList = nullptr;
   hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
