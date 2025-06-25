@@ -667,75 +667,6 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
   }
 }
 
-// std::stringは文字列を扱う
-// 06_02
-ModelData LoadOjFile(const std::string &directoryPath,
-                     const std::string &filename) {
-
-  // 1.中で必要となる変数の宣言
-  ModelData modelData;            // 構築するModelData
-  std::vector<Vector4> positions; // 位置
-  std::vector<Vector3> normals;   // 法線
-  std::vector<Vector2> texcoords; // テクスチャ座標
-  std::string line;               // ファイルから読んだ一行を格納するもの
-
-  std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
-  assert(file.is_open()); // とりあえず開けなかったら止める
-
-  // 2.ファイルを開く
-  while (std::getline(file, line)) {
-    std::string identifiler;
-    std::istringstream s(line);
-    s >> identifiler; // 先頭の識別子を読む
-
-    // identifierに応じた処理
-    if (identifiler == "v") {
-      Vector4 position;
-      s >> position.x >> position.y >> position.z;
-      position.w = 1.0f;
-      positions.push_back(position);
-    } else if (identifiler == "vt") {
-      Vector2 texcoord;
-      s >> texcoord.x >> texcoord.y;
-      texcoords.push_back(texcoord);
-    } else if (identifiler == "vn") {
-      Vector3 normal;
-      s >> normal.x >> normal.y >> normal.z;
-      normals.push_back(normal);
-    } else if (identifiler == "f") {
-      // 面は三角形限定。その他は未対応
-      for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
-        std::string vertexDefinition;
-        s >> vertexDefinition;
-        // 頂点の要素へのIndexは「位置/UV/法線」で格納されているので、分解してえIndexを取得する
-        std::istringstream v(vertexDefinition);
-        uint32_t elementIndices[3];
-        for (int32_t element = 0; element < 3; ++element) {
-          std::string index;
-
-          std::getline(v, index, '/'); // 区切りでインデックスを読んでいく
-          elementIndices[element] = std::stoi(index);
-        }
-        // 要素へのIndexから、実際の要素の値を取得して、頂点を構築する
-        Vector4 position = positions[elementIndices[0] - 1];
-        Vector2 texcoord = texcoords[elementIndices[1] - 1];
-        Vector3 normal = normals[elementIndices[2] - 1];
-        VertexData vertex = {position, texcoord, normal};
-        modelData.vertices.push_back(vertex);
-      }
-    }
-  }
-
-  // 3.実際にファイルを読み,ModelDataを構築していく
-  //モデル読み込み
-  ModelData modelData = LoadOjFile("resources", "plane.obj");
-  //頂点リソースを作る
-  ID3D12Resource *vertexResource = CreateBufferResource(
-      , sizeof(VertexData) * modelData.vertices.size());
-  // 4.ModelDataを返す
-}
-
-
 // ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
@@ -850,8 +781,68 @@ GetGPUDescriptorHandle(ID3D12DescriptorHeap *descriptorHeap,
   return handleGPU;
 }
 
+// std::stringは文字列を扱う
+// 06_02
+ModelData LoadOjFile(const std::string &directoryPath,
+                     const std::string &filename) {
 
+  // 1.中で必要となる変数の宣言
+  ModelData modelData;            // 構築するModelData
+  std::vector<Vector4> positions; // 位置
+  std::vector<Vector3> normals;   // 法線
+  std::vector<Vector2> texcoords; // テクスチャ座標
+  std::string line;               // ファイルから読んだ一行を格納するもの
+                                  // 2.ファイルを開く
+  std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
+  assert(file.is_open()); // とりあえず開けなかったら止める
 
+  // 3.実際にファイルを読み,ModelDataを構築していく
+  while (std::getline(file, line)) {
+    std::string identifiler;
+    std::istringstream s(line);
+    s >> identifiler; // 先頭の識別子を読む
+
+    // identifierに応じた処理
+    if (identifiler == "v") {
+      Vector4 position;
+      s >> position.x >> position.y >> position.z;
+      position.w = 1.0f;
+      positions.push_back(position);
+    } else if (identifiler == "vt") {
+      Vector2 texcoord;
+      s >> texcoord.x >> texcoord.y;
+      texcoords.push_back(texcoord);
+    } else if (identifiler == "vn") {
+      Vector3 normal;
+      s >> normal.x >> normal.y >> normal.z;
+      normals.push_back(normal);
+    } else if (identifiler == "f") {
+      // 面は三角形限定。その他は未対応
+      for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
+        std::string vertexDefinition;
+        s >> vertexDefinition;
+        // 頂点の要素へのIndexは「位置/UV/法線」で格納されているので、分解してえIndexを取得する
+        std::istringstream v(vertexDefinition);
+        uint32_t elementIndices[3];
+        for (int32_t element = 0; element < 3; ++element) {
+          std::string index;
+
+          std::getline(v, index, '/'); // 区切りでインデックスを読んでいく
+          elementIndices[element] = std::stoi(index);
+        }
+        // 要素へのIndexから、実際の要素の値を取得して、頂点を構築する
+        Vector4 position = positions[elementIndices[0] - 1];
+        Vector2 texcoord = texcoords[elementIndices[1] - 1];
+        Vector3 normal = normals[elementIndices[2] - 1];
+        VertexData vertex = {position, texcoord, normal};
+        modelData.vertices.push_back(vertex);
+      }
+    }
+  }
+
+  // 4.ModelDataを返す
+  return modelData;
+}
 /////
 // main関数/////-------------------------------------------------------------------------------------------------
 //  Windwsアプリでの円とリポウント(main関数)
@@ -925,7 +916,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     debugController->SetEnableGPUBasedValidation(TRUE);
   }
 #endif // _DEBUG
-  
+
   // ウィンドウを表示する
   ShowWindow(hwnd, SW_SHOW);
 
@@ -980,7 +971,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   assert(device != nullptr);
   Log(logStream,
       "Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
-  
+
 #ifdef _DEBUG
 
   ID3D12InfoQueue *infoQueue = nullptr;
@@ -1008,21 +999,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     // 解放
     infoQueue->Release();
   }
-  
+
 #endif // DEBUG
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   // コマンドキューを生成する
   ID3D12CommandQueue *commandQueue = nullptr;
@@ -1037,7 +1015,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                                       IID_PPV_ARGS(&commandAllocator));
   // コマンドキューアロケーターの生成があ上手くいかなかったので起動できない
   assert(SUCCEEDED(hr));
-  
+
   // コマンドリストを生成する
   ID3D12GraphicsCommandList *commandList = nullptr;
   hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -1304,7 +1282,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // RasiterzerStateの設定
   D3D12_RASTERIZER_DESC rasterizerDesc{};
   // 裏面(時計回り)を表示しない
-  rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+  rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
   // 三角形の中を塗りつぶす
   rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
@@ -1357,51 +1335,76 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   //////////////
   // 実際に生成//
   //////////////
-  //--------------------------
-  // 通常モデル用リソース
-  //--------------------------
-  ID3D12Resource *vertexResource =
-      CreateBufferResource(device, sizeof(VertexData) * kNumVertices);
+  ////--------------------------
+  //// 通常モデル用リソース
+  ////--------------------------
+  // ID3D12Resource *vertexResource =
+  //     CreateBufferResource(device, sizeof(VertexData) * kNumVertices);
+  // VertexData *vertexData = nullptr;
+  // vertexResource->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
+
+  //--------------------------------------------------
+  // modelDataを使う
+  //--------------------------------------------------
+
+  // モデル読み込み
+  ModelData modelData = LoadOjFile("resources", "plane.obj");
+  // 頂点リソースを作る
+  ID3D12Resource *vertexResource = CreateBufferResource(
+      device, sizeof(VertexData) * modelData.vertices.size());
+  // 頂点バッファービューを作成する
+  D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
+  vertexBufferView.BufferLocation =
+      vertexResource->GetGPUVirtualAddress(); // リソース先頭のアドレスを使う
+  vertexBufferView.SizeInBytes =
+      UINT(sizeof(VertexData) *
+           modelData.vertices.size()); // 使用するリソースの頂点のサイズ
+  vertexBufferView.StrideInBytes = sizeof(VertexData); // 1頂点あたりのサイズ
+  // 頂点リソースにデータを書き込む
   VertexData *vertexData = nullptr;
   vertexResource->Map(0, nullptr, reinterpret_cast<void **>(&vertexData));
-  //--------------------------
-  // 三角形の頂点データ
-  //--------------------------
-  // 左下
-  vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
-  vertexData[0].texcoord = {0.0f, 1.0f};
-  //  上
-  vertexData[1].position = {0.0f, 0.5f, 0.0f, 1.0f};
-  vertexData[1].texcoord = {0.5f, 0.0f};
-  //  右下
-  vertexData[2].position = {0.5f, -0.5f, 0.0f, 1.0f};
-  vertexData[2].texcoord = {1.0f, 1.0f};
+  std::memcpy(vertexData, modelData.vertices.data(),
+              sizeof(VertexData) *
+                  modelData.vertices.size()); // 頂点データをリソースにコピー
 
-  // 左下２03_01_Other
-  vertexData[3].position = {-0.5f, -0.5f, 0.5f, 1.0f};
-  vertexData[3].texcoord = {0.0f, 1.0f};
+  ////--------------------------
+  //// 三角形の頂点データ
+  ////--------------------------
+  //// 左下
+  // vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
+  // vertexData[0].texcoord = {0.0f, 1.0f};
+  ////  上
+  // vertexData[1].position = {0.0f, 0.5f, 0.0f, 1.0f};
+  // vertexData[1].texcoord = {0.5f, 0.0f};
+  ////  右下
+  // vertexData[2].position = {0.5f, -0.5f, 0.0f, 1.0f};
+  // vertexData[2].texcoord = {1.0f, 1.0f};
 
-  // 上２
-  vertexData[4].position = {0.0f, 0.0f, 0.0f, 1.0f};
-  vertexData[4].texcoord = {0.5f, 0.0f};
-  // 右下２
-  vertexData[5].position = {0.5f, -0.5f, -0.5f, 1.0f};
-  vertexData[5].texcoord = {1.0f, 1.0f};
+  //// 左下２03_01_Other
+  // vertexData[3].position = {-0.5f, -0.5f, 0.5f, 1.0f};
+  // vertexData[3].texcoord = {0.0f, 1.0f};
+
+  //// 上２
+  // vertexData[4].position = {0.0f, 0.0f, 0.0f, 1.0f};
+  // vertexData[4].texcoord = {0.5f, 0.0f};
+  //// 右下２
+  // vertexData[5].position = {0.5f, -0.5f, -0.5f, 1.0f};
+  // vertexData[5].texcoord = {1.0f, 1.0f};
   //--------------------------
-  // 頂点バッファービュー
+  //  頂点バッファービュー
   //--------------------------
-  //   頂点バッファビューを作成する
-  D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
-  // リソースの先頭のアドレスから使う
-  vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
-  // 使用するリソースのサイズは頂点３つ分のサイズ
-  vertexBufferView.SizeInBytes = sizeof(VertexData) * kNumVertices;
-  // 1頂点あたりのサイズ
-  vertexBufferView.StrideInBytes = sizeof(VertexData);
+  ////   頂点バッファビューを作成する
+  // D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
+  //// リソースの先頭のアドレスから使う
+  // vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
+  //// 使用するリソースのサイズは頂点３つ分のサイズ
+  // vertexBufferView.SizeInBytes = sizeof(VertexData) * kNumVertices;
+  //// 1頂点あたりのサイズ
+  // vertexBufferView.StrideInBytes = sizeof(VertexData);
   //--------------------------
-  // マテリアル
+  //  マテリアル
   //--------------------------
-  //  マテリアル用のリソースを作る今回はcolor一つ分のサイズを用意する05_03
+  //   マテリアル用のリソースを作る今回はcolor一つ分のサイズを用意する05_03
   ID3D12Resource *materialResource =
       CreateBufferResource(device, sizeof(Material));
   // マテリアルにデータを書き込む
@@ -1450,7 +1453,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   vertexDataSprite[2].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下
   vertexDataSprite[2].texcoord = {1.0f, 1.0f};
 
-  vertexDataSprite[3].position = {640.0f, 0.0f, 0.0f, 1.0f};
+  vertexDataSprite[3].position = {640.0f, 0.0f, 0.0f, 1.0f}; // 右上
   vertexDataSprite[3].texcoord = {1.0f, 0.0f};
 
   // sprite用の頂点バッファビューを作成する04_00
@@ -1587,7 +1590,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   assert(SUCCEEDED(hr));
 
   // スフィア作成_05_00_OTHER
-  GenerateSphereVertices(vertexData, kSubdivision, 0.5f);
+  // GenerateSphereVertices(vertexData, kSubdivision, 0.5f);
 
   // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
   // こういうもんである02_03
@@ -1763,8 +1766,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           3, directionalLightResource->GetGPUVirtualAddress());
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
-      commandList->DrawInstanced(kNumVertices, 1, 0, 0);
-
+      // commandList->DrawInstanced(kNumVertices, 1, 0, 0);
+      // obj
+      commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
       // マテリアルCbufferの場所を設定05_03変更これ書くとUvChackerがちゃんとする
       commandList->SetGraphicsRootConstantBufferView(
           0, materialResourceSprite
@@ -1780,9 +1784,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootConstantBufferView(
           1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
       // UvChecker
-      commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
-      // 描画の最後です//----------------------------------------------------
-      //  実際のcommandListのImGuiの描画コマンドを積む
+     // commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+
+      //  描画の最後です//----------------------------------------------------
+      //   実際のcommandListのImGuiの描画コマンドを積む
       ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 
       //  画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
