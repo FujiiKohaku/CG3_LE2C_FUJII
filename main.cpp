@@ -1282,26 +1282,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   //--------------------------
   // 三角形の頂点データ
   //--------------------------
-  // 左下
-  vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
-  vertexData[0].texcoord = {0.0f, 1.0f};
-  //  上
-  vertexData[1].position = {0.0f, 0.5f, 0.0f, 1.0f};
-  vertexData[1].texcoord = {0.5f, 0.0f};
-  //  右下
-  vertexData[2].position = {0.5f, -0.5f, 0.0f, 1.0f};
-  vertexData[2].texcoord = {1.0f, 1.0f};
+  //// 左下
+  //vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
+  //vertexData[0].texcoord = {0.0f, 1.0f};
+  ////  上
+  //vertexData[1].position = {0.0f, 0.5f, 0.0f, 1.0f};
+  //vertexData[1].texcoord = {0.5f, 0.0f};
+  ////  右下
+  //vertexData[2].position = {0.5f, -0.5f, 0.0f, 1.0f};
+  //vertexData[2].texcoord = {1.0f, 1.0f};
 
-  // 左下２03_01_Other
-  vertexData[3].position = {-0.5f, -0.5f, 0.5f, 1.0f};
-  vertexData[3].texcoord = {0.0f, 1.0f};
+  //// 左下２03_01_Other
+  //vertexData[3].position = {-0.5f, -0.5f, 0.5f, 1.0f};
+  //vertexData[3].texcoord = {0.0f, 1.0f};
 
-  // 上２
-  vertexData[4].position = {0.0f, 0.0f, 0.0f, 1.0f};
-  vertexData[4].texcoord = {0.5f, 0.0f};
-  // 右下２
-  vertexData[5].position = {0.5f, -0.5f, -0.5f, 1.0f};
-  vertexData[5].texcoord = {1.0f, 1.0f};
+  //// 上２
+  //vertexData[4].position = {0.0f, 0.0f, 0.0f, 1.0f};
+  //vertexData[4].texcoord = {0.5f, 0.0f};
+  //// 右下２
+  //vertexData[5].position = {0.5f, -0.5f, -0.5f, 1.0f};
+  //vertexData[5].texcoord = {1.0f, 1.0f};
   //--------------------------
   // 頂点バッファービュー
   //--------------------------
@@ -1501,7 +1501,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   assert(SUCCEEDED(hr));
 
   // スフィア作成_05_00_OTHER
-  GenerateSphereVertices(vertexData, kSubdivision, 0.5f);
+  GenerateSphereVertices(vertexData, kSubdivision, 1.0f);
 
   // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
   // こういうもんである02_03
@@ -1560,6 +1560,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
       ImGui::End();
 
+      directionalLightData->direction =
+          Normalize(directionalLightData->direction); // 真上から下方向
+
       // ImGuiの内部コマンドを生成する02_03
       ImGui::
           Render(); // ImGui終わりの場所。描画の前02_03--------------------------
@@ -1574,6 +1577,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       //  メイクアフィンマトリックス02_02
       Matrix4x4 worldMatrix = MakeAffineMatrix(
           transform.scale, transform.rotate, transform.translate);
+
       // カメラのメイクアフィンマトリックス02_02
       Matrix4x4 cameraMatrix =
           MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate,
@@ -1587,9 +1591,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       Matrix4x4 worldViewProjectionMatrix =
           Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
       // CBVのバッファに書き込む02_02
-      // CBVに正しい行列を書き込む
-      memcpy(&wvpData->WVP, &worldViewProjectionMatrix, sizeof(Matrix4x4));
 
+      wvpData->WVP = worldViewProjectionMatrix;
+      wvpData->World = worldMatrix;
       // Sprite用のworldviewProjectionMatrixを作る04_00
       Matrix4x4 worldMatrixSprite =
           MakeAffineMatrix(transformSprite.scale, transformSprite.rotate,
@@ -1601,7 +1605,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           Multiply(worldMatrixSprite,
                    Multiply(viewMatrixSprite, projectionMatrixSprite));
       // 単位行列を書き込んでおく04_00
-      transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
+      transformationMatrixDataSprite->WVP = viewMatrixSprite;
       transformationMatrixDataSprite->World = worldMatrixSprite;
 
       //-------------------------
