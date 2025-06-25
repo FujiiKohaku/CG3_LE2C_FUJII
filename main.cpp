@@ -792,7 +792,8 @@ ModelData LoadOjFile(const std::string &directoryPath,
   std::vector<Vector3> normals;   // 法線
   std::vector<Vector2> texcoords; // テクスチャ座標
   std::string line;               // ファイルから読んだ一行を格納するもの
-                                  // 2.ファイルを開く
+
+  // 2.ファイルを開く
   std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
   assert(file.is_open()); // とりあえず開けなかったら止める
 
@@ -806,6 +807,8 @@ ModelData LoadOjFile(const std::string &directoryPath,
     if (identifiler == "v") {
       Vector4 position;
       s >> position.x >> position.y >> position.z;
+      position.x *= -1.0f;
+     
       position.w = 1.0f;
       positions.push_back(position);
     } else if (identifiler == "vt") {
@@ -815,8 +818,11 @@ ModelData LoadOjFile(const std::string &directoryPath,
     } else if (identifiler == "vn") {
       Vector3 normal;
       s >> normal.x >> normal.y >> normal.z;
+      normal.x *= -1.0f;
+      
       normals.push_back(normal);
     } else if (identifiler == "f") {
+      VertexData triangle[3]; // 三つの頂点を保存
       // 面は三角形限定。その他は未対応
       for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
         std::string vertexDefinition;
@@ -834,9 +840,14 @@ ModelData LoadOjFile(const std::string &directoryPath,
         Vector4 position = positions[elementIndices[0] - 1];
         Vector2 texcoord = texcoords[elementIndices[1] - 1];
         Vector3 normal = normals[elementIndices[2] - 1];
-        VertexData vertex = {position, texcoord, normal};
-        modelData.vertices.push_back(vertex);
+        // X軸を反転して左手座標系に
+
+        triangle[faceVertex] = {position, texcoord, normal};
       }
+      // 逆順にして格納（2 → 1 → 0）
+      modelData.vertices.push_back(triangle[2]);
+      modelData.vertices.push_back(triangle[1]);
+      modelData.vertices.push_back(triangle[0]);
     }
   }
 
@@ -1784,7 +1795,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootConstantBufferView(
           1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
       // UvChecker
-     // commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+      // commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
       //  描画の最後です//----------------------------------------------------
       //   実際のcommandListのImGuiの描画コマンドを積む
