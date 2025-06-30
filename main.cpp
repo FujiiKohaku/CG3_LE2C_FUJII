@@ -1454,29 +1454,29 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 三角形の頂点データ
   //--------------------------
   //// 左下
-  //vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
-  //vertexData[0].texcoord = {0.0f, 1.0f};
+  // vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
+  // vertexData[0].texcoord = {0.0f, 1.0f};
   ////  上
-  //vertexData[1].position = {0.0f, 0.5f, 0.0f, 1.0f};
-  //vertexData[1].texcoord = {0.5f, 0.0f};
+  // vertexData[1].position = {0.0f, 0.5f, 0.0f, 1.0f};
+  // vertexData[1].texcoord = {0.5f, 0.0f};
   ////  右下
-  //vertexData[2].position = {0.5f, -0.5f, 0.0f, 1.0f};
-  //vertexData[2].texcoord = {1.0f, 1.0f};
+  // vertexData[2].position = {0.5f, -0.5f, 0.0f, 1.0f};
+  // vertexData[2].texcoord = {1.0f, 1.0f};
 
   //// 左下２03_01_Other
-  //vertexData[3].position = {-0.5f, -0.5f, 0.5f, 1.0f};
-  //vertexData[3].texcoord = {0.0f, 1.0f};
+  // vertexData[3].position = {-0.5f, -0.5f, 0.5f, 1.0f};
+  // vertexData[3].texcoord = {0.0f, 1.0f};
 
   //// 上２
-  //vertexData[4].position = {0.0f, 0.0f, 0.0f, 1.0f};
-  //vertexData[4].texcoord = {0.5f, 0.0f};
+  // vertexData[4].position = {0.0f, 0.0f, 0.0f, 1.0f};
+  // vertexData[4].texcoord = {0.5f, 0.0f};
   //// 右下２
-  //vertexData[5].position = {0.5f, -0.5f, -0.5f, 1.0f};
-  //vertexData[5].texcoord = {1.0f, 1.0f};
+  // vertexData[5].position = {0.5f, -0.5f, -0.5f, 1.0f};
+  // vertexData[5].texcoord = {1.0f, 1.0f};
   //--------------------------
-  // 頂点バッファービュー
+  //  頂点バッファービュー
   //--------------------------
-  //   頂点バッファビューを作成する
+  //    頂点バッファビューを作成する
   D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
   // リソースの先頭のアドレスから使う
   vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
@@ -1910,7 +1910,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->DrawInstanced(kNumVertices, 1, 0, 0);
 
       // マテリアルCbufferの場所を設定05_03変更これ書くとUvChackerがちゃんとする
-      //commandList->SetGraphicsRootConstantBufferView(
+      // commandList->SetGraphicsRootConstantBufferView(
       //    0, materialResourceSprite
       //           ->GetGPUVirtualAddress()); // ここでmaterialResource使え
 
@@ -2033,6 +2033,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   indexResourceSprite->Release();
   vertexResourceFloor->Release();
   pipelineStateFloor->Release();
+  psoFloorSolid->Release();
+  wvpResourceFloor->Release();
+  materialResourceFloor->Release();
+  timeConstBuffer->Release(); // これが原因リリースしとけや
 
   CoInitialize(nullptr);
 #endif
