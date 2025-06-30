@@ -807,6 +807,7 @@ ModelData LoadOjFile(const std::string &directoryPath,
     if (identifiler == "v") {
       Vector4 position;
       s >> position.x >> position.y >> position.z;
+      //左手座標にする
       position.x *= -1.0f;
      
       position.w = 1.0f;
@@ -814,10 +815,12 @@ ModelData LoadOjFile(const std::string &directoryPath,
     } else if (identifiler == "vt") {
       Vector2 texcoord;
       s >> texcoord.x >> texcoord.y;
+      texcoord.x *= -1.0f;
       texcoords.push_back(texcoord);
     } else if (identifiler == "vn") {
       Vector3 normal;
       s >> normal.x >> normal.y >> normal.z;
+      //左手座標にする
       normal.x *= -1.0f;
       
       normals.push_back(normal);
@@ -1296,7 +1299,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
   // 三角形の中を塗りつぶす
   rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-
+  rasterizerDesc.FrontCounterClockwise = FALSE;
   // Shaderをコンパイルする
   IDxcBlob *vertexShaderBlob =
       CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler,
