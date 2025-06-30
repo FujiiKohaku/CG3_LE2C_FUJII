@@ -1453,26 +1453,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   //--------------------------
   // 三角形の頂点データ
   //--------------------------
-  // 左下
-  vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
-  vertexData[0].texcoord = {0.0f, 1.0f};
-  //  上
-  vertexData[1].position = {0.0f, 0.5f, 0.0f, 1.0f};
-  vertexData[1].texcoord = {0.5f, 0.0f};
-  //  右下
-  vertexData[2].position = {0.5f, -0.5f, 0.0f, 1.0f};
-  vertexData[2].texcoord = {1.0f, 1.0f};
+  //// 左下
+  //vertexData[0].position = {-0.5f, -0.5f, 0.0f, 1.0f};
+  //vertexData[0].texcoord = {0.0f, 1.0f};
+  ////  上
+  //vertexData[1].position = {0.0f, 0.5f, 0.0f, 1.0f};
+  //vertexData[1].texcoord = {0.5f, 0.0f};
+  ////  右下
+  //vertexData[2].position = {0.5f, -0.5f, 0.0f, 1.0f};
+  //vertexData[2].texcoord = {1.0f, 1.0f};
 
-  // 左下２03_01_Other
-  vertexData[3].position = {-0.5f, -0.5f, 0.5f, 1.0f};
-  vertexData[3].texcoord = {0.0f, 1.0f};
+  //// 左下２03_01_Other
+  //vertexData[3].position = {-0.5f, -0.5f, 0.5f, 1.0f};
+  //vertexData[3].texcoord = {0.0f, 1.0f};
 
-  // 上２
-  vertexData[4].position = {0.0f, 0.0f, 0.0f, 1.0f};
-  vertexData[4].texcoord = {0.5f, 0.0f};
-  // 右下２
-  vertexData[5].position = {0.5f, -0.5f, -0.5f, 1.0f};
-  vertexData[5].texcoord = {1.0f, 1.0f};
+  //// 上２
+  //vertexData[4].position = {0.0f, 0.0f, 0.0f, 1.0f};
+  //vertexData[4].texcoord = {0.5f, 0.0f};
+  //// 右下２
+  //vertexData[5].position = {0.5f, -0.5f, -0.5f, 1.0f};
+  //vertexData[5].texcoord = {1.0f, 1.0f};
   //--------------------------
   // 頂点バッファービュー
   //--------------------------
@@ -1910,9 +1910,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->DrawInstanced(kNumVertices, 1, 0, 0);
 
       // マテリアルCbufferの場所を設定05_03変更これ書くとUvChackerがちゃんとする
-      commandList->SetGraphicsRootConstantBufferView(
-          0, materialResourceSprite
-                 ->GetGPUVirtualAddress()); // ここでmaterialResource使え
+      //commandList->SetGraphicsRootConstantBufferView(
+      //    0, materialResourceSprite
+      //           ->GetGPUVirtualAddress()); // ここでmaterialResource使え
 
       // spriteの描画04_00
       commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
