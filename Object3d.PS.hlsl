@@ -45,14 +45,18 @@ PixelShaderOutput main(VertexShaderOutput input)
     // ───────────────────────────────────────
     //  コースティクス模様（時間＋UVで生成）
     // ───────────────────────────────────────
-    float2 uv = transformedUV.xy * 10.0f; // 細かさ調整
-    float wave =
-        sin(uv.x * 6.0f + time * 3.0f) +
-        cos(uv.y * 12.0f - time * 4.0f);
+float2 uv = transformedUV.xy * 10.0f;
 
-    float caustics = pow(wave * 0.25f + 0.5f, 4.0f); // 0-1 に正規化→強調
-    float3 causticsColor = caustics * float3(1.2f, 1.3f, 1.5f); // 白〜青み
+// 複数方向から波を合成
+float wave =
+    sin(uv.x * 6.0f + time * 2.5f) +
+    sin(uv.y * 8.0f + time * 3.0f) +
+    sin((uv.x + uv.y) * 5.0f + time * 4.0f) +
+    sin((uv.x - uv.y) * 7.0f - time * 3.5f);
 
+// 正規化＆強調
+float caustics = pow(wave * 0.125f + 0.5f, 4.0f);
+float3 causticsColor = caustics * float3(1.2f, 1.3f, 1.5f);
     // ───────────────────────────────────────
     //  合成して出力
     // ───────────────────────────────────────

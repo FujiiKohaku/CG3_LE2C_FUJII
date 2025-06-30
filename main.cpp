@@ -122,7 +122,7 @@ enum AnimationType {
 WaveType waveType = WAVE_SINE;
 AnimationType animationType = ANIM_NONE;
 float waveTime = 0.0f;
-
+Vector3 floorTranslate = {0.0f, 15.0f, 0.0f};
 // グローバル or 適切な場所に定義
 
 constexpr int kSubdivision = 16;
@@ -466,15 +466,19 @@ void UpdateTimeBuffer() {
   memcpy(mapped, &tb, sizeof(tb));
   timeConstBuffer->Unmap(0, nullptr);
 }
-
 void UpdateFloorWVP(ID3D12Resource *wvpResourceFloor,
                     const Matrix4x4 &viewMatrix, const Matrix4x4 &projMatrix) {
   TransformationMatrix *wvpDataFloor = nullptr;
   wvpResourceFloor->Map(0, nullptr, (void **)&wvpDataFloor);
 
-  Matrix4x4 worldFloor = Matrix4x4MakeScaleMatrix({10.0f, 1.0f, 10.0f});
-  Matrix4x4 wvp = Multiply(worldFloor, Multiply(viewMatrix, projMatrix));
+  // スケール行列
+  Matrix4x4 scale = Matrix4x4MakeScaleMatrix({10.0f, 1.0f, 10.0f});
+  // 平行移動行列（←ここにfloorTranslateを反映）
+  Matrix4x4 translate = MakeTranslateMatrix(floorTranslate);
+  // world = scale × translate（順番大事）
+  Matrix4x4 worldFloor = Multiply(scale, translate);
 
+  Matrix4x4 wvp = Multiply(worldFloor, Multiply(viewMatrix, projMatrix));
   wvpDataFloor->WVP = wvp;
   wvpDataFloor->World = worldFloor;
 
@@ -1527,17 +1531,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       0, nullptr,
       reinterpret_cast<void **>(&vertexDataSprite)); // 04_00
   // 6頂点を4頂点にする
-  vertexDataSprite[0].position = {0.0f, 360.0f, 0.0f, 1.0f}; // 左下
-  vertexDataSprite[0].texcoord = {0.0f, 1.0f};
+  //vertexDataSprite[0].position = {0.0f, 360.0f, 0.0f, 1.0f}; // 左下
+  //vertexDataSprite[0].texcoord = {0.0f, 1.0f};
 
-  vertexDataSprite[1].position = {0.0f, 0.0f, 0.0f, 1.0f}; // 左上
-  vertexDataSprite[1].texcoord = {0.0f, 0.0f};
+  //vertexDataSprite[1].position = {0.0f, 0.0f, 0.0f, 1.0f}; // 左上
+  //vertexDataSprite[1].texcoord = {0.0f, 0.0f};
 
-  vertexDataSprite[2].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下
-  vertexDataSprite[2].texcoord = {1.0f, 1.0f};
+  //vertexDataSprite[2].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下
+  //vertexDataSprite[2].texcoord = {1.0f, 1.0f};
 
-  vertexDataSprite[3].position = {640.0f, 0.0f, 0.0f, 1.0f};
-  vertexDataSprite[3].texcoord = {1.0f, 0.0f};
+  //vertexDataSprite[3].position = {640.0f, 0.0f, 0.0f, 1.0f};
+  //vertexDataSprite[3].texcoord = {1.0f, 0.0f};
 
   // sprite用の頂点バッファビューを作成する04_00
   D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite{};
@@ -1634,7 +1638,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   VertexData floorVertices[6];
   // 床
-  GenerateFloorVertices(floorVertices, 10.0f);
+  GenerateFloorVertices(floorVertices, 2.0f);
 
   ID3D12Resource *vertexResourceFloor =
       CreateBufferResource(device, sizeof(floorVertices));
@@ -1699,7 +1703,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       {0.0f, 0.0f, 0.0f},
       {0.0f, 0.0f, 0.0f},
   };
-  static float floorY = -5.0f;
+
 
   // Textureの切り替え
   bool useMonstarBall = true;
@@ -1734,31 +1738,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui_ImplWin32_NewFrame();
       ImGui::NewFrame();
 
-      // 床のY座標を ImGui で調整できるようにする
-      static float floorY = 4.0f;
-
-      // 頂点データを更新
-      Vector3 floorP0 = {-5.0f, floorY, -5.0f};
-      Vector3 floorP1 = {5.0f, floorY, -5.0f};
-      Vector3 floorP2 = {-5.0f, floorY, 5.0f};
-      Vector3 floorP3 = {5.0f, floorY, 5.0f};
-
-      // 三角形に変換
-      floorVertices[0].position = {floorP0.x, floorP0.y, floorP0.z, 1.0f};
-      floorVertices[1].position = {floorP2.x, floorP2.y, floorP2.z, 1.0f};
-      floorVertices[2].position = {floorP1.x, floorP1.y, floorP1.z, 1.0f};
-      floorVertices[3].position = {floorP1.x, floorP1.y, floorP1.z, 1.0f};
-      floorVertices[4].position = {floorP2.x, floorP2.y, floorP2.z, 1.0f};
-      floorVertices[5].position = {floorP3.x, floorP3.y, floorP3.z, 1.0f};
-
-      // UVと法線を再設定（必要なら）
-      for (int i = 0; i < 6; ++i) {
-        floorVertices[i].texcoord = {
-            (floorVertices[i].position.x + 5.0f) / 10.0f,
-            1.0f - (floorVertices[i].position.z + 5.0f) / 10.0f};
-        floorVertices[i].normal = {0.0f, 1.0f, 0.0f};
-      }
-
       // === GPUに再アップロード ===
 
       UpdateTimeBuffer();
@@ -1770,7 +1749,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       ImGui::SliderAngle("RotateX", &transform.rotate.x, -180.0f, 180.0f);
       ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
       ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
-      ImGui::SliderFloat("Floor Y", &floorY, -10.0f, 10.0f);
+      ImGui::DragFloat3("Floor Translate", &floorTranslate.x, 0.1f);
       ImGui::Text("Camera Transform");
 
       // スケール（通常は1固定でもいいけど操作可能に）
@@ -1841,106 +1820,94 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           uvTransformMatrix, MakeRotateZMatrix(uvTransformSprite.rotate.z));
       uvTransformMatrix = Multiply(
           uvTransformMatrix, MakeTranslateMatrix(uvTransformSprite.translate));
-      materialDataSprite->uvTransform = uvTransformMatrix;
+      materialDataSprite->uvTransform = MakeIdentity4x4();
 
-      // 画面のクリア処理
+      //---------------------------
+      // 1. レンダーターゲット準備（RTV/DSV/クリア）
+      //---------------------------
       //   これから書き込むバックバッファのインデックスを取得
       UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
-      // TransitionBarrieの設定01_02
+
+      // バリア遷移
+
       D3D12_RESOURCE_BARRIER barrier{};
-      // 今回のバリアはTransion
       barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-      // Noneにしておく
       barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-      // バリアをはる対象のリソース。現在のバックバッファに対して行う
       barrier.Transition.pResource = swapChainResources[backBufferIndex];
-      // 遷移前(現在)のResourceState
       barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-      // 遷移後のResourceState
       barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-      // TransitionBarrierを張る
       commandList->ResourceBarrier(1, &barrier);
 
-      // 描画先のRTVうぃ設定する
-      commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
-                                      nullptr);
-      // 描画先のRTVとDSVを設定する
+      // RTV/DSV 設定
       D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
           dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
       commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
                                       &dsvHandle);
-      // 指定した色で画面全体をクリアする
-      float clearColor[] = {
-          0.1f, 0.25f, 0.5f,
-          1.0f}; /// 青っぽい色RGBAの順
-                 /// //これ最初の文字1.0fにするとピンク画面になる
+
+      // クリア
+      float clearColor[] = {0.1f, 0.25f, 0.5f, 1.0f}; /// 青っぽい色RGBAの順
       commandList->ClearRenderTargetView(rtvHandles[backBufferIndex],
                                          clearColor, 0, nullptr);
-      // 03_01
       commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH,
                                          1.0f, 0, 0, nullptr);
-      // 描画
+
+      // ビューポート・シザー設定
       commandList->RSSetViewports(1, &viewport);       // viewportを設定
       commandList->RSSetScissorRects(1, &scissorRect); // Scirssorを設定
-      // RootSignatureを設定。PS0に設定しているけど別途設定が必要
+      //---------------------------
+      // 2. 共通設定（RootSig, ライトなど）
+      //---------------------------
       commandList->SetGraphicsRootSignature(rootSignature);
-      commandList->SetPipelineState(graphicsPinelineState);     // PS0を設定
-      commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // VBVを設定
-      // 形状を設定。PS0に設定しているものとはまた別。同じものを設定すると考えていけばよい
-      commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-      commandList->SetGraphicsRootDescriptorTable(
-          2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
-
-      // マテリアルCbufferの場所を設定05_03変更
-      commandList->SetGraphicsRootConstantBufferView(
-          0, materialResource
-                 ->GetGPUVirtualAddress()); // ここでmaterialResource使え
-
-      // wvp用のCBufferの場所を設定02_02
-      commandList->SetGraphicsRootConstantBufferView(
-          1, wvpResource->GetGPUVirtualAddress());
-      // 平行光源用のCbufferの場所を設定05_03
       commandList->SetGraphicsRootConstantBufferView(
           3, directionalLightResource->GetGPUVirtualAddress());
       commandList->SetGraphicsRootConstantBufferView(
           4, timeConstBuffer->GetGPUVirtualAddress());
-
+      //---------------------------
+      // 3. モデルの描画
+      //---------------------------
+      commandList->SetPipelineState(graphicsPinelineState);     // PS0を設定
+      commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // VBVを設定
+      commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+      commandList->SetGraphicsRootDescriptorTable(
+          2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+      commandList->SetGraphicsRootConstantBufferView(
+          0, materialResource->GetGPUVirtualAddress());
+      // wvp用のCBufferの場所を設定02_02
+      commandList->SetGraphicsRootConstantBufferView(
+          1, wvpResource->GetGPUVirtualAddress());
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
       commandList->DrawInstanced(kNumVertices, 1, 0, 0);
-
-      // マテリアルCbufferの場所を設定05_03変更これ書くとUvChackerがちゃんとする
-      // commandList->SetGraphicsRootConstantBufferView(
-      //    0, materialResourceSprite
-      //           ->GetGPUVirtualAddress()); // ここでmaterialResource使え
+      //---------------------------
+      // 4. スプライトの描画
+      //---------------------------
 
       // spriteの描画04_00
       commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
       // IBVを設定
       commandList->IASetIndexBuffer(&indexBufferViewSprite);
-
-      // UvChecker
-      // commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
-      commandList->SetPipelineState(psoFloorSolid);
-      // 床の描画
-      commandList->IASetVertexBuffers(0, 1, &vertexBufferViewFloor);
-      // 時間バッファをセット ←
       commandList->SetGraphicsRootConstantBufferView(
-          4, timeConstBuffer->GetGPUVirtualAddress());
-      commandList->DrawInstanced(6, 1, 0, 0);
-
-      // 描画直前
-      commandList->IASetVertexBuffers(0, 1, &vertexBufferViewFloor);
-      commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-      // 描画
+          0, materialResourceSprite->GetGPUVirtualAddress()); // マテリアル
       commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
       commandList->SetGraphicsRootConstantBufferView(
           1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
       commandList->SetGraphicsRootConstantBufferView(
           4, timeConstBuffer->GetGPUVirtualAddress());
-      // 頂点数6で描画（2三角形分）
-      // commandList->DrawInstanced(6, 1, 0, 0);
+      commandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // ★これを追加！
+      //---------------------------
+      // 5. 床の描画
+      //---------------------------
+      commandList->SetPipelineState(psoFloorSolid);
+      commandList->IASetVertexBuffers(0, 1, &vertexBufferViewFloor);
+      commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+      commandList->SetGraphicsRootConstantBufferView(
+          0, materialResourceFloor->GetGPUVirtualAddress());
+      commandList->SetGraphicsRootConstantBufferView(
+          1, wvpResourceFloor->GetGPUVirtualAddress());
+      commandList->DrawInstanced(6, 1, 0, 0);
+
+     
+      
+
 
       // 描画の最後です//----------------------------------------------------
       //  実際のcommandListのImGuiの描画コマンドを積む
@@ -2033,7 +2000,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   indexResourceSprite->Release();
   vertexResourceFloor->Release();
   pipelineStateFloor->Release();
-  psoFloorSolid->Release();
+
   wvpResourceFloor->Release();
   materialResourceFloor->Release();
   timeConstBuffer->Release(); // これが原因リリースしとけや
