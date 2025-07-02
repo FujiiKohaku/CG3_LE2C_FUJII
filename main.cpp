@@ -401,7 +401,9 @@ void GenerateGridVertices(VertexData *vertices, int kSubdivision,
 
   for (int row = 0; row < kSubdivision; ++row) {
     float z = -half + cellSize * row; // 球と一緒///今ここ
-    float nextZ = z + cellSize; // Z方向に一マスずつ増やしてる//nextZは次何メートル進みますよ―的な
+    float nextZ =
+        z +
+        cellSize; // Z方向に一マスずつ増やしてる//nextZは次何メートル進みますよ―的な
 
     for (int col = 0; col < kSubdivision; ++col) {
       float x = -half + cellSize * col;
@@ -410,14 +412,14 @@ void GenerateGridVertices(VertexData *vertices, int kSubdivision,
       // 手前と奥だからんかいい感じのを考えないといけないね。
 
       // 各頂点の位置
-      Vector3 leftTop = {x, 0.0f, z};         // 左上
-      Vector3 leftBottom = {x, 0.0f, nextZ};     // 左下
-      Vector3 rightTop = {nextX, 0.0f, z};     // 右上
+      Vector3 leftTop = {x, 0.0f, z};             // 左上
+      Vector3 leftBottom = {x, 0.0f, nextZ};      // 左下
+      Vector3 rightTop = {nextX, 0.0f, z};        // 右上
       Vector3 rightBottom = {nextX, 0.0f, nextZ}; // 右下
 
       // 高さ変化をサイン波で
-      float freq = 2.0f;
-      float amp = 0.2f;
+      float freq = 2.0f; // 周波数
+      float amp = 0.2f;  // 振幅
       leftTop.y = sinf(freq * (leftTop.x + leftTop.z) + time) * amp;
       leftBottom.y = sinf(freq * (leftBottom.x + leftBottom.z) + time) * amp;
       rightTop.y = sinf(freq * (rightTop.x + rightTop.z) + time) * amp;
@@ -428,18 +430,18 @@ void GenerateGridVertices(VertexData *vertices, int kSubdivision,
           {leftTop.x, leftTop.y, leftTop.z, 1.0f},
           {(leftTop.x + half) / gridSize, 1.0f - (leftTop.z + half) / gridSize},
           {0, 1, 0}};
-      VertexData vB = {
-          {leftBottom.x, leftBottom.y, leftBottom.z, 1.0f},
-          {(leftBottom.x + half) / gridSize, 1.0f - (leftBottom.z + half) / gridSize},
-          {0, 1, 0}};
-      VertexData vC = {
-          {rightTop.x, rightTop.y, rightTop.z, 1.0f},
-          {(rightTop.x + half) / gridSize, 1.0f - (rightTop.z + half) / gridSize},
-          {0, 1, 0}};
-      VertexData vD = {
-          {rightBottom.x, rightBottom.y, rightBottom.z, 1.0f},
-          {(rightBottom.x + half) / gridSize, 1.0f - (rightBottom.z + half) / gridSize},
-          {0, 1, 0}};
+      VertexData vB = {{leftBottom.x, leftBottom.y, leftBottom.z, 1.0f},
+                       {(leftBottom.x + half) / gridSize,
+                        1.0f - (leftBottom.z + half) / gridSize},
+                       {0, 1, 0}};
+      VertexData vC = {{rightTop.x, rightTop.y, rightTop.z, 1.0f},
+                       {(rightTop.x + half) / gridSize,
+                        1.0f - (rightTop.z + half) / gridSize},
+                       {0, 1, 0}};
+      VertexData vD = {{rightBottom.x, rightBottom.y, rightBottom.z, 1.0f},
+                       {(rightBottom.x + half) / gridSize,
+                        1.0f - (rightBottom.z + half) / gridSize},
+                       {0, 1, 0}};
 
       // 頂点インデックス
       int index = (row * kSubdivision + col) * 6;
