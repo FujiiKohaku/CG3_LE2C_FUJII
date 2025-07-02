@@ -815,7 +815,9 @@ ModelData LoadOjFile(const std::string &directoryPath,
     } else if (identifiler == "vt") {
       Vector2 texcoord;
       s >> texcoord.x >> texcoord.y;
-      texcoord.x *= -1.0f;
+      //上下逆にする
+      
+      texcoord.y *= -1.0f;
       texcoords.push_back(texcoord);
     } else if (identifiler == "vn") {
       Vector3 normal;
@@ -1362,7 +1364,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   //--------------------------------------------------
 
   // モデル読み込み
-  ModelData modelData = LoadOjFile("resources", "plane.obj");
+  ModelData modelData = LoadOjFile("resources", "Plane.obj");
   // 頂点リソースを作る
   ID3D12Resource *vertexResource = CreateBufferResource(
       device, sizeof(VertexData) * modelData.vertices.size());
