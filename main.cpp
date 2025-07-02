@@ -388,45 +388,71 @@ Vector3 Normalize(const Vector3 &v) {
 #pragma region Wave
 void GenerateGridVertices(VertexData *vertices, int kSubdivision,
                           float gridSize, float time) {
-  const float step = gridSize / kSubdivision;
-  const float half = gridSize / 2.0f;
+  // GridSize=全体の平面の幅
+  // kSubdivision=分割数
+  // 例
+  // gridSize = 10.0f
+  // kSubdivision = 10
+  // cellSize = 10.0f / 10 = 1.0f,平面を10 ×
+  // 10のマスに分割となるので1マスの大きさが1.0f
+  const float cellSize = gridSize / kSubdivision; // 1マスの幅
 
-  for (int y = 0; y < kSubdivision; ++y) {
-    for (int x = 0; x < kSubdivision; ++x) {
-      int i = (y * kSubdivision + x) * 6;
+  const float half = gridSize / 2.0f; //	中心を原点に合わせるための補正値
 
-      Vector3 p0 = {-half + step * x, 0.0f, -half + step * y};
-      Vector3 p1 = {-half + step * (x + 1), 0.0f, -half + step * y};
-      Vector3 p2 = {-half + step * x, 0.0f, -half + step * (y + 1)};
-      Vector3 p3 = {-half + step * (x + 1), 0.0f, -half + step * (y + 1)};
+  for (int row = 0; row < kSubdivision; ++row) {
+    float z = -half + cellSize * row; // 球と一緒///今ここ
+    float nextZ = z + cellSize; // Z方向に一マスずつ増やしてる//nextZは次何メートル進みますよ―的な
 
-      // サイン波による高さの変更（Y軸）
-      float frequency = 2.0f;
-      float amplitude = 0.2f;
-      p0.y = sinf(frequency * (p0.x + p0.z) + time) * amplitude;
-      p1.y = sinf(frequency * (p1.x + p1.z) + time) * amplitude;
-      p2.y = sinf(frequency * (p2.x + p2.z) + time) * amplitude;
-      p3.y = sinf(frequency * (p3.x + p3.z) + time) * amplitude;
+    for (int col = 0; col < kSubdivision; ++col) {
+      float x = -half + cellSize * col;
+      float nextX = x + cellSize; // X方向に一マスずつ増やしてる
+      // nextXとか名前変かもしれん
+      // 手前と奥だからんかいい感じのを考えないといけないね。
 
-      // 三角形1 (p0, p2, p1)
-      vertices[i + 0].position = {p0.x, p0.y, p0.z, 1.0f};
-      vertices[i + 1].position = {p2.x, p2.y, p2.z, 1.0f};
-      vertices[i + 2].position = {p1.x, p1.y, p1.z, 1.0f};
+      // 各頂点の位置
+      Vector3 leftTop = {x, 0.0f, z};         // 左上
+      Vector3 leftBottom = {x, 0.0f, nextZ};     // 左下
+      Vector3 rightTop = {nextX, 0.0f, z};     // 右上
+      Vector3 rightBottom = {nextX, 0.0f, nextZ}; // 右下
 
-      // 三角形2 (p1, p2, p3)
-      vertices[i + 3].position = {p1.x, p1.y, p1.z, 1.0f};
-      vertices[i + 4].position = {p2.x, p2.y, p2.z, 1.0f};
-      vertices[i + 5].position = {p3.x, p3.y, p3.z, 1.0f};
+      // 高さ変化をサイン波で
+      float freq = 2.0f;
+      float amp = 0.2f;
+      leftTop.y = sinf(freq * (leftTop.x + leftTop.z) + time) * amp;
+      leftBottom.y = sinf(freq * (leftBottom.x + leftBottom.z) + time) * amp;
+      rightTop.y = sinf(freq * (rightTop.x + rightTop.z) + time) * amp;
+      rightBottom.y = sinf(freq * (rightBottom.x + rightBottom.z) + time) * amp;
 
-      for (int j = 0; j < 6; ++j) {
-        // テクスチャ座標
-        vertices[i + j].texcoord = {
-            (vertices[i + j].position.x + half) / gridSize,
-            1.0f - (vertices[i + j].position.z + half) / gridSize};
+      // 頂点データ作成
+      VertexData vA = {
+          {leftTop.x, leftTop.y, leftTop.z, 1.0f},
+          {(leftTop.x + half) / gridSize, 1.0f - (leftTop.z + half) / gridSize},
+          {0, 1, 0}};
+      VertexData vB = {
+          {leftBottom.x, leftBottom.y, leftBottom.z, 1.0f},
+          {(leftBottom.x + half) / gridSize, 1.0f - (leftBottom.z + half) / gridSize},
+          {0, 1, 0}};
+      VertexData vC = {
+          {rightTop.x, rightTop.y, rightTop.z, 1.0f},
+          {(rightTop.x + half) / gridSize, 1.0f - (rightTop.z + half) / gridSize},
+          {0, 1, 0}};
+      VertexData vD = {
+          {rightBottom.x, rightBottom.y, rightBottom.z, 1.0f},
+          {(rightBottom.x + half) / gridSize, 1.0f - (rightBottom.z + half) / gridSize},
+          {0, 1, 0}};
 
-        // 仮の法線（Y軸方向） → 必要なら正確に計算してもOK
-        vertices[i + j].normal = {0.0f, 1.0f, 0.0f};
-      }
+      // 頂点インデックス
+      int index = (row * kSubdivision + col) * 6;
+
+      // 三角形1: A-B-C
+      vertices[index + 0] = vA;
+      vertices[index + 1] = vB;
+      vertices[index + 2] = vC;
+
+      // 三角形2: C-B-D
+      vertices[index + 3] = vC;
+      vertices[index + 4] = vB;
+      vertices[index + 5] = vD;
     }
   }
 }
@@ -1531,17 +1557,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       0, nullptr,
       reinterpret_cast<void **>(&vertexDataSprite)); // 04_00
   // 6頂点を4頂点にする
-  //vertexDataSprite[0].position = {0.0f, 360.0f, 0.0f, 1.0f}; // 左下
-  //vertexDataSprite[0].texcoord = {0.0f, 1.0f};
+  // vertexDataSprite[0].position = {0.0f, 360.0f, 0.0f, 1.0f}; // 左下
+  // vertexDataSprite[0].texcoord = {0.0f, 1.0f};
 
-  //vertexDataSprite[1].position = {0.0f, 0.0f, 0.0f, 1.0f}; // 左上
-  //vertexDataSprite[1].texcoord = {0.0f, 0.0f};
+  // vertexDataSprite[1].position = {0.0f, 0.0f, 0.0f, 1.0f}; // 左上
+  // vertexDataSprite[1].texcoord = {0.0f, 0.0f};
 
-  //vertexDataSprite[2].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下
-  //vertexDataSprite[2].texcoord = {1.0f, 1.0f};
+  // vertexDataSprite[2].position = {640.0f, 360.0f, 0.0f, 1.0f}; // 右下
+  // vertexDataSprite[2].texcoord = {1.0f, 1.0f};
 
-  //vertexDataSprite[3].position = {640.0f, 0.0f, 0.0f, 1.0f};
-  //vertexDataSprite[3].texcoord = {1.0f, 0.0f};
+  // vertexDataSprite[3].position = {640.0f, 0.0f, 0.0f, 1.0f};
+  // vertexDataSprite[3].texcoord = {1.0f, 0.0f};
 
   // sprite用の頂点バッファビューを作成する04_00
   D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite{};
@@ -1703,7 +1729,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       {0.0f, 0.0f, 0.0f},
       {0.0f, 0.0f, 0.0f},
   };
-
 
   // Textureの切り替え
   bool useMonstarBall = true;
@@ -1904,10 +1929,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootConstantBufferView(
           1, wvpResourceFloor->GetGPUVirtualAddress());
       commandList->DrawInstanced(6, 1, 0, 0);
-
-     
-      
-
 
       // 描画の最後です//----------------------------------------------------
       //  実際のcommandListのImGuiの描画コマンドを積む
