@@ -25,6 +25,7 @@
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
 #include <sstream>
+#include <iostream>
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
                                                              UINT msg,
                                                              WPARAM wParam,
@@ -80,8 +81,14 @@ struct DirectionalLight {
   float intensity;
 };
 // CG2_06_02
+struct MaterialData {
+  std::string textureFilePath;
+};
+
+// CG2_06_02
 struct ModelData {
   std::vector<VertexData> vertices;
+  MaterialData material;
 };
 // 変数//--------------------
 // Lightingを有効にする
@@ -560,6 +567,7 @@ DirectX::ScratchImage LoadTexture(const std::string &filePath) {
   std::wstring filePathW = ConvertString(filePath);
   HRESULT hr = DirectX::LoadFromWICFile(
       filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+  //std::wcout << L"LoadFromWICFile HR: " << std::hex << hr << std::endl;
   assert(SUCCEEDED(hr));
 
   // ミップマップの作成
@@ -781,6 +789,31 @@ GetGPUDescriptorHandle(ID3D12DescriptorHeap *descriptorHeap,
   return handleGPU;
 }
 
+/// CG_02_06
+MaterialData LoadMaterialTemplateFile(const std::string &directoryPath,
+                                      const std::string &filename) {
+  // 1.中で必要となる変数の宣言
+  MaterialData materialData; // 構築するMaterialData
+  // 2.ファイルを開く
+  std::string line; // ファイルから読んだ１行を格納するもの
+  std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
+  assert(file.is_open()); // とりあえず開けなかったら止める
+  // 3.実際にファイルを読み、MaterialDataを構築していく
+  while (std::getline(file, line)) {
+    std::string identifier;
+    std::istringstream s(line);
+    s >> identifier;
+    // identifierに応じた処理
+    if (identifier == "map_Kd") {
+      std::string textureFilename;
+      s >> textureFilename;
+      // 連結してファイルパスにする
+      materialData.textureFilePath = directoryPath + "/" + textureFilename;
+    }
+  }
+  // 4.materialDataを返す
+  return materialData;
+}
 // std::stringは文字列を扱う
 // 06_02
 ModelData LoadOjFile(const std::string &directoryPath,
@@ -807,24 +840,26 @@ ModelData LoadOjFile(const std::string &directoryPath,
     if (identifiler == "v") {
       Vector4 position;
       s >> position.x >> position.y >> position.z;
-      //左手座標にする
+      // 左手座標にする
       position.x *= -1.0f;
-     
+
       position.w = 1.0f;
       positions.push_back(position);
     } else if (identifiler == "vt") {
       Vector2 texcoord;
       s >> texcoord.x >> texcoord.y;
-      //上下逆にする
-      
+      // 上下逆にする
+
       texcoord.y *= -1.0f;
+      texcoord.y = 1.0f - texcoord.y;
+      //CG2_06_02_kusokusosjsusuawihoafwhgiuwhkgfau
       texcoords.push_back(texcoord);
     } else if (identifiler == "vn") {
       Vector3 normal;
       s >> normal.x >> normal.y >> normal.z;
-      //左手座標にする
+      // 左手座標にする
       normal.x *= -1.0f;
-      
+
       normals.push_back(normal);
     } else if (identifiler == "f") {
       VertexData triangle[3]; // 三つの頂点を保存
@@ -853,9 +888,16 @@ ModelData LoadOjFile(const std::string &directoryPath,
       modelData.vertices.push_back(triangle[2]);
       modelData.vertices.push_back(triangle[1]);
       modelData.vertices.push_back(triangle[0]);
+      //?
+    } else if (identifiler == "mtllib") {
+      // materialTemplateLibraryファイルの名前を取得する
+      std::string materialFilename;
+      s >> materialFilename;
+      // 基本的にobjファイルと同一階層mtlは存在させるので、ディレクトリ名とファイル名を渡す。
+      modelData.material =
+          LoadMaterialTemplateFile(directoryPath, materialFilename);
     }
   }
-
   // 4.ModelDataを返す
   return modelData;
 }
@@ -1214,9 +1256,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ID3D12Resource *textureResource = CreateTextureResource(device, metadata);
   ID3D12Resource *intermediateResource =
       UploadTextureData(textureResource, mipImages, device, commandList); //?
+  // モデル読み込み
+  ModelData modelData = LoadOjFile("resources","Plane.obj");
+
+
+
+
+  std::cout << "テクスチャファイルパス: " << modelData.material.textureFilePath
+            << std::endl;
+
+  if (!std::filesystem::exists(modelData.material.textureFilePath)) {
+    std::cerr << "ファイルが存在しません！" << std::endl;
+  }
 
   // 2枚目のTextureを読んで転送するCG2_05_01_page_8
-  DirectX::ScratchImage mipImages2 = LoadTexture("resources/monsterBall.png");
+  DirectX::ScratchImage mipImages2 =LoadTexture(modelData.material.textureFilePath);
+
   const DirectX::TexMetadata &metadata2 = mipImages2.GetMetadata();
   ID3D12Resource *textureResource2 = CreateTextureResource(device, metadata2);
   ID3D12Resource *intermediateResource2 =
@@ -1363,8 +1418,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // modelDataを使う
   //--------------------------------------------------
 
-  // モデル読み込み
-  ModelData modelData = LoadOjFile("resources", "Plane.obj");
   // 頂点リソースを作る
   ID3D12Resource *vertexResource = CreateBufferResource(
       device, sizeof(VertexData) * modelData.vertices.size());
@@ -1696,10 +1749,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       memcpy(&wvpData->WVP, &worldViewProjectionMatrix, sizeof(Matrix4x4));
 
       // Sprite用のworldviewProjectionMatrixを作る04_00
-      Matrix4x4 worldMatrixSprite =MakeAffineMatrix(transformSprite.scale, transformSprite.rotate,transformSprite.translate);
+      Matrix4x4 worldMatrixSprite =
+          MakeAffineMatrix(transformSprite.scale, transformSprite.rotate,
+                           transformSprite.translate);
       Matrix4x4 viewMatrixSprite = MakeIdentity4x4();
-      Matrix4x4 projectionMatrixSprite = MakeOrthographicMatrix(0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
-      Matrix4x4 worldViewProjectionMatrixSprite =Multiply(worldMatrixSprite,Multiply(viewMatrixSprite, projectionMatrixSprite));
+      Matrix4x4 projectionMatrixSprite = MakeOrthographicMatrix(
+          0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
+      Matrix4x4 worldViewProjectionMatrixSprite =
+          Multiply(worldMatrixSprite,
+                   Multiply(viewMatrixSprite, projectionMatrixSprite));
       // 単位行列を書き込んでおく04_00
       transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
       transformationMatrixDataSprite->World = worldMatrixSprite;
