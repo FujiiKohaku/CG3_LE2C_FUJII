@@ -56,7 +56,7 @@ float wave =
 
 // 正規化＆強調
 float caustics = pow(wave * 0.125f + 0.5f, 4.0f);
-float3 causticsColor = caustics * float3(1.2f, 1.3f, 1.5f);
+float3 causticsColor = caustics * float3(0.4f, 1.3f, 1.5f);
     // ───────────────────────────────────────
     //  合成して出力
     // ───────────────────────────────────────
