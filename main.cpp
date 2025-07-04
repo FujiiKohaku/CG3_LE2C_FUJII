@@ -24,6 +24,7 @@
 #include "externals/imgui/imgui.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
+#include <cstdlib>
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
                                                              UINT msg,
@@ -385,7 +386,35 @@ Vector3 Normalize(const Vector3 &v) {
 //------------------------------
 // wave
 //------------------------------
-#pragma region Wave
+#pragma region WaveGod
+float totalHeight(Vector3 pos, float time) {
+  float height = 0.0f;
+
+  // 中心からの距離
+  float r = sqrtf(pos.x * pos.x + pos.z * pos.z);
+
+  // 基本波（低周波の円形波）
+  float freq1 = 5.0f;  // 波の密度（1秒に5回波が通過するイメージ）
+  float amp1 = 0.15f;  // 振幅
+  float speed1 = 2.0f; // 波の進む速さ
+  height += sinf(freq1 * r - speed1 * time) * amp1;
+
+  // 細かい波紋（高周波）
+  float freq2 = 20.0f;
+  float amp2 = 0.05f;
+  float speed2 = 3.5f;
+  height += sinf(freq2 * r - speed2 * time) * amp2;
+
+  // 少し違う波形を加えてリズムを多様化
+  float freq3 = 10.0f;
+  float amp3 = 0.1f;
+  float speed3 = 1.2f;
+  height += sinf(freq3 * r * 0.5f - speed3 * time * 0.7f) * amp3;
+
+  return height;
+}
+
+
 void GenerateGridVertices(VertexData *vertices, int kSubdivision,
                           float gridSize, float time) {
   // GridSize=全体の平面の幅
@@ -419,11 +448,11 @@ void GenerateGridVertices(VertexData *vertices, int kSubdivision,
 
       // 高さ変化をサイン波で
       float freq = 2.0f; // 周波数
-      float amp = 0.2f;  // 振幅
-      leftTop.y = sinf(freq * (leftTop.x + leftTop.z) + time) * amp;
-      leftBottom.y = sinf(freq * (leftBottom.x + leftBottom.z) + time) * amp;
-      rightTop.y = sinf(freq * (rightTop.x + rightTop.z) + time) * amp;
-      rightBottom.y = sinf(freq * (rightBottom.x + rightBottom.z) + time) * amp;
+      float amp = 0.2f;  // 振幅//波もう少し調整ノイズ作成
+      leftTop.y = totalHeight(leftTop, time);
+      leftBottom.y = totalHeight(leftBottom, time);
+      rightTop.y = totalHeight(rightTop, time);
+      rightBottom.y = totalHeight(rightBottom, time);
 
       // 頂点データ作成
       VertexData vA = {

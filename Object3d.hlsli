@@ -4,6 +4,8 @@ struct VertexShaderOutput
     float32_t4 position : SV_POSITION;
     float32_t2 texcoord : TEXCOORD0;
     float32_t3 normal : NORMAL0;
+    float32_t3 worldPos : TEXCOORD2;
+    float wavePhase : TEXCOORD3;
 };
 
 //05_03
