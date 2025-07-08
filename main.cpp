@@ -1815,8 +1815,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // 描画先のRTVとDSVを設定する
       D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
           dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-      commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
-                                      &dsvHandle);
+      //commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
+      //                                &dsvHandle);
       // 指定した色で画面全体をクリアする
       float clearColor[] = {
           0.1f, 0.25f, 0.5f,
@@ -1853,9 +1853,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           3, directionalLightResource->GetGPUVirtualAddress());
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
-      // commandList->DrawInstanced(kNumVertices, 1, 0, 0);
+       //commandList->DrawInstanced(kNumVertices, 1, 0, 0);
       // obj
-      commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+   /*   commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);*/
       // マテリアルCbufferの場所を設定05_03変更これ書くとUvChackerがちゃんとする
       commandList->SetGraphicsRootConstantBufferView(
           0, materialResourceSprite
@@ -1871,7 +1871,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootConstantBufferView(
           1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
       // UvChecker
-      // commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+    /*   commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);*/
 
       //  描画の最後です//----------------------------------------------------
       //   実際のcommandListのImGuiの描画コマンドを積む
