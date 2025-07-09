@@ -1106,8 +1106,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // コマンドキュー,ウィンドウバンドル、設定を渡して生成する
   hr = dxgiFactory->CreateSwapChainForHwnd(
       commandQueue.Get(), hwnd, &swapChainDesc, nullptr, nullptr,
-      reinterpret_cast<IDXGISwapChain1 **>(
-          swapChain.GetAddressOf())); // com.Get,OF
+      reinterpret_cast<IDXGISwapChain1 **>(swapChain.GetAddressOf())); // com.Get,OF
   assert(SUCCEEDED(hr));
 
   // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
@@ -1144,14 +1143,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2];
   // まず１つ目をつくる。１つ目は最初のところに作る。作る場所をこちらで指定して上げる必要がある
   rtvHandles[0] = rtvStartHandle;
-  device->CreateRenderTargetView(swapChainResources->Get(), &rtvDesc,
+  device->CreateRenderTargetView(swapChainResources[0].Get(), &rtvDesc,
                                  rtvHandles[0]);
   // 2つ目のディスクリプタハンドルを得る（自力で）
-  rtvHandles[1].ptr =
-      rtvHandles[0].ptr +
+  rtvHandles[1].ptr = rtvHandles[0].ptr +
       device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
   // 2つ目を作る
-  device->CreateRenderTargetView(swapChainResources->Get(), &rtvDesc,
+  device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc,
                                  rtvHandles[1]);
 
   // 初期値でFenceを作る01_02
@@ -1810,13 +1808,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->ResourceBarrier(1, &barrier);
 
       //// 描画先のRTVうぃ設定する
-      //commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
-      //                                nullptr);
+ /*     commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
+                                      nullptr);*/
       // 描画先のRTVとDSVを設定する
       D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
           dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-      //commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
-      //                                &dsvHandle);
+      commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
+                                      &dsvHandle);
       // 指定した色で画面全体をクリアする
       float clearColor[] = {
           0.1f, 0.25f, 0.5f,
@@ -1855,7 +1853,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
        //commandList->DrawInstanced(kNumVertices, 1, 0, 0);
       // obj
-   /*   commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);*/
+     commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);//オブジェクトのやつ
       // マテリアルCbufferの場所を設定05_03変更これ書くとUvChackerがちゃんとする
       commandList->SetGraphicsRootConstantBufferView(
           0, materialResourceSprite
@@ -1871,7 +1869,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootConstantBufferView(
           1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
       // UvChecker
-    /*   commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);*/
+      commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);//左上のやつ
 
       //  描画の最後です//----------------------------------------------------
       //   実際のcommandListのImGuiの描画コマンドを積む
