@@ -79,10 +79,7 @@ struct DirectionalLight {
 // Lightingを有効にする
 //
 
-// 16分割
-const int kSubdivision = 16;
-// 頂点数
-int kNumVertices = kSubdivision * kSubdivision * 6;
+
 // --- 列挙体 ---
 enum WaveType {
   WAVE_SINE,
@@ -109,6 +106,10 @@ enum AnimationType {
 WaveType waveType = WAVE_SINE;
 AnimationType animationType = ANIM_NONE;
 float waveTime = 0.0f;
+// 16分割
+const int kSubdivision = 4;
+// 頂点数
+int kNumVertices = kSubdivision * kSubdivision * 6;
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
@@ -658,6 +659,7 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
     }
   }
 }
+
 ////////////////////
 // 関数の生成ここまで//
 ////////////////////
@@ -1661,7 +1663,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootConstantBufferView(
           1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
       // UvChecker
-      commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+      //commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
       // 描画の最後です//----------------------------------------------------
       //  実際のcommandListのImGuiの描画コマンドを積む
       ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
