@@ -850,7 +850,7 @@ ModelData LoadOjFile(const std::string &directoryPath,
       s >> texcoord.x >> texcoord.y;
       // 上下逆にする
 
-      texcoord.y *= -1.0f;
+      /*texcoord.y *= -1.0f;*/
       texcoord.y = 1.0f - texcoord.y;
       //CG2_06_02_kusokusosjsusuawihoafwhgiuwhkgfau
       texcoords.push_back(texcoord);
