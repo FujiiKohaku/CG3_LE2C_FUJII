@@ -675,7 +675,20 @@ void GenerateSphereVertices(VertexData *vertices, int kSubdivision,
     }
   }
 }
+// D3Dリソースリークチェック用のクラス
+struct D3DResourceLeakChecker {
+  ~D3DResourceLeakChecker() {
+    Microsoft::WRL::ComPtr<IDXGIDebug1> debug;
 
+    // DXGIのデバッグインターフェースを取得
+    if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
+      // DXGI全体のリソースチェック（アプリが作ったリソースがまだ残ってるか確認）
+      debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
+      debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
+      debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
+    }
+  }
+};
 // ウィンドウプロシージャ
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 
@@ -908,6 +921,8 @@ ModelData LoadOjFile(const std::string &directoryPath,
 //  Windwsアプリでの円とリポウント(main関数)
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+  D3DResourceLeakChecker leakChecker;
+
   CoInitializeEx(0, COINIT_MULTITHREADED);
 
   // 誰も補足しなかった場合(Unhandled),補足する関数を登録
@@ -993,8 +1008,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   for (UINT i = 0; dxgiFactory->EnumAdapterByGpuPreference(
                        i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
                        IID_PPV_ARGS(&useAdapter)) != DXGI_ERROR_NOT_FOUND;
-       ++i) 
-  {
+       ++i) {
 
     // アダプターの情報を取得する
     DXGI_ADAPTER_DESC3 adapterDesc{};        // com
@@ -1002,11 +1016,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     assert(SUCCEEDED(hr));                   // 取得できないのは一大事
     // ソフトウェアアダプタでなければ採用!
     if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) { // get
-        // 採用したアダプタの情報をログに出力wstringの方なので注意
-        Log(logStream,
-            ConvertString(std::format(L"Use Adapater:{}\n",
+      // 採用したアダプタの情報をログに出力wstringの方なので注意
+      Log(logStream,
+          ConvertString(std::format(L"Use Adapater:{}\n",
                                     adapterDesc.Description))); // get
-        break;
+      break;
     }
     useAdapter = nullptr; // ソフトウェアアダプタの場合は見なかったことにする
   }
@@ -1082,7 +1096,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   assert(SUCCEEDED(hr));
 
   // コマンドリストを生成する
-  Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList = nullptr; // com
+  Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList =
+      nullptr; // com
   hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
                                  commandAllocator.Get(), nullptr, // get
                                  IID_PPV_ARGS(&commandList));
@@ -1106,7 +1121,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // コマンドキュー,ウィンドウバンドル、設定を渡して生成する
   hr = dxgiFactory->CreateSwapChainForHwnd(
       commandQueue.Get(), hwnd, &swapChainDesc, nullptr, nullptr,
-      reinterpret_cast<IDXGISwapChain1 **>(swapChain.GetAddressOf())); // com.Get,OF
+      reinterpret_cast<IDXGISwapChain1 **>(
+          swapChain.GetAddressOf())); // com.Get,OF
   assert(SUCCEEDED(hr));
 
   // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
@@ -1146,7 +1162,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   device->CreateRenderTargetView(swapChainResources[0].Get(), &rtvDesc,
                                  rtvHandles[0]);
   // 2つ目のディスクリプタハンドルを得る（自力で）
-  rtvHandles[1].ptr = rtvHandles[0].ptr +
+  rtvHandles[1].ptr =
+      rtvHandles[0].ptr +
       device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
   // 2つ目を作る
   device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc,
@@ -1798,8 +1815,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // Noneにしておく
       barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
       // バリアをはる対象のリソース。現在のバックバッファに対して行う
-      barrier.Transition.pResource =
-          swapChainResources[backBufferIndex].Get();
+      barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
       // 遷移前(現在)のResourceState
       barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
       // 遷移後のResourceState
@@ -1808,8 +1824,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->ResourceBarrier(1, &barrier);
 
       //// 描画先のRTVうぃ設定する
- /*     commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false,
-                                      nullptr);*/
+      /*     commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex],
+         false, nullptr);*/
       // 描画先のRTVとDSVを設定する
       D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
           dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
@@ -1851,9 +1867,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           3, directionalLightResource->GetGPUVirtualAddress());
 
       // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
-       //commandList->DrawInstanced(kNumVertices, 1, 0, 0);
+      // commandList->DrawInstanced(kNumVertices, 1, 0, 0);
       // obj
-     commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);//オブジェクトのやつ
+      commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0,
+                                 0); // オブジェクトのやつ
       // マテリアルCbufferの場所を設定05_03変更これ書くとUvChackerがちゃんとする
       commandList->SetGraphicsRootConstantBufferView(
           0, materialResourceSprite
@@ -1869,7 +1886,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       commandList->SetGraphicsRootConstantBufferView(
           1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
       // UvChecker
-      commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);//左上のやつ
+      commandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // 左上のやつ
 
       //  描画の最後です//----------------------------------------------------
       //   実際のcommandListのImGuiの描画コマンドを積む
@@ -1927,9 +1944,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 //  commandList->Release();
 //  commandAllocator->Release();
 //  commandQueue->Release();
-//  device->Release();
+//  /*device->Release();*/
 //  useAdapter->Release();
-//  dxgiFactory->Release();
+//  //dxgiFactory->Release();
 //  vertexResource->Release();
 //  graphicsPinelineState->Release();
 //  signatureBlob->Release();
@@ -1939,32 +1956,32 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 //  rootSignature->Release();
 //  pixelShaderBlob->Release();
 //  vertexShaderBlob->Release();
-#ifdef _DEBUG
-  //  debugController->Release();
-  //  materialResource->Release();
-  //  wvpResource->Release();
-  //  srvDescriptorHeap->Release();
-  //  textureResource->Release();      // 03_00
-  //  mipImages.Release();             // 03_00
-  //  intermediateResource->Release(); // 03_00EX
-  //  depthStencillResource->Release();
-  //  dsvDescriptorHeap->Release();
-  //  includHandler->Release();
-  //  dxcCompiler->Release();
-  //  dxcUtils->Release();
-  //  vertexResourceSprite->Release();
-  //  transformationMatrixResourceSprite->Release();
-  //  intermediateResource->Release();   // 05_01
-  //  intermediateResource2->Release();  // 05_01
-  //  textureResource2->Release();       // 05_01
-  //  materialResourceSprite->Release(); // 05_03
-  //  directionalLightResource->Release();
-  //  indexResourceSprite->Release();
-  CoInitialize(nullptr);
-#endif
+//#ifdef _DEBUG
+    //debugController->Release();
+    //materialResource->Release();
+    //wvpResource->Release();
+    //srvDescriptorHeap->Release();
+    //textureResource->Release();      // 03_00
+    //mipImages.Release();             // 03_00
+    //intermediateResource->Release(); // 03_00EX
+    //depthStencillResource->Release();
+    //dsvDescriptorHeap->Release();
+    //includHandler->Release();
+    //dxcCompiler->Release();
+    //dxcUtils->Release();
+    //vertexResourceSprite->Release();
+    //transformationMatrixResourceSprite->Release();
+    //intermediateResource->Release();   // 05_01
+    //intermediateResource2->Release();  // 05_01
+    //textureResource2->Release();       // 05_01
+    //materialResourceSprite->Release(); // 05_03
+ /*   directionalLightResource->Release();*/
+ /*   indexResourceSprite->Release();*/
+//  CoInitialize(nullptr);
+//#endif
   CloseWindow(hwnd);
 
-  // リソースチェックCG2_01_03
+   //リソースチェックCG2_01_03
   IDXGIDebug1 *debug;
   if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
     debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
