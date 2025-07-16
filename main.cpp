@@ -26,6 +26,10 @@
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
 #include <xaudio2.h>
+#define DIRECTINPUT_VERSION 0x0800 // DirectInputのバージョン指定
+#include <dinput.h>
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "xaudio2.lib")
 // リンカオプション
 #pragma comment(lib, "d3d12.lib")
@@ -1026,7 +1030,7 @@ SoundData soundData1 = SoundLoadWave("Resources/BGM.wav");
 // main関数/////-------------------------------------------------------------------------------------------------
 //  Windwsアプリでの円とリポウント(main関数)
 
-int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     D3DResourceLeakChecker leakChecker;
 
@@ -1100,14 +1104,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         debugController->SetEnableGPUBasedValidation(TRUE);
     }
 #endif // _DEBUG
-
-    //==XAudioエンジンのインスタンスを生成==//
-    HRESULT result = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
-
-    //==マスターボイスを生成==//
-    result = xAudio2->CreateMasteringVoice(&masterVoice);
-
-    SoundPlayWave(xAudio2.Get(), soundData1); // 音声再生
 
     // ウィンドウを表示する
     ShowWindow(hwnd, SW_SHOW);
@@ -1221,6 +1217,37 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         IID_PPV_ARGS(&commandList));
     // コマンドリストの生成が上手くいかなかったので起動できない
     assert(SUCCEEDED(hr));
+    // ----------------------------
+    // DirectX12 初期化ここまで！
+    // ----------------------------
+    //==XAudioエンジンのインスタンスを生成==//
+    HRESULT result = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
+
+    //==マスターボイスを生成==//
+    result = xAudio2->CreateMasteringVoice(&masterVoice);
+
+ 
+
+    //=======================
+    //  入力デバイスの初期化
+    //=======================
+    // DirectInput全体の初期化(後からゲームパッドなどを追加するとしてもこのオブジェクトはひとつでいい)(winmainを改造、hinstanceに名づけをしました)
+    Microsoft::WRL::ComPtr<IDirectInput8> directInput = nullptr;
+    result = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
+    assert(SUCCEEDED(result));
+    // キーボードデバイスの生成（GUID_Joystickなど指定すればほかの種類のデバイスも扱える）
+    Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard = nullptr; // com
+    result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, nullptr);
+    assert(SUCCEEDED(result));
+    // 入六データ形式のセット(キーボードの場合c_dfDIKeyboardだけど入力デバイスの種類によってあらかじめ何種類か用意されている)
+    result = keyboard->SetDataFormat(&c_dfDIKeyboard); // 標準形式
+    assert(SUCCEEDED(result));
+    // 排他制御レベルのセット
+    result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+    assert(SUCCEEDED(result));
+    //=======================
+    //  入力デバイスの初期化ここまで
+    //=======================
 
     // スワップチェーンを生成する
     Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr; // com
@@ -1790,10 +1817,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
             ImGui::NewFrame();
+
+            //=================================
+            // キーボード情報の取得開始
+            //=================================
+            // キーボードの状態を取得する
+            keyboard->Acquire();
+            // 全キーの入力状態を取得する(全てのキーの入力情報をまとめて取得できる)
+            BYTE key[256] = {};
+            keyboard->GetDeviceState(sizeof(key), key);
             //
             // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
-            ImGui::
-                ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
+            ImGui::ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
 
             ImGui::Begin("Materialcolor");
             ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 5.0f);
@@ -1806,33 +1841,35 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             ImGui::Text("useMonstarBall");
             ImGui::Checkbox("useMonstarBall", &useMonstarBall);
             ImGui::Text("LIgthng");
-            ImGui::SliderFloat("x", &directionalLightData->direction.x, -10.0f,
-                10.0f);
-            ImGui::SliderFloat("y", &directionalLightData->direction.y, -10.0f,
-                10.0f);
-            ImGui::SliderFloat("z", &directionalLightData->direction.z, -10.0f,
-                10.0f);
+            ImGui::SliderFloat("x", &directionalLightData->direction.x, -10.0f, 10.0f);
+            ImGui::SliderFloat("y", &directionalLightData->direction.y, -10.0f, 10.0f);
+            ImGui::SliderFloat("z", &directionalLightData->direction.z, -10.0f, 10.0f);
             ImGui::Text("UVTransform");
-            ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f,
-                -10.0f, 10.0f);
-            ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f,
-                10.0f);
+            ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+            ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
             ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
 
             ImGui::End();
 
             // ImGuiの内部コマンドを生成する02_03
-            ImGui::
-                Render(); // ImGui終わりの場所。描画の前02_03--------------------------
+            ImGui::Render(); // ImGui終わりの場所。描画の前02_03--------------------------
+
             // 描画用のDescrriptorHeapの設定02_03
             Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeaps[] = {
                 srvDescriptorHeap
             };
             commandList->SetDescriptorHeaps(1, descriptorHeaps->GetAddressOf());
-
+            //===================================
             //  ゲームの処理02_02
+            //===================================
             //  02_02
             waveTime += 0.05f;
+
+            // 数字の０キーが押されていたら
+            if (key[DIK_0]) {
+                OutputDebugStringA("Hit 0");
+                SoundPlayWave(xAudio2.Get(), soundData1); // 音声再生の関数
+            }
 
             //  メイクアフィンマトリックス02_02
             Matrix4x4 worldMatrix = MakeAffineMatrix(
