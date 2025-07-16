@@ -937,63 +937,52 @@ ModelData LoadOjFile(const std::string& directoryPath,
 SoundData SoundLoadWave(const char* filename)
 {
     HRESULT result;
-    //==ファイルオープン==//
-    // ファイル入力ストリームのインスタンス
-    std::ifstream file;
-    //.Wavファイルをバイナリモードで開く
-    file.open(filename, std::ios::binary);
-    // ファイルオープン失敗を検出する
+
+    std::ifstream file(filename, std::ios::binary);
     assert(file.is_open());
 
-    //==.wavデータ読み込み==//
     // RIFFヘッダーの読み込み
     RiffHeader riff;
     file.read((char*)&riff, sizeof(riff));
-    // ファイルがRIFFかチェック
-    if (strncmp(riff.chunk.id, "RIFF", 4) != 0) {
+    if (strncmp(riff.chunk.id, "RIFF", 4) != 0 || strncmp(riff.type, "WAVE", 4) != 0) {
         assert(0);
     }
-    // タイプがWAVEかチェック
-    if (strncmp(riff.type, "WAVE", 4) != 0) {
-        assert(0);
-    }
-    // Formatチャンクの読み込み
+
     FormatChunk format = {};
-    // チャンクヘッダーの確認
-    file.read((char*)&format, sizeof(ChunkHeader));
-    if (strncmp(format.chunk.id, "fmt", 4) != 0) {
-        assert(0);
-    }
-    // チャンク本体の読み込み
-    assert(format.chunk.size <= sizeof(format.fmt));
-    file.read((char*)&format.fmt, format.chunk.size);
-    // Dataチャンクの読み込み
-    ChunkHeader data;
-    // JuNKチャンクを検出した場合
-    if (strncmp(data.id, "JUNK", 4) == 0) {
-        // 読み取り位置をJUNKチャンクの終わりまで進める
-        file.seekg(data.size, std::ios_base::cur);
-        // 再読み込み
-        file.read((char*)&data, sizeof(data));
-    }
-    if (strncmp(data.id, "data", 4) != 0) {
-        assert(0);
-    }
-    // Dataチャンクのデータ部(波形データの読み込み)
-    char* pBuffer = new char[data.size];
-    file.read(pBuffer, data.size);
-    // Waveファイルをとじる
-    file.close(); // ファイルクローズ
+    ChunkHeader chunk = {};
 
-    // ファイルクローズ
+    // チャンクを順に読み取って fmt と data を探す
+    char* pBuffer = nullptr;
+    unsigned int dataSize = 0;
 
-    // 読み込んだ音声データをリターン
-    // returnするための音声データ
+    while (file.read((char*)&chunk, sizeof(chunk))) {
+        if (strncmp(chunk.id, "fmt ", 4) == 0) {
+            assert(chunk.size <= sizeof(WAVEFORMATEX));
+            file.read((char*)&format.fmt, chunk.size);
+        } else if (strncmp(chunk.id, "data", 4) == 0) {
+            pBuffer = new char[chunk.size];
+            file.read(pBuffer, chunk.size);
+            dataSize = chunk.size;
+        } else {
+            // 他のチャンク（JUNKなど）はスキップ
+            file.seekg(chunk.size, std::ios::cur);
+        }
+
+        // fmt も data も読み込めたら終わり
+        if (format.fmt.nChannels != 0 && pBuffer != nullptr) {
+            break;
+        }
+    }
+
+    file.close();
+
+    assert(format.fmt.nChannels != 0); // fmt チャンクが見つからなかった
+    assert(pBuffer != nullptr); // data チャンクが見つからなかった
+
     SoundData soundData = {};
-
     soundData.wfex = format.fmt;
     soundData.pBuffer = reinterpret_cast<BYTE*>(pBuffer);
-    soundData.bufferSize = data.size;
+    soundData.bufferSize = dataSize;
     return soundData;
 }
 
@@ -1010,17 +999,30 @@ void SoundUnload(SoundData* soundData)
 }
 void SoundPlayWave(IXAudio2* xAudio2, const SoundData& soundData)
 {
-    HRESULT result; 
+    HRESULT result;
 
-    //波形フォーマットをもとにsourceVoiceの生成
+    // 波形フォーマットをもとにsourceVoiceの生成
     IXAudio2SourceVoice* pSourceVoice = nullptr;
     result = xAudio2->CreateSourceVoice(&pSourceVoice, &soundData.wfex);
     assert(SUCCEEDED(result));
 
-    //再生する波形データの設定
-    XAUDIO_BUFFER
+    // 再生する波形データの設定
+    XAUDIO2_BUFFER buf {};
+    buf.pAudioData = soundData.pBuffer;
+    buf.AudioBytes = soundData.bufferSize;
+    buf.Flags = XAUDIO2_END_OF_STREAM;
+
+    // 波形データの再生
+    result = pSourceVoice->SubmitSourceBuffer(&buf);
+    result = pSourceVoice->Start();
 }
-    ////////////////
+
+// 音声読み込み
+SoundData soundData1 = SoundLoadWave("Resources/BGM.wav");
+
+// 音声再生
+
+////////////////
 // main関数/////-------------------------------------------------------------------------------------------------
 //  Windwsアプリでの円とリポウント(main関数)
 
@@ -1104,6 +1106,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     //==マスターボイスを生成==//
     result = xAudio2->CreateMasteringVoice(&masterVoice);
+
+    SoundPlayWave(xAudio2.Get(), soundData1); // 音声再生
 
     // ウィンドウを表示する
     ShowWindow(hwnd, SW_SHOW);
@@ -2000,7 +2004,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     CloseHandle(fenceEvent);
 
     // リリースする場所
-
+    // XAudio解放
+    xAudio2.Reset();
+    // 音声データ開放
+    SoundUnload(&soundData1);
     CoInitialize(nullptr);
     // #endif
     CloseWindow(hwnd);
