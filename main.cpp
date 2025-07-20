@@ -1,16 +1,18 @@
 // ======================= ヘッダー・ライブラリ関連 ==========================
 #define _USE_MATH_DEFINES
 // 標準ライブラリ//
+#include "MatrixMath.h"
+#include "Utility.h"
 #include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
 #include <wrl.h>
+#include "Unknwn.h"
 // Windows・DirectX関連
 #include <Windows.h>
 #include <d3d12.h>
@@ -18,7 +20,7 @@
 #include <dxcapi.h>
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
-#include <strsafe.h>
+
 // 外部ライブラリ//
 #include "externals/DirectXTex/DirectXTex.h"
 #include "externals/DirectXTex/d3dx12.h"
@@ -34,7 +36,7 @@
 // リンカオプション
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "dbghelp.lib")
+
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "dxcompiler.lib")
 // ======================= ImGui用ウィンドウプロシージャ =====================
@@ -43,22 +45,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
     WPARAM wParam,
     LPARAM lParam);
 // ======================= 基本構造体 =====================
-// 基本ベクトル.行列
-struct Vector2 {
-    float x, y;
-};
-struct Vector3 {
-    float x, y, z;
-};
-struct Vector4 {
-    float x, y, z, w;
-};
-struct Matrix3x3 {
-    float m[3][3];
-};
-struct Matrix4x4 {
-    float m[4][4];
-};
+
 // 変換情報
 struct Transform {
     Vector3 scale;
@@ -167,288 +154,11 @@ float waveTime = 0.0f;
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
-#pragma region 行列関数
-// 単位行列の作成
-Matrix4x4 MakeIdentity4x4()
-{
-    Matrix4x4 result {};
-    for (int i = 0; i < 4; ++i)
-        result.m[i][i] = 1.0f;
-    return result;
-}
-// 拡大縮小行列S
-Matrix4x4 Matrix4x4MakeScaleMatrix(const Vector3& s)
-{
-    Matrix4x4 result = {};
-    result.m[0][0] = s.x;
-    result.m[1][1] = s.y;
-    result.m[2][2] = s.z;
-    result.m[3][3] = 1.0f;
-    return result;
-}
 
-// X軸回転行列R
-Matrix4x4 MakeRotateXMatrix(float radian)
-{
-    Matrix4x4 result = {};
 
-    result.m[0][0] = 1.0f;
-    result.m[1][1] = std::cos(radian);
-    result.m[1][2] = std::sin(radian);
-    result.m[2][1] = -std::sin(radian);
-    result.m[2][2] = std::cos(radian);
-    result.m[3][3] = 1.0f;
 
-    return result;
-}
-// Y軸回転行列R
-Matrix4x4 MakeRotateYMatrix(float radian)
-{
-    Matrix4x4 result = {};
 
-    result.m[0][0] = std::cos(radian);
-    result.m[0][2] = std::sin(radian);
-    result.m[1][1] = 1.0f;
-    result.m[2][0] = -std::sin(radian);
-    result.m[2][2] = std::cos(radian);
-    result.m[3][3] = 1.0f;
 
-    return result;
-}
-// Z軸回転行列R
-Matrix4x4 MakeRotateZMatrix(float radian)
-{
-    Matrix4x4 result = {};
-
-    result.m[0][0] = std::cos(radian);
-    result.m[0][1] = -std::sin(radian);
-    result.m[1][0] = std::sin(radian);
-    result.m[1][1] = std::cos(radian);
-    result.m[2][2] = 1.0f;
-    result.m[3][3] = 1.0f;
-
-    return result;
-}
-
-// 平行移動行列T
-Matrix4x4 MakeTranslateMatrix(const Vector3& tlanslate)
-{
-    Matrix4x4 result = {};
-    result.m[0][0] = 1.0f;
-    result.m[1][1] = 1.0f;
-    result.m[2][2] = 1.0f;
-    result.m[3][3] = 1.0f;
-    result.m[3][0] = tlanslate.x;
-    result.m[3][1] = tlanslate.y;
-    result.m[3][2] = tlanslate.z;
-
-    return result;
-}
-// 行列の積
-Matrix4x4 Multiply(const Matrix4x4& m1, const Matrix4x4& m2)
-{
-    Matrix4x4 result {};
-    for (int i = 0; i < 4; ++i)
-        for (int j = 0; j < 4; ++j)
-            for (int k = 0; k < 4; ++k)
-                result.m[i][j] += m1.m[i][k] * m2.m[k][j];
-    return result;
-}
-// ワールドマトリックス、メイクアフィン
-Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotate,
-    const Vector3& translate)
-{
-    Matrix4x4 scaleMatrix = Matrix4x4MakeScaleMatrix(scale);
-    Matrix4x4 rotateX = MakeRotateXMatrix(rotate.x);
-    Matrix4x4 rotateY = MakeRotateYMatrix(rotate.y);
-    Matrix4x4 rotateZ = MakeRotateZMatrix(rotate.z);
-    Matrix4x4 rotateMatrix = Multiply(Multiply(rotateX, rotateY), rotateZ);
-    Matrix4x4 translateMatrix = MakeTranslateMatrix(translate);
-
-    Matrix4x4 worldMatrix = Multiply(Multiply(scaleMatrix, rotateMatrix), translateMatrix);
-    return worldMatrix;
-}
-// 4x4 行列の逆行列を計算する関数
-Matrix4x4 Inverse(Matrix4x4 m)
-{
-    Matrix4x4 result;
-    float det;
-    int i;
-
-    result.m[0][0] = m.m[1][1] * m.m[2][2] * m.m[3][3] - m.m[1][1] * m.m[2][3] * m.m[3][2] - m.m[2][1] * m.m[1][2] * m.m[3][3] + m.m[2][1] * m.m[1][3] * m.m[3][2] + m.m[3][1] * m.m[1][2] * m.m[2][3] - m.m[3][1] * m.m[1][3] * m.m[2][2];
-
-    result.m[0][1] = -m.m[0][1] * m.m[2][2] * m.m[3][3] + m.m[0][1] * m.m[2][3] * m.m[3][2] + m.m[2][1] * m.m[0][2] * m.m[3][3] - m.m[2][1] * m.m[0][3] * m.m[3][2] - m.m[3][1] * m.m[0][2] * m.m[2][3] + m.m[3][1] * m.m[0][3] * m.m[2][2];
-
-    result.m[0][2] = m.m[0][1] * m.m[1][2] * m.m[3][3] - m.m[0][1] * m.m[1][3] * m.m[3][2] - m.m[1][1] * m.m[0][2] * m.m[3][3] + m.m[1][1] * m.m[0][3] * m.m[3][2] + m.m[3][1] * m.m[0][2] * m.m[1][3] - m.m[3][1] * m.m[0][3] * m.m[1][2];
-
-    result.m[0][3] = -m.m[0][1] * m.m[1][2] * m.m[2][3] + m.m[0][1] * m.m[1][3] * m.m[2][2] + m.m[1][1] * m.m[0][2] * m.m[2][3] - m.m[1][1] * m.m[0][3] * m.m[2][2] - m.m[2][1] * m.m[0][2] * m.m[1][3] + m.m[2][1] * m.m[0][3] * m.m[1][2];
-
-    result.m[1][0] = -m.m[1][0] * m.m[2][2] * m.m[3][3] + m.m[1][0] * m.m[2][3] * m.m[3][2] + m.m[2][0] * m.m[1][2] * m.m[3][3] - m.m[2][0] * m.m[1][3] * m.m[3][2] - m.m[3][0] * m.m[1][2] * m.m[2][3] + m.m[3][0] * m.m[1][3] * m.m[2][2];
-
-    result.m[1][1] = m.m[0][0] * m.m[2][2] * m.m[3][3] - m.m[0][0] * m.m[2][3] * m.m[3][2] - m.m[2][0] * m.m[0][2] * m.m[3][3] + m.m[2][0] * m.m[0][3] * m.m[3][2] + m.m[3][0] * m.m[0][2] * m.m[2][3] - m.m[3][0] * m.m[0][3] * m.m[2][2];
-
-    result.m[1][2] = -m.m[0][0] * m.m[1][2] * m.m[3][3] + m.m[0][0] * m.m[1][3] * m.m[3][2] + m.m[1][0] * m.m[0][2] * m.m[3][3] - m.m[1][0] * m.m[0][3] * m.m[3][2] - m.m[3][0] * m.m[0][2] * m.m[1][3] + m.m[3][0] * m.m[0][3] * m.m[1][2];
-
-    result.m[1][3] = m.m[0][0] * m.m[1][2] * m.m[2][3] - m.m[0][0] * m.m[1][3] * m.m[2][2] - m.m[1][0] * m.m[0][2] * m.m[2][3] + m.m[1][0] * m.m[0][3] * m.m[2][2] + m.m[2][0] * m.m[0][2] * m.m[1][3] - m.m[2][0] * m.m[0][3] * m.m[1][2];
-
-    result.m[2][0] = m.m[1][0] * m.m[2][1] * m.m[3][3] - m.m[1][0] * m.m[2][3] * m.m[3][1] - m.m[2][0] * m.m[1][1] * m.m[3][3] + m.m[2][0] * m.m[1][3] * m.m[3][1] + m.m[3][0] * m.m[1][1] * m.m[2][3] - m.m[3][0] * m.m[1][3] * m.m[2][1];
-
-    result.m[2][1] = -m.m[0][0] * m.m[2][1] * m.m[3][3] + m.m[0][0] * m.m[2][3] * m.m[3][1] + m.m[2][0] * m.m[0][1] * m.m[3][3] - m.m[2][0] * m.m[0][3] * m.m[3][1] - m.m[3][0] * m.m[0][1] * m.m[2][3] + m.m[3][0] * m.m[0][3] * m.m[2][1];
-
-    result.m[2][2] = m.m[0][0] * m.m[1][1] * m.m[3][3] - m.m[0][0] * m.m[1][3] * m.m[3][1] - m.m[1][0] * m.m[0][1] * m.m[3][3] + m.m[1][0] * m.m[0][3] * m.m[3][1] + m.m[3][0] * m.m[0][1] * m.m[1][3] - m.m[3][0] * m.m[0][3] * m.m[1][1];
-
-    result.m[2][3] = -m.m[0][0] * m.m[1][1] * m.m[2][3] + m.m[0][0] * m.m[1][3] * m.m[2][1] + m.m[1][0] * m.m[0][1] * m.m[2][3] - m.m[1][0] * m.m[0][3] * m.m[2][1] - m.m[2][0] * m.m[0][1] * m.m[1][3] + m.m[2][0] * m.m[0][3] * m.m[1][1];
-
-    result.m[3][0] = -m.m[1][0] * m.m[2][1] * m.m[3][2] + m.m[1][0] * m.m[2][2] * m.m[3][1] + m.m[2][0] * m.m[1][1] * m.m[3][2] - m.m[2][0] * m.m[1][2] * m.m[3][1] - m.m[3][0] * m.m[1][1] * m.m[2][2] + m.m[3][0] * m.m[1][2] * m.m[2][1];
-
-    result.m[3][1] = m.m[0][0] * m.m[2][1] * m.m[3][2] - m.m[0][0] * m.m[2][2] * m.m[3][1] - m.m[2][0] * m.m[0][1] * m.m[3][2] + m.m[2][0] * m.m[0][2] * m.m[3][1] + m.m[3][0] * m.m[0][1] * m.m[2][2] - m.m[3][0] * m.m[0][2] * m.m[2][1];
-
-    result.m[3][2] = -m.m[0][0] * m.m[1][1] * m.m[3][2] + m.m[0][0] * m.m[1][2] * m.m[3][1] + m.m[1][0] * m.m[0][1] * m.m[3][2] - m.m[1][0] * m.m[0][2] * m.m[3][1] - m.m[3][0] * m.m[0][1] * m.m[1][2] + m.m[3][0] * m.m[0][2] * m.m[1][1];
-
-    result.m[3][3] = m.m[0][0] * m.m[1][1] * m.m[2][2] - m.m[0][0] * m.m[1][2] * m.m[2][1] - m.m[1][0] * m.m[0][1] * m.m[2][2] + m.m[1][0] * m.m[0][2] * m.m[2][1] + m.m[2][0] * m.m[0][1] * m.m[1][2] - m.m[2][0] * m.m[0][2] * m.m[1][1];
-
-    det = m.m[0][0] * result.m[0][0] + m.m[0][1] * result.m[1][0] + m.m[0][2] * result.m[2][0] + m.m[0][3] * result.m[3][0];
-
-    if (det == 0)
-        return Matrix4x4 {}; // またはエラー処理
-
-    det = 1.0f / det;
-
-    for (i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            result.m[i][j] = result.m[i][j] * det;
-
-    return result;
-}
-// 透視投影行列
-Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio,
-    float nearClip, float farClip)
-{
-    Matrix4x4 result = {};
-
-    float f = 1.0f / std::tan(fovY / 2.0f);
-
-    result.m[0][0] = f / aspectRatio;
-    result.m[1][1] = f;
-    result.m[2][2] = farClip / (farClip - nearClip);
-    result.m[2][3] = 1.0f;
-    result.m[3][2] = -(nearClip * farClip) / (farClip - nearClip);
-    return result;
-}
-// 正射影行列
-Matrix4x4 MakeOrthographicMatrix(float left, float top, float right,
-    float bottom, float nearClip, float farClip)
-{
-    Matrix4x4 m = {};
-
-    m.m[0][0] = 2.0f / (right - left);
-    m.m[1][1] = 2.0f / (top - bottom);
-    m.m[2][2] = 1.0f / (farClip - nearClip);
-    m.m[3][0] = -(right + left) / (right - left);
-    m.m[3][1] = -(top + bottom) / (top - bottom);
-    m.m[3][2] = -nearClip / (farClip - nearClip);
-    m.m[3][3] = 1.0f;
-
-    return m;
-}
-// ビューポート変換行列
-Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height,
-    float minDepth, float maxDepth)
-{
-    Matrix4x4 m = {};
-
-    // 行0：X方向スケーリングと移動
-    m.m[0][0] = width / 2.0f;
-    m.m[1][1] = -height / 2.0f;
-    m.m[2][2] = maxDepth - minDepth;
-    m.m[3][0] = left + width / 2.0f;
-    m.m[3][1] = top + height / 2.0f;
-    m.m[3][2] = minDepth;
-    m.m[3][3] = 1.0f;
-
-    return m;
-}
-// 正規化関数
-Vector3 Normalize(const Vector3& v)
-{
-    float length = std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-    if (length == 0.0f)
-        return { 0.0f, 0.0f, 0.0f };
-    return { v.x / length, v.y / length, v.z / length };
-}
-#pragma endregion
-
-//===エラーハンドリング用の身にダンプ出力関数===///
-static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception)
-{
-    // 時刻を取得して、時刻を名前に入れたファイルを作成。Dumpsディレクトリ以下ぶ出力
-    SYSTEMTIME time;
-    GetLocalTime(&time);
-    wchar_t filePath[MAX_PATH] = { 0 };
-    CreateDirectory(L"./Dumps", nullptr);
-    StringCchPrintfW(filePath, MAX_PATH, L"./Dumps/%04d-%02d%02d-%02d%02d.dmp",
-        time.wYear, time.wMonth, time.wDay, time.wHour,
-        time.wMinute);
-    HANDLE dumpFileHandle = CreateFile(filePath, GENERIC_READ | GENERIC_WRITE,
-        FILE_SHARE_WRITE | FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
-    // processId(このexeのId)とクラッシュ(例外)の発生したthreadIdを取得
-    DWORD processId = GetCurrentProcessId();
-    DWORD threadId = GetCurrentThreadId();
-    // 設定情報を入力
-    MINIDUMP_EXCEPTION_INFORMATION minidumpInformation { 0 };
-    minidumpInformation.ThreadId = threadId;
-    minidumpInformation.ExceptionPointers = exception;
-    minidumpInformation.ClientPointers = TRUE;
-    // Dumpを出力。MiniDumpNormalは最低限の情報を出力するフラグ
-    MiniDumpWriteDump(GetCurrentProcess(), processId, dumpFileHandle,
-        MiniDumpNormal, &minidumpInformation, nullptr, nullptr);
-    // 他に関連づけられているSEH例外ハンドラがあれば実行。
-
-    return EXCEPTION_EXECUTE_HANDLER;
-}
-
-//=== ログ出力関数（コンソールとデバッグ出力）==//
-void Log(std::ostream& os, const std::string& message)
-{
-    os << message << std::endl;
-    OutputDebugStringA(message.c_str());
-}
-
-//=== UTF-8文字列 -> ワイド文字列への変換===/
-std::wstring ConvertString(const std::string& str)
-{
-    if (str.empty()) {
-        return std::wstring();
-    }
-
-    auto sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]),
-        static_cast<int>(str.size()), NULL, 0);
-    if (sizeNeeded == 0) {
-        return std::wstring();
-    }
-    std::wstring result(sizeNeeded, 0);
-    MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]),
-        static_cast<int>(str.size()), &result[0], sizeNeeded);
-    return result;
-}
-
-//=== ワイド文字列 -> UTF-8文字列への変換 ===
-std::string ConvertString(const std::wstring& str)
-{
-    if (str.empty()) {
-        return std::string();
-    }
-
-    auto sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()),
-        NULL, 0, NULL, NULL);
-    if (sizeNeeded == 0) {
-        return std::string();
-    }
-    std::string result(sizeNeeded, 0);
-    WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()),
-        result.data(), sizeNeeded, NULL, NULL);
-    return result;
-}
 
 //=== D3D12バッファリソース作成（UPLOADヒープ） ===
 Microsoft::WRL::ComPtr<ID3D12Resource>
@@ -580,7 +290,7 @@ DirectX::ScratchImage LoadTexture(const std::string& filePath)
 {
     // テクスチャファイルを読んでプログラムで扱えるようにする
     DirectX::ScratchImage image {};
-    std::wstring filePathW = ConvertString(filePath);
+    std::wstring filePathW =Utility::ConvertString(filePath);
     HRESULT hr = DirectX::LoadFromWICFile(
         filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
     // std::wcout << L"LoadFromWICFile HR: " << std::hex << hr << std::endl;
@@ -743,7 +453,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     // ここの中身を書いていく02_00
     // 1.hlslファイルを読み込む02_00
     // これからシェーダーをコンパイルする旨をログに出す02_00
-    Log(os, ConvertString(std::format(L"Begin CompileShader,path:{},profike:{}\n", filepath, profile)));
+    Utility::Log(os, Utility::ConvertString(std::format(L"Begin CompileShader,path:{},profike:{}\n", filepath, profile)));
     // hlslファイルを読む02_00
     Microsoft::WRL::ComPtr<IDxcBlobEncoding> shaderSource = nullptr;
     HRESULT hr = dxcUtils->LoadFile(filepath.c_str(), nullptr, &shaderSource);
@@ -784,7 +494,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     IDxcBlobUtf8* shaderError = nullptr;
     shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
     if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
-        Log(os, shaderError->GetStringPointer());
+        Utility::Log(os, shaderError->GetStringPointer());
         // 警告、エラーダメ絶対02_00
         assert(false);
     }
@@ -795,8 +505,8 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
         nullptr);
     assert(SUCCEEDED(hr));
     // 成功したログを出す02_00
-    Log(os,
-        ConvertString(std::format(L"Compile Succeeded, path:{}, profike:{}\n ",
+    Utility::Log(os,
+        Utility::ConvertString(std::format(L"Compile Succeeded, path:{}, profike:{}\n ",
             filepath, profile)));
     // もう使わないリソースを解放02_00
     // shaderSource->Release();
@@ -1038,7 +748,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
     // main関数はじまってすぐに登録するとよい
-    SetUnhandledExceptionFilter(ExportDump);
+    SetUnhandledExceptionFilter(Utility::ExportDump);
     // ログのディレクトリを用意
     std::filesystem::create_directory("logs");
     // main関数の先頭//
@@ -1131,8 +841,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // ソフトウェアアダプタでなければ採用!
         if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) { // get
             // 採用したアダプタの情報をログに出力wstringの方なので注意
-            Log(logStream,
-                ConvertString(std::format(L"Use Adapater:{}\n",
+            Utility::Log(logStream,
+                Utility::ConvertString(std::format(L"Use Adapater:{}\n",
                     adapterDesc.Description))); // get
             break;
         }
@@ -1155,14 +865,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // 指定した昨日レベルでデバイスは生成できたか確認
         if (SUCCEEDED(hr)) {
             // 生成できたのでログ出力を行ってループを抜ける
-            Log(logStream,
+            Utility::Log(logStream,
                 std::format("FeatureLevel : {}\n", featureLevelStrings[i]));
             break;
         }
     }
     // デバイスの生成が上手くいかなかったので起動できない
     assert(device != nullptr);
-    Log(logStream, "Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
+    Utility::Log(logStream, "Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
 
 #ifdef _DEBUG
 
@@ -1225,8 +935,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     //==マスターボイスを生成==//
     result = xAudio2->CreateMasteringVoice(&masterVoice);
-
- 
 
     //=======================
     //  入力デバイスの初期化
@@ -1390,7 +1098,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // もし失敗したら、エラーメッセージを出して止める
     if (FAILED(hr)) {
-        Log(logStream, reinterpret_cast<char*>(errorBlob->GetBufferPointer())); // エラーをログに出す
+        Utility::Log(logStream, reinterpret_cast<char*>(errorBlob->GetBufferPointer())); // エラーをログに出す
         assert(false); // 絶対成功してないと困るので、止める
     }
 
@@ -1619,7 +1327,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
     // 今回は赤を書き込んでみる
     materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-    materialData->uvTransform = MakeIdentity4x4(); // 06_01_UuvTransform行列を単位行列で初期化
+    materialData->uvTransform = MatrixMath::MakeIdentity4x4(); // 06_01_UuvTransform行列を単位行列で初期化
     materialData->enableLighting = true;
     //--------------------------
     // WVP行列
@@ -1631,7 +1339,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // 書き込むためのアドレスを取得02_02
     wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
     // 単位行列を書き込んでおく02_02
-    Matrix4x4 identity = MakeIdentity4x4();
+    Matrix4x4 identity = MatrixMath::MakeIdentity4x4();
     // 05_03
     memcpy(&wvpData->WVP, &identity, sizeof(Matrix4x4));
     memcpy(&wvpData->World, &identity, sizeof(Matrix4x4));
@@ -1700,7 +1408,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         reinterpret_cast<void**>(&materialDataSprite));
     // 今回は白を設定
     materialDataSprite->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-    materialDataSprite->uvTransform = MakeIdentity4x4(); // 06_01//同じ
+    materialDataSprite->uvTransform = MatrixMath::MakeIdentity4x4(); // 06_01//同じ
     materialDataSprite->enableLighting = false; // kokomonstrball?
 
     // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
@@ -1736,7 +1444,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     directionalLightResource->Map(
         0, nullptr, reinterpret_cast<void**>(&directionalLightData));
     directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 白色光
-    directionalLightData->direction = Normalize({ 0.0f, -1.0f, 0.0f }); // 真上から下方向
+    directionalLightData->direction = MatrixMath::Normalize({ 0.0f, -1.0f, 0.0f }); // 真上から下方向
     directionalLightData->intensity = 1.0f; // 標準の明るさ
 
     //--------------------------
@@ -1872,30 +1580,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
 
             //  メイクアフィンマトリックス02_02
-            Matrix4x4 worldMatrix = MakeAffineMatrix(
+            Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(
                 transform.scale, transform.rotate, transform.translate);
             // カメラのメイクアフィンマトリックス02_02
-            Matrix4x4 cameraMatrix = MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate,
+            Matrix4x4 cameraMatrix = MatrixMath::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate,
                 cameraTransform.translate);
             // 逆行列カメラ02_02
-            Matrix4x4 viewMatrix = Inverse(cameraMatrix);
+            Matrix4x4 viewMatrix = MatrixMath::Inverse(cameraMatrix);
             // 透視投影行列02_02
-            Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(
+            Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(
                 0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
             // ワールドビュープロジェクション行列02_02
-            Matrix4x4 worldViewProjectionMatrix = Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
+            Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
             // CBVのバッファに書き込む02_02
             // CBVに正しい行列を書き込む
             memcpy(&wvpData->WVP, &worldViewProjectionMatrix, sizeof(Matrix4x4));
 
             // Sprite用のworldviewProjectionMatrixを作る04_00
-            Matrix4x4 worldMatrixSprite = MakeAffineMatrix(transformSprite.scale, transformSprite.rotate,
+            Matrix4x4 worldMatrixSprite = MatrixMath::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate,
                 transformSprite.translate);
-            Matrix4x4 viewMatrixSprite = MakeIdentity4x4();
-            Matrix4x4 projectionMatrixSprite = MakeOrthographicMatrix(
+            Matrix4x4 viewMatrixSprite = MatrixMath::MakeIdentity4x4();
+            Matrix4x4 projectionMatrixSprite = MatrixMath::MakeOrthographicMatrix(
                 0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
-            Matrix4x4 worldViewProjectionMatrixSprite = Multiply(worldMatrixSprite,
-                Multiply(viewMatrixSprite, projectionMatrixSprite));
+            Matrix4x4 worldViewProjectionMatrixSprite = MatrixMath::Multiply(worldMatrixSprite,
+                MatrixMath::Multiply(viewMatrixSprite, projectionMatrixSprite));
             // 単位行列を書き込んでおく04_00
             transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
             transformationMatrixDataSprite->World = worldMatrixSprite;
@@ -1903,11 +1611,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             //-------------------------
             // UVTransform用の行列生成
             //-------------------------
-            Matrix4x4 uvTransformMatrix = Matrix4x4MakeScaleMatrix(uvTransformSprite.scale);
-            uvTransformMatrix = Multiply(
-                uvTransformMatrix, MakeRotateZMatrix(uvTransformSprite.rotate.z));
-            uvTransformMatrix = Multiply(
-                uvTransformMatrix, MakeTranslateMatrix(uvTransformSprite.translate));
+
+            Matrix4x4 uvTransformMatrix = MatrixMath::Matrix4x4MakeScaleMatrix(uvTransformSprite.scale);
+            uvTransformMatrix = MatrixMath::Multiply(
+                uvTransformMatrix, MatrixMath::MakeRotateZMatrix(uvTransformSprite.rotate.z));
+            uvTransformMatrix = MatrixMath::Multiply(
+                uvTransformMatrix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
             materialDataSprite->uvTransform = uvTransformMatrix;
 
             // 画面のクリア処理
