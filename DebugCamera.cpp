@@ -5,6 +5,10 @@ void DebugCamera::Update()
     // カメラのワールド行列を更新
     cameraMatrix = MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, rotation_, translation_);
     viewMatrix = Inverse(cameraMatrix);
+
+
+    
+
 }
 
 void DebugCamera::Initialize()

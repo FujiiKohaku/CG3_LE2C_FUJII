@@ -1,7 +1,9 @@
 // ======================= ヘッダー・ライブラリ関連 ==========================
 #define _USE_MATH_DEFINES
 // 標準ライブラリ//
+#include "Input.h"
 #include "MatrixMath.h"
+#include "Unknwn.h"
 #include "Utility.h"
 #include <cassert>
 #include <chrono>
@@ -11,8 +13,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <wrl.h>
-#include "Unknwn.h"
 // Windows・DirectX関連
 #include <Windows.h>
 #include <d3d12.h>
@@ -28,10 +28,7 @@
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
 #include <xaudio2.h>
-#define DIRECTINPUT_VERSION 0x0800 // DirectInputのバージョン指定
-#include <dinput.h>
-#pragma comment(lib, "dinput8.lib")
-#pragma comment(lib, "dxguid.lib")
+
 #pragma comment(lib, "xaudio2.lib")
 // リンカオプション
 #pragma comment(lib, "d3d12.lib")
@@ -154,11 +151,6 @@ float waveTime = 0.0f;
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
-
-
-
-
-
 
 //=== D3D12バッファリソース作成（UPLOADヒープ） ===
 Microsoft::WRL::ComPtr<ID3D12Resource>
@@ -290,7 +282,7 @@ DirectX::ScratchImage LoadTexture(const std::string& filePath)
 {
     // テクスチャファイルを読んでプログラムで扱えるようにする
     DirectX::ScratchImage image {};
-    std::wstring filePathW =Utility::ConvertString(filePath);
+    std::wstring filePathW = Utility::ConvertString(filePath);
     HRESULT hr = DirectX::LoadFromWICFile(
         filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
     // std::wcout << L"LoadFromWICFile HR: " << std::hex << hr << std::endl;
@@ -1511,7 +1503,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
     MSG msg {};
-
+    //===キーボードのインスタンス作成
+    Input input;
+    //=================================
+    // キーボード情報の取得開始
+    //=================================
+    input.Initialize(hInstance, hwnd);
     // ウィンドウの×ボタンが押されるまでループ
     while (msg.message != WM_QUIT) {
 
@@ -1526,15 +1523,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui_ImplWin32_NewFrame();
             ImGui::NewFrame();
 
-            //=================================
-            // キーボード情報の取得開始
-            //=================================
-            // キーボードの状態を取得する
-            keyboard->Acquire();
-            // 全キーの入力状態を取得する(全てのキーの入力情報をまとめて取得できる)
-            BYTE key[256] = {};
-            keyboard->GetDeviceState(sizeof(key), key);
-            //
+        
+
             // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
             ImGui::ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
 
@@ -1573,8 +1563,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             //  02_02
             waveTime += 0.05f;
 
+            input.Update();
             // 数字の０キーが押されていたら
-            if (key[DIK_0]) {
+            if (input.IsKeyPressed(DIK_0)) {
                 OutputDebugStringA("Hit 0");
                 SoundPlayWave(xAudio2.Get(), soundData1); // 音声再生の関数
             }
