@@ -1,6 +1,7 @@
 // ======================= ヘッダー・ライブラリ関連 ==========================
 #define _USE_MATH_DEFINES
 // 標準ライブラリ//
+#include "DebugCamera.h"
 #include "Input.h"
 #include "MatrixMath.h"
 #include "Unknwn.h"
@@ -1503,7 +1504,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
     MSG msg {};
-    //===キーボードのインスタンス作成
+    //=================================
+    // キーボード1インスタンス作成
+    //=================================
     Input input;
     //=================================
     // キーボード情報の取得開始
@@ -1522,8 +1525,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
             ImGui::NewFrame();
-
-        
 
             // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
             ImGui::ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
