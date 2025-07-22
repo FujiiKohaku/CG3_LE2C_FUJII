@@ -19,8 +19,7 @@ bool Input::Initialize(HINSTANCE hInstance, HWND hwnd)
     assert(SUCCEEDED(result));
 
     // 排他制御レベルのセット
-    result = keyboard_->SetCooperativeLevel(hwnd,
-        DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+    result = keyboard_->SetCooperativeLevel(hwnd,DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
     assert(SUCCEEDED(result));
 
     return true;

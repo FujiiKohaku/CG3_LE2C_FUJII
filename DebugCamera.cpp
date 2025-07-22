@@ -4,7 +4,7 @@ void DebugCamera::Update()
 {
     const float moveSpeed = 0.1f;
     const float rotateSpeed = 0.05f;
-
+    input_.Update();
     // 移動ベクトル（ローカル空間）
     Vector3 move = { 0.0f, 0.0f, 0.0f };
 
@@ -21,7 +21,8 @@ void DebugCamera::Update()
         move.x += moveSpeed;
     }
     if (input_.IsKeyPressed(DIK_Q)) {
-        move.y += moveSpeed;;
+        move.y += moveSpeed;
+        ;
     }
     if (input_.IsKeyPressed(DIK_E)) {
         move.y -= moveSpeed;
@@ -41,20 +42,19 @@ void DebugCamera::Update()
     translation_.z += move.x * std::sin(rotation_.y) + move.z * std::cos(rotation_.y);
 
     // ビュー行列の更新
-    cameraMatrix = MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, rotation_, translation_);
-    viewMatrix = Inverse(cameraMatrix);
+    cameraMatrix = DebugCamera::MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, rotation_, translation_);
+    viewMatrix = DebugCamera::Inverse(cameraMatrix);
 }
 
-
-
-void DebugCamera::Initialize()
+void DebugCamera::Initialize(HINSTANCE hinstance, HWND hwnd)
 {
+    input_.Initialize(hinstance, hwnd);
     // ワールド変換行列を作成（スケール1、回転・移動はメンバ変数から）
-    cameraMatrix = MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, rotation_, translation_);
+    cameraMatrix = DebugCamera::MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, rotation_, translation_);
 
     // ビュー行列はカメラ行列の逆行列
-    viewMatrix = Inverse(cameraMatrix);
+    viewMatrix = DebugCamera::Inverse(cameraMatrix);
 
     // 正射影行列の作成（左上・右下・近クリップ・遠クリップ）
-    orthoGraphicMatrix = MakeOrthographicMatrix(-160.0f, 160.0f, 200.0f, 300.0f, 0.0f, 1000.0f);
+    orthoGraphicMatrix = DebugCamera::MakeOrthographicMatrix(-160.0f, 160.0f, 200.0f, 300.0f, 0.0f, 1000.0f);
 }

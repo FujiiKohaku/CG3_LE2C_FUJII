@@ -1,15 +1,9 @@
 #pragma once
 #include "Input.h"
 #include <sstream>
+#include "MatrixMath.h"
 class DebugCamera {
 public:
-    struct Vector3 {
-        float x, y, z;
-    };
-
-    struct Matrix4x4 {
-        float m[4][4];
-    };
 #pragma region 行列関数
     // 単位行列の作成
     Matrix4x4 MakeIdentity4x4()
@@ -221,9 +215,11 @@ public:
     }
 #pragma endregion
 
-    void Initialize();
+    void Initialize(HINSTANCE hinstance, HWND hwnd);
 
     void Update();
+
+    const Matrix4x4& GetViewMatrix() const { return viewMatrix; }
 
 private:
     // XYZ軸周りのローカル回転角
