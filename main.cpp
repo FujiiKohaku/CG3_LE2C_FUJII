@@ -933,19 +933,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //  入力デバイスの初期化
     //=======================
     // DirectInput全体の初期化(後からゲームパッドなどを追加するとしてもこのオブジェクトはひとつでいい)(winmainを改造、hinstanceに名づけをしました)
-    Microsoft::WRL::ComPtr<IDirectInput8> directInput = nullptr;
-    result = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
-    assert(SUCCEEDED(result));
+    // Microsoft::WRL::ComPtr<IDirectInput8> directInput = nullptr;
+    // result = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
+    // assert(SUCCEEDED(result));
     // キーボードデバイスの生成（GUID_Joystickなど指定すればほかの種類のデバイスも扱える）
-    Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard = nullptr; // com
-    result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, nullptr);
-    assert(SUCCEEDED(result));
+    // Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard = nullptr; // com
+    // result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, nullptr);
+    // assert(SUCCEEDED(result));
     // 入六データ形式のセット(キーボードの場合c_dfDIKeyboardだけど入力デバイスの種類によってあらかじめ何種類か用意されている)
-    result = keyboard->SetDataFormat(&c_dfDIKeyboard); // 標準形式
-    assert(SUCCEEDED(result));
+    // result = keyboard->SetDataFormat(&c_dfDIKeyboard); // 標準形式
+    // assert(SUCCEEDED(result));
     // 排他制御レベルのセット
-    result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-    assert(SUCCEEDED(result));
+    // result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+    // assert(SUCCEEDED(result));
     //=======================
     //  入力デバイスの初期化ここまで
     //=======================
@@ -1505,13 +1505,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     MSG msg {};
     //=================================
-    // キーボード1インスタンス作成
+    // キーボードインスタンス作成
     //=================================
     Input input;
     //=================================
     // キーボード情報の取得開始
     //=================================
     input.Initialize(hInstance, hwnd);
+
+    //=================================
+    // デバックカメラインスタンス作成
+    //=================================
+    DebugCamera debugCamera;
+    // debugcamera初期化一回だけ
+    debugCamera.Initialize();
     // ウィンドウの×ボタンが押されるまでループ
     while (msg.message != WM_QUIT) {
 
@@ -1563,8 +1570,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             //===================================
             //  02_02
             waveTime += 0.05f;
-
+            // インプットの更新
             input.Update();
+            // デバッグカメラの更新
+            debugCamera.Update();
+
             // 数字の０キーが押されていたら
             if (input.IsKeyPressed(DIK_0)) {
                 OutputDebugStringA("Hit 0");
