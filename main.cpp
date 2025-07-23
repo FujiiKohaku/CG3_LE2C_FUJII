@@ -10,7 +10,6 @@
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
-#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -21,20 +20,16 @@
 #include <dxcapi.h>
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
-
 // 外部ライブラリ//
 #include "externals/DirectXTex/DirectXTex.h"
 #include "externals/DirectXTex/d3dx12.h"
 #include "externals/imgui/imgui.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
-#include <xaudio2.h>
 
-#pragma comment(lib, "xaudio2.lib")
 // リンカオプション
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
-
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "dxcompiler.lib")
 // ======================= ImGui用ウィンドウプロシージャ =====================
@@ -92,31 +87,31 @@ struct ModelData {
 };
 //==音声構造体==//
 // チャンクヘッダ
-struct ChunkHeader {
-    char id[4]; // チャンクID
-    uint32_t size; // チャンクサイズ
-};
-
-// RIFFヘッダチャンク
-struct RiffHeader {
-    ChunkHeader chunk; // チャンクヘッダ(RIFF)
-    char type[4]; // フォーマット（"WAVE"）
-};
-
-// FMTチャンク
-struct FormatChunk {
-    ChunkHeader chunk; // チャンクヘッダ(FMT)
-    WAVEFORMATEX fmt; // WAVEフォーマット
-};
-// 音声データ
-struct SoundData {
-    // 波形フォーマット
-    WAVEFORMATEX wfex;
-    // バッファの先頭アドレス
-    BYTE* pBuffer;
-    // バッファのサイズ
-    unsigned int bufferSize;
-};
+// struct ChunkHeader {
+//    char id[4]; // チャンクID
+//    uint32_t size; // チャンクサイズ
+//};
+//
+//// RIFFヘッダチャンク
+// struct RiffHeader {
+//     ChunkHeader chunk; // チャンクヘッダ(RIFF)
+//     char type[4]; // フォーマット（"WAVE"）
+// };
+//
+//// FMTチャンク
+// struct FormatChunk {
+//     ChunkHeader chunk; // チャンクヘッダ(FMT)
+//     WAVEFORMATEX fmt; // WAVEフォーマット
+// };
+//// 音声データ
+// struct SoundData {
+//     // 波形フォーマット
+//     WAVEFORMATEX wfex;
+//     // バッファの先頭アドレス
+//     BYTE* pBuffer;
+//     // バッファのサイズ
+//     unsigned int bufferSize;
+// };
 
 //------------------
 // グローバル定数
@@ -745,8 +740,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // ログのディレクトリを用意
     std::filesystem::create_directory("logs");
     // main関数の先頭//
-    Microsoft::WRL::ComPtr<IXAudio2> xAudio2;
-    IXAudio2MasteringVoice* masterVoice;
+   
 
     // 現在時刻を取得(UTC時刻)
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
