@@ -71,3 +71,21 @@ LONG WINAPI Utility::ExportDump(EXCEPTION_POINTERS* exception)
 
     return EXCEPTION_EXECUTE_HANDLER;
 }
+
+Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> Utility::CreateDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, UINT numDescriptors, bool shaderVisible)
+{
+
+    D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+    desc.Type = type;
+    desc.NumDescriptors = numDescriptors;
+    desc.Flags = shaderVisible
+        ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+        : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    desc.NodeMask = 0;
+
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> heap;
+    HRESULT hr = device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&heap));
+    assert(SUCCEEDED(hr));
+
+    return heap;
+}
