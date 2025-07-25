@@ -6,40 +6,39 @@
 #include <xaudio2.h>
 #pragma comment(lib, "xaudio2.lib")
 // --------------------------------------
-// XAudio2 ‚ğg—p‚µ‚½ƒTƒEƒ“ƒhŠÇ—ƒNƒ‰ƒX
-// EWAVƒtƒ@ƒCƒ‹‚Ì“Ç‚İ‚İ
-// EÄ¶ˆ—
-// Eƒƒ‚ƒŠ‰ğ•ú
-// E‰Šú‰»‚ÆI—¹ˆ—
+// XAudio2 ã‚’ä½¿ç”¨ã—ãŸã‚µã‚¦ãƒ³ãƒ‰ç®¡ç†ã‚¯ãƒ©ã‚¹
+// ãƒ»WAVãƒ•ã‚¡ã‚¤ãƒ«ã®èª­ã¿è¾¼ã¿
+// ãƒ»å†ç”Ÿå‡¦ç†
+// ãƒ»ãƒ¡ãƒ¢ãƒªè§£æ”¾
+// ãƒ»åˆæœŸåŒ–ã¨çµ‚äº†å‡¦ç†
 // --------------------------------------
 
-// WAVƒtƒ@ƒCƒ‹‚Ì“à—e‚ğŠi”[‚·‚é\‘¢‘Ì
+// WAVãƒ•ã‚¡ã‚¤ãƒ«ã®å†…å®¹ã‚’æ ¼ç´ã™ã‚‹æ§‹é€ ä½“
 struct SoundData {
-    WAVEFORMATEX wfex; // ‰¹ºƒtƒH[ƒ}ƒbƒgî•ñ
-    BYTE* pBuffer; // ‰¹ºƒf[ƒ^ƒoƒbƒtƒ@
-    unsigned int bufferSize; // ƒoƒbƒtƒ@ƒTƒCƒYiƒoƒCƒg’PˆÊj
+    WAVEFORMATEX wfex; // éŸ³å£°ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆæƒ…å ±
+    BYTE* pBuffer; // éŸ³å£°ãƒ‡ãƒ¼ã‚¿ãƒãƒƒãƒ•ã‚¡
+    unsigned int bufferSize; // ãƒãƒƒãƒ•ã‚¡ã‚µã‚¤ã‚ºï¼ˆãƒã‚¤ãƒˆå˜ä½ï¼‰
 };
 
-// ƒTƒEƒ“ƒh‘S‘Ì‚ğŠÇ—‚·‚éƒNƒ‰ƒX
+// ã‚µã‚¦ãƒ³ãƒ‰å…¨ä½“ã‚’ç®¡ç†ã™ã‚‹ã‚¯ãƒ©ã‚¹
 class SoundManager {
-    // ƒRƒ“ƒXƒgƒ‰ƒNƒ^EƒfƒXƒgƒ‰ƒNƒ^
+public:
+    // ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿ãƒ»ãƒ‡ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
     SoundManager();
     ~SoundManager();
 
-    // XAudio2 ‚ğ‰Šú‰»‚·‚é
-    void Initialize() { }
-    // XAudio2 ‚ğ‰ğ•ú‚·‚é
-    void Finalize();
-    // WAVƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚ñ‚Åƒƒ‚ƒŠ‚É“WŠJ
+    // XAudio2 ã‚’åˆæœŸåŒ–ã™ã‚‹
+    void Initialize();
+    // XAudio2 ã‚’è§£æ”¾ã™ã‚‹
+    void Finalize(SoundData* soundData);
+    // WAVãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã‚“ã§ãƒ¡ãƒ¢ãƒªã«å±•é–‹
     SoundData SoundLoadWave(const char* filename);
-    // ‰¹ºƒf[ƒ^‚ğƒƒ‚ƒŠ‚©‚ç‰ğ•ú
+    // éŸ³å£°ãƒ‡ãƒ¼ã‚¿ã‚’ãƒ¡ãƒ¢ãƒªã‹ã‚‰è§£æ”¾
     void SoundUnload(SoundData* soundData);
-    // ‰¹º‚ğÄ¶
-    void SoundPlayWave(IXAudio2* xAudio2, const SoundData& soundData);
+    // éŸ³å£°ã‚’å†ç”Ÿ
+    void SoundPlayWave(const SoundData& soundData);
 
 private:
     Microsoft::WRL::ComPtr<IXAudio2> xAudio2;
     IXAudio2MasteringVoice* masterVoice;
-
-    SoundData soundData1;
 };

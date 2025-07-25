@@ -4,15 +4,18 @@
 #include "DebugCamera.h"
 #include "Input.h"
 #include "MatrixMath.h"
+#include "SoundManager.h"
 #include "Unknwn.h"
 #include "Utility.h"
 #include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
+#include <wrl.h>
 // Windows・DirectX関連
 #include <Windows.h>
 #include <d3d12.h>
@@ -144,6 +147,8 @@ enum AnimationType {
 WaveType waveType = WAVE_SINE;
 AnimationType animationType = ANIM_NONE;
 float waveTime = 0.0f;
+
+;
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
@@ -636,13 +641,6 @@ ModelData LoadOjFile(const std::string& directoryPath,
     return modelData;
 }
 
-
-
-// 音声読み込み
-SoundData soundData1 = SoundLoadWave("Resources/BGM.wav");
-
-// 音声再生
-
 ////////////////
 // main関数/////-------------------------------------------------------------------------------------------------
 //  Windwsアプリでの円とリポウント(main関数)
@@ -659,7 +657,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // ログのディレクトリを用意
     std::filesystem::create_directory("logs");
     // main関数の先頭//
-   
 
     // 現在時刻を取得(UTC時刻)
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
@@ -834,10 +831,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // DirectX12 初期化ここまで！
     // ----------------------------
     //==XAudioエンジンのインスタンスを生成==//
-    HRESULT result = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
+    // HRESULT result = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
 
     //==マスターボイスを生成==//
-    result = xAudio2->CreateMasteringVoice(&masterVoice);
+    // result = xAudio2->CreateMasteringVoice(&masterVoice);
 
     //=======================
     //  入力デバイスの初期化
@@ -1353,6 +1350,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     DebugCamera debugCamera;
     // debugcamera初期化一回だけ
     debugCamera.Initialize(hInstance, hwnd);
+    //=================================
+    // サウンドマネージャーインスタンス作成
+    //=================================
+    SoundManager soundmanager;
+    // サウンドマネージャー初期化！
+    soundmanager.Initialize();
+    // サウンドファイルを読み込み（パスはプロジェクトに合わせて調整）
+    SoundData bgm = soundmanager.SoundLoadWave("Resources/BGM.wav");
+
     // ウィンドウの×ボタンが押されるまでループ
     while (msg.message != WM_QUIT) {
 
@@ -1412,7 +1418,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // 数字の０キーが押されていたら
             if (input.IsKeyPressed(DIK_0)) {
                 OutputDebugStringA("Hit 0");
-                SoundPlayWave(xAudio2.Get(), soundData1); // 音声再生の関数
+                soundmanager.SoundPlayWave(bgm);
             }
 
             //  メイクアフィンマトリックス02_02
@@ -1567,9 +1573,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // リリースする場所
     // XAudio解放
-    xAudio2.Reset();
-    // 音声データ開放
-    
+    soundmanager.Finalize(&bgm);
+
 
     CoInitialize(nullptr);
     // #endif
