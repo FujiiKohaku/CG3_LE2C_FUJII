@@ -4,6 +4,9 @@
 #include <iostream>
 #include <string>
 #include <strsafe.h>
+#include <wrl.h>
+#include <d3d12.h>
+#include <cassert>
 #pragma comment(lib, "dbghelp.lib")
 class Utility {
 public:
@@ -15,4 +18,11 @@ public:
     static void Log(std::ostream& os, const std::string& message);
 
     static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception);
+
+    // ヘルパー関数：ディスクリプタヒープを作る
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(
+        ID3D12Device* device,
+        D3D12_DESCRIPTOR_HEAP_TYPE type,
+        UINT numDescriptors,
+        bool shaderVisible);
 };
