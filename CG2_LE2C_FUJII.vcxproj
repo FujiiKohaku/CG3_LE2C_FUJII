@@ -100,7 +100,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Matrix4x4.cpp" />
     <ClCompile Include="SoundManager.cpp" />
-    <ClCompile Include="SoundStruct.cpp" />
     <ClCompile Include="Struct.cpp" />
     <ClCompile Include="Utility.cpp" />
     <ClCompile Include="MatrixMath.cpp" />
@@ -132,7 +131,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Input.h" />
     <ClInclude Include="Matrix4x4.h" />
     <ClInclude Include="SoundManager.h" />
-    <ClInclude Include="SoundStruct.h" />
     <ClInclude Include="Struct.h" />
     <ClInclude Include="Utility.h" />
     <ClInclude Include="MatrixMath.h" />
