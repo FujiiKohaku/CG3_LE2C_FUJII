@@ -88,33 +88,7 @@ struct ModelData {
     std::vector<VertexData> vertices;
     MaterialData material;
 };
-//==音声構造体==//
-// チャンクヘッダ
-// struct ChunkHeader {
-//    char id[4]; // チャンクID
-//    uint32_t size; // チャンクサイズ
-//};
-//
-//// RIFFヘッダチャンク
-// struct RiffHeader {
-//     ChunkHeader chunk; // チャンクヘッダ(RIFF)
-//     char type[4]; // フォーマット（"WAVE"）
-// };
-//
-//// FMTチャンク
-// struct FormatChunk {
-//     ChunkHeader chunk; // チャンクヘッダ(FMT)
-//     WAVEFORMATEX fmt; // WAVEフォーマット
-// };
-//// 音声データ
-// struct SoundData {
-//     // 波形フォーマット
-//     WAVEFORMATEX wfex;
-//     // バッファの先頭アドレス
-//     BYTE* pBuffer;
-//     // バッファのサイズ
-//     unsigned int bufferSize;
-// };
+
 
 //------------------
 // グローバル定数
@@ -431,6 +405,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
     // 標準のメッセージ処理を行う
     return DefWindowProc(hwnd, msg, wparam, lparam);
 }
+
+
 // CompileShader関数02_00
 Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     // CompilerするSHaderファイルへのパス02_00
@@ -470,6 +446,8 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
         L"-Zpr" // メモリレイアウトは行優先02_00
 
     };
+
+
     // 実際にShaderをコンパイルする02_00
     Microsoft::WRL::ComPtr<IDxcResult> shaderResult = nullptr;
     hr = dxcCompiler->Compile(
