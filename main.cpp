@@ -3,6 +3,7 @@
 // 標準ライブラリ//
 #include "DebugCamera.h"
 #include "Input.h"
+#include "Logger.h"
 #include "MatrixMath.h"
 #include "SoundManager.h"
 #include "Unknwn.h"
@@ -37,7 +38,7 @@
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "dxcompiler.lib")
 // ======================= ImGui用ウィンドウプロシージャ =====================
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam,LPARAM lParam);
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 // ======================= 基本構造体 =====================
 
 // 変換情報
@@ -382,26 +383,7 @@ struct D3DResourceLeakChecker {
     }
 };
 
-//// ウィンドウプロシージャ//クラス化
-// LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
-//{
-//
-//     //
-//     if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
-//         return true;
-//     }
-//
-//     // メッセージに応じて固有の処理を行う
-//     switch (msg) {
-//         // ウィンドウが破棄された
-//     case WM_DESTROY:
-//         // OSに対して、アプリの終了を伝える
-//         PostQuitMessage(0);
-//         return 0;
-//     }
-//     // 標準のメッセージ処理を行う
-//     return DefWindowProc(hwnd, msg, wparam, lparam);
-// }
+
 
 // CompileShader関数02_00
 Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
@@ -418,7 +400,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     // ここの中身を書いていく02_00
     // 1.hlslファイルを読み込む02_00
     // これからシェーダーをコンパイルする旨をログに出す02_00
-    Utility::Log(os, Utility::ConvertString(std::format(L"Begin CompileShader,path:{},profike:{}\n", filepath, profile)));
+    logger.Log(os, Utility::ConvertString(std::format(L"Begin CompileShader,path:{},profike:{}\n", filepath, profile)));
     // hlslファイルを読む02_00
     Microsoft::WRL::ComPtr<IDxcBlobEncoding> shaderSource = nullptr;
     HRESULT hr = dxcUtils->LoadFile(filepath.c_str(), nullptr, &shaderSource);
@@ -460,7 +442,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     IDxcBlobUtf8* shaderError = nullptr;
     shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
     if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
-        Utility::Log(os, shaderError->GetStringPointer());
+        logger.Log(os, shaderError->GetStringPointer());
         // 警告、エラーダメ絶対02_00
         assert(false);
     }
@@ -471,12 +453,8 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
         nullptr);
     assert(SUCCEEDED(hr));
     // 成功したログを出す02_00
-    Utility::Log(os,
-        Utility::ConvertString(std::format(L"Compile Succeeded, path:{}, profike:{}\n ",
-            filepath, profile)));
-    // もう使わないリソースを解放02_00
-    // shaderSource->Release();
-    // shaderResult->Release();
+    logger.Log(os, Utility::ConvertString(std::format(L"Compile Succeeded, path:{}, profike:{}\n ", filepath, profile)));
+ 
     // 実行用のバイナリを返却02_00
     return shaderBlob.Get(); // get
 }
@@ -625,87 +603,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // インスタンス作成
     WindowManager window;
 
-
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
     // main関数はじまってすぐに登録するとよい
     SetUnhandledExceptionFilter(Utility::ExportDump);
 
-    // ログのディレクトリを用意
-    std::filesystem::create_directory("logs");
-    // main関数の先頭//
+  
 
-    // 現在時刻を取得(UTC時刻)
-    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-    // ログファイルの名前にコンマ何秒はいらないので削って秒にする
-    std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
-        nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-    // 日本時間(PCの設定時間)に変換
-    std::chrono::zoned_time loacalTime { std::chrono::current_zone(), nowSeconds };
-    // formatを使って年月日_時分秒の文字列に変換
-    std::string dateString = std::format("{:%Y%m%d_%H%M%S}", loacalTime);
-    // 時刻を使ってファイル名を決定
-    std::string logFilePath = std::string("logs/") + dateString + ".log";
-    // ファイルを作って書き込み準備
-    std::ofstream logStream(logFilePath);
-    // 出力
-
-     // ウィンドウ初期化
+    // ウィンドウ初期化
     if (!window.Initialize(L"MyWindowClass", L"My Window Title", 1280, 720)) {
         return -1;
     }
     // ウィンドウハンドル取得（必要に応じて DirectX に渡す）
     HWND hwnd = window.GetHwnd();
 
-
-    // WNDCLASS wc {};//クラス化
-    //// ウィンドウプロシージャ
-    // wc.lpfnWndProc = WindowProc;
-    //// ウィンドウクラス名(何でもよい)
-    // wc.lpszClassName = L"CG2WindowClass";
-    //// インスタンスバンドル
-    // wc.hInstance = GetModuleHandle(nullptr);
-    //// カーソル
-    // wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    //// ウィンドウクラスを登録する
-    // RegisterClass(&wc);
+   
     //// クライアント領域のサイズ
     const int32_t kClientWidth = 1280;
     const int32_t kClientHeight = 720;
 
-    //// ウィンドウサイズを表す構造体体にクライアント領域を入れる
-    // RECT wrc = { 0, 0, kClientWidth, kClientHeight };
-
-    //// クライアント領域をもとに実際のサイズにwrcを変更してもらう
-    // AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
-
-    // ウィンドウの生成
-    // HWND hwnd = CreateWindow(wc.lpszClassName, // 利用するクラス名
-    //    L"CG2", // タイトルバーの文字(何でもよい)
-    //    WS_OVERLAPPEDWINDOW, // よく見るウィンドウスタイル
-    //    CW_USEDEFAULT, // 表示X座標(Windowsに任せる)
-    //    CW_USEDEFAULT, // 表示Y座標(WindowsOSに任せる)
-    //    wrc.right - wrc.left, // ウィンドウ横幅
-    //    wrc.bottom - wrc.top, // ウィンドウ縦幅
-    //    nullptr, // 親ウィンドウハンドル
-    //    nullptr, // メニューハンドル
-    //    wc.hInstance, // インスタンスハンドル
-    //    nullptr); // オプション
-
-    // #ifdef _DEBUG
-    //
-    //     Microsoft::WRL::ComPtr<ID3D12Debug1> debugController = nullptr; // COM
-    //     if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
-    //         // デバックレイヤーを有効化する
-    //         debugController->EnableDebugLayer();
-    //         // さらに6PU側でもチェックリストを行うようにする
-    //         debugController->SetEnableGPUBasedValidation(TRUE);
-    //     }
-    // #endif // _DEBUG
-
-    // ウィンドウを表示する
-    /*   ShowWindow(hwnd, SW_SHOW);*/
+   
 
     // DXGIファクトリーの生成
     Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr; // com
@@ -730,7 +648,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // ソフトウェアアダプタでなければ採用!
         if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) { // get
             // 採用したアダプタの情報をログに出力wstringの方なので注意
-            Utility::Log(logStream,
+            logger.Log(logger.GetLogStream(),
                 Utility::ConvertString(std::format(L"Use Adapater:{}\n",
                     adapterDesc.Description))); // get
             break;
@@ -754,14 +672,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // 指定した昨日レベルでデバイスは生成できたか確認
         if (SUCCEEDED(hr)) {
             // 生成できたのでログ出力を行ってループを抜ける
-            Utility::Log(logStream,
+            logger.Log(logger.GetLogStream(),
                 std::format("FeatureLevel : {}\n", featureLevelStrings[i]));
             break;
         }
     }
     // デバイスの生成が上手くいかなかったので起動できない
     assert(device != nullptr);
-    Utility::Log(logStream, "Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
+    logger.Log(logger.GetLogStream(), "Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
 
 #ifdef _DEBUG
 
@@ -813,35 +731,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
     // コマンドリストの生成が上手くいかなかったので起動できない
     assert(SUCCEEDED(hr));
-    // ----------------------------
-    // DirectX12 初期化ここまで！
-    // ----------------------------
-    //==XAudioエンジンのインスタンスを生成==//
-    // HRESULT result = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
-
-    //==マスターボイスを生成==//
-    // result = xAudio2->CreateMasteringVoice(&masterVoice);
-
-    //=======================
-    //  入力デバイスの初期化
-    //=======================
-    // DirectInput全体の初期化(後からゲームパッドなどを追加するとしてもこのオブジェクトはひとつでいい)(winmainを改造、hinstanceに名づけをしました)
-    // Microsoft::WRL::ComPtr<IDirectInput8> directInput = nullptr;
-    // result = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
-    // assert(SUCCEEDED(result));
-    // キーボードデバイスの生成（GUID_Joystickなど指定すればほかの種類のデバイスも扱える）
-    // Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard = nullptr; // com
-    // result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, nullptr);
-    // assert(SUCCEEDED(result));
-    // 入六データ形式のセット(キーボードの場合c_dfDIKeyboardだけど入力デバイスの種類によってあらかじめ何種類か用意されている)
-    // result = keyboard->SetDataFormat(&c_dfDIKeyboard); // 標準形式
-    // assert(SUCCEEDED(result));
-    // 排他制御レベルのセット
-    // result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-    // assert(SUCCEEDED(result));
-    //=======================
-    //  入力デバイスの初期化ここまで
-    //=======================
+    
 
     // スワップチェーンを生成する
     Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr; // com
@@ -974,7 +864,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // もし失敗したら、エラーメッセージを出して止める
     if (FAILED(hr)) {
-        Utility::Log(logStream, reinterpret_cast<char*>(errorBlob->GetBufferPointer())); // エラーをログに出す
+        logger.Log(logger.GetLogStream(), reinterpret_cast<char*>(errorBlob->GetBufferPointer())); // エラーをログに出す
         assert(false); // 絶対成功してないと困るので、止める
     }
 
@@ -1077,10 +967,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
     rasterizerDesc.FrontCounterClockwise = FALSE;
     // Shaderをコンパイルする
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includHandler, logStream);
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includHandler, logger.GetLogStream());
     assert(vertexShaderBlob != nullptr);
 
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includHandler, logStream);
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includHandler, logger.GetLogStream());
     assert(pixelShaderBlob != nullptr);
 
     // PSOを生成する
