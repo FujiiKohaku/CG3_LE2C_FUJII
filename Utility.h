@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <strsafe.h>
+#include <wrl.h>
 #pragma comment(lib, "dbghelp.lib")
 class Utility {
 public:

@@ -2,6 +2,7 @@
 #define _USE_MATH_DEFINES
 // 標準ライブラリ//
 #include "DebugCamera.h"
+#include "GraphicsDevice.h"
 #include "Input.h"
 #include "Logger.h"
 #include "MatrixMath.h"
@@ -383,8 +384,6 @@ struct D3DResourceLeakChecker {
     }
 };
 
-
-
 // CompileShader関数02_00
 Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     // CompilerするSHaderファイルへのパス02_00
@@ -454,7 +453,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     assert(SUCCEEDED(hr));
     // 成功したログを出す02_00
     logger.Log(os, Utility::ConvertString(std::format(L"Compile Succeeded, path:{}, profike:{}\n ", filepath, profile)));
- 
+
     // 実行用のバイナリを返却02_00
     return shaderBlob.Get(); // get
 }
@@ -602,14 +601,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // インスタンス作成
     WindowManager window;
-
+    // インスタンス作成
+    GraphicsDevice graphicsDevice;
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
     // main関数はじまってすぐに登録するとよい
     SetUnhandledExceptionFilter(Utility::ExportDump);
-
-  
 
     // ウィンドウ初期化
     if (!window.Initialize(L"MyWindowClass", L"My Window Title", 1280, 720)) {
@@ -618,68 +616,97 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // ウィンドウハンドル取得（必要に応じて DirectX に渡す）
     HWND hwnd = window.GetHwnd();
 
-   
+    ID3D12Device* device = graphicsDevice.GetDevice();
+
+    HRESULT hr;
     //// クライアント領域のサイズ
     const int32_t kClientWidth = 1280;
     const int32_t kClientHeight = 720;
 
-   
+    /////==消す==//
+     //Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr;
+     //hr = CreateDXGIFactory(IID_PPV_ARGS(dxgiFactory.GetAddressOf()));
+     //assert(SUCCEEDED(hr));
+    // IDXGIAdapter4* useAdapter = nullptr;
+    // for (UINT i = 0; dxgiFactory->EnumAdapterByGpuPreference(
+    //                      i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
+    //                      IID_PPV_ARGS(&useAdapter))
+    //     != DXGI_ERROR_NOT_FOUND;
+    //     ++i) {
 
-    // DXGIファクトリーの生成
-    Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr; // com
-    // HRESULTはWindows系のエラー子どであり
-    // 関数が成功したかをSUCCEEDEDマクロで判定できる
-    HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(dxgiFactory.GetAddressOf()));
-    // 初期化の根本的な部分でエラーが出た場合はプログラムが間違っているか、どうにもできない場合が多いのでassertにしておく
+    //    // アダプターの情報を取得する
+    //    DXGI_ADAPTER_DESC3 adapterDesc {}; // com
+    //    hr = useAdapter->GetDesc3(&adapterDesc); // comGet
+    //    assert(SUCCEEDED(hr)); // 取得できないのは一大事
+    //    // ソフトウェアアダプタでなければ採用!
+    //    if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) { // get
+    //        // 採用したアダプタの情報をログに出力wstringの方なので注意
+    //        logger.Log(logger.GetLogStream(),
+    //            Utility::ConvertString(std::format(L"Use Adapater:{}\n",
+    //                adapterDesc.Description))); // get
+    //        break;
+    //    }
+    //    useAdapter = nullptr; // ソフトウェアアダプタの場合は見なかったことにする
+    //}
+    // assert(useAdapter != nullptr);
+    // Microsoft::WRL::ComPtr<ID3D12Device> device = nullptr;
+
+    // D3D_FEATURE_LEVEL featureLevels[] = {
+    //     D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0
+    // };
+
+    // const char* featureLevelStrings[] = { "12.2", "12.1", "12.0" };
+    //// 高い順に生成できるか試していく
+    // for (size_t i = 0; i < _countof(featureLevels); ++i) {
+    //     // 採用したアダプターでデバイスを生成
+    //     hr = D3D12CreateDevice(useAdapter, featureLevels[i], IID_PPV_ARGS(&device));
+    //     // 指定した昨日レベルでデバイスは生成できたか確認
+    //     if (SUCCEEDED(hr)) {
+    //         // 生成できたのでログ出力を行ってループを抜ける
+    //         logger.Log(logger.GetLogStream(),
+    //             std::format("FeatureLevel : {}\n", featureLevelStrings[i]));
+    //         break;
+    //     }
+    // }
+    //// デバイスの生成が上手くいかなかったので起動できない
+    // assert(device != nullptr);
+    // logger.Log(logger.GetLogStream(), "Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
+
+    // コマンドキューを生成する
+    //Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue;
+    //hr = device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue));
+    //// コマンドキューの生成が上手くいかなかったので起動できない
+    //assert(SUCCEEDED(hr));
+    //// コマンドアロケーターを生成する
+    //Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator = nullptr; // com
+    //hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
+    //assert(SUCCEEDED(hr));
+    //// コマンドリストを生成する
+    //Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList = nullptr; // com
+    //hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
+    //// コマンドリストの生成が上手くいかなかったので起動できない
+    //assert(SUCCEEDED(hr));
+    //     // スワップチェーンを生成する
+    Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr; // com
+    DXGI_SWAP_CHAIN_DESC1 swapChainDesc {};
+
+    swapChainDesc.Width = kClientWidth; // 画面の幅。ウィンドウのクライアント領域を同じものんにしておく
+    swapChainDesc.Height = kClientHeight; // 画面の高さ。ウィンドウのクライアント領域を同じものにしておく
+    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式
+    swapChainDesc.SampleDesc.Count = 1; // マルチサンプルしない
+    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // 描画のターゲットとしてりようする
+    swapChainDesc.BufferCount = 2; // ダブルバッファ
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニターに移したら,中身を吐き
+                                                              // コマンドキュー,ウィンドウバンドル、設定を渡して生成する
+    hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue.Get(), hwnd, &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf())); // com.Get,OF
     assert(SUCCEEDED(hr));
-    // 使用するアダプタ用の変数,最初にnullptrを入れておく
-    IDXGIAdapter4* useAdapter = nullptr; // com
-    // よい順にアダプタを頼む
-    for (UINT i = 0; dxgiFactory->EnumAdapterByGpuPreference(
-                         i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
-                         IID_PPV_ARGS(&useAdapter))
-        != DXGI_ERROR_NOT_FOUND;
-        ++i) {
+    // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap = // com
+        CreateDescriptorHeap(graphicsDevice.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
+    
+    /////==消す==//
 
-        // アダプターの情報を取得する
-        DXGI_ADAPTER_DESC3 adapterDesc {}; // com
-        hr = useAdapter->GetDesc3(&adapterDesc); // comGet
-        assert(SUCCEEDED(hr)); // 取得できないのは一大事
-        // ソフトウェアアダプタでなければ採用!
-        if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) { // get
-            // 採用したアダプタの情報をログに出力wstringの方なので注意
-            logger.Log(logger.GetLogStream(),
-                Utility::ConvertString(std::format(L"Use Adapater:{}\n",
-                    adapterDesc.Description))); // get
-            break;
-        }
-        useAdapter = nullptr; // ソフトウェアアダプタの場合は見なかったことにする
-    }
 
-    // 適切なアダプタが見つからなかったので起動できない
-    assert(useAdapter != nullptr);
-    Microsoft::WRL::ComPtr<ID3D12Device> device = nullptr;
-    // 昨日レベルとログ出力用の文字列
-    D3D_FEATURE_LEVEL featureLevels[] = {
-        D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0
-    };
-
-    const char* featureLevelStrings[] = { "12.2", "12.1", "12.0" };
-    // 高い順に生成できるか試していく
-    for (size_t i = 0; i < _countof(featureLevels); ++i) {
-        // 採用したアダプターでデバイスを生成
-        hr = D3D12CreateDevice(useAdapter, featureLevels[i], IID_PPV_ARGS(&device));
-        // 指定した昨日レベルでデバイスは生成できたか確認
-        if (SUCCEEDED(hr)) {
-            // 生成できたのでログ出力を行ってループを抜ける
-            logger.Log(logger.GetLogStream(),
-                std::format("FeatureLevel : {}\n", featureLevelStrings[i]));
-            break;
-        }
-    }
-    // デバイスの生成が上手くいかなかったので起動できない
-    assert(device != nullptr);
-    logger.Log(logger.GetLogStream(), "Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
 
 #ifdef _DEBUG
 
@@ -711,52 +738,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
 #endif // DEBUG
+   
 
-    // コマンドキューを生成する
-    Microsoft::WRL::ComPtr<ID3D12CommandQueue>
-        commandQueue = nullptr; // com
-    D3D12_COMMAND_QUEUE_DESC commandQueueDesc {};
-    hr = device->CreateCommandQueue(&commandQueueDesc,
-        IID_PPV_ARGS(&commandQueue));
-    // コマンドキューの生成が上手くいかなかったので起動できない
-    assert(SUCCEEDED(hr));
-    // コマンドアロケーターを生成する
-    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator = nullptr; // com
-    hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
-    // コマンドキューアロケーターの生成があ上手くいかなかったので起動できない
-    assert(SUCCEEDED(hr));
+   
 
-    // コマンドリストを生成する
-    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList = nullptr; // com
-    hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
-    // コマンドリストの生成が上手くいかなかったので起動できない
-    assert(SUCCEEDED(hr));
-    
 
-    // スワップチェーンを生成する
-    Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr; // com
-    DXGI_SWAP_CHAIN_DESC1 swapChainDesc {};
-    swapChainDesc.Width = kClientWidth; // 画面の幅。ウィンドウのクライアント領域を同じものんにしておく
-    swapChainDesc.Height = kClientHeight; // 画面の高さ。ウィンドウのクライアント領域を同じものにしておく
-    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式
-    swapChainDesc.SampleDesc.Count = 1; // マルチサンプルしない
-    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // 描画のターゲットとしてりようする
-    swapChainDesc.BufferCount = 2; // ダブルバッファ
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニターに移したら,中身を吐き
-    // コマンドキュー,ウィンドウバンドル、設定を渡して生成する
-    hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue.Get(), hwnd, &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf())); // com.Get,OF
-    assert(SUCCEEDED(hr));
 
-    // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap = // com
-        CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
+
+   
+
+
 
     // DSV用のヒープでディスクリプタの数は１。DSVはshader内で触るものではないので,ShaderVisibleはfalse
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap = // com
-        CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
+        CreateDescriptorHeap(graphicsDevice.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
 
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap = // com
-        CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+        CreateDescriptorHeap(graphicsDevice.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
     // SwapChainからResourceを引っ張ってくる
     Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = {
@@ -876,8 +874,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // Textureを読んで転送する03_00
     DirectX::ScratchImage mipImages = LoadTexture("resources/uvChecker.png");
     const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
-    Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = CreateTextureResource(device.Get(), metadata); // get
-    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = UploadTextureData(textureResource.Get(), mipImages, device.Get(), commandList.Get()); //?
+    Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = CreateTextureResource(graphicsDevice.GetDevice(), metadata); // get
+    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = UploadTextureData(textureResource.Get(), mipImages, graphicsDevice.GetDevice(), commandList.Get()); //?
     // モデル読み込み
     ModelData modelData = LoadOjFile("resources", "Plane.obj");
 
@@ -892,8 +890,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     DirectX::ScratchImage mipImages2 = LoadTexture(modelData.material.textureFilePath);
 
     const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
-    Microsoft::WRL::ComPtr<ID3D12Resource> textureResource2 = CreateTextureResource(device.Get(), metadata2); // get
-    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource2 = UploadTextureData(textureResource2.Get(), mipImages2, device.Get(), commandList.Get());
+    Microsoft::WRL::ComPtr<ID3D12Resource> textureResource2 = CreateTextureResource(graphicsDevice.GetDevice(), metadata2); // get
+    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource2 = UploadTextureData(textureResource2.Get(), mipImages2, graphicsDevice.GetDevice(), commandList.Get());
 
     // 03_00EX
     // ID3D12Resource *intermediateResource =
@@ -1015,7 +1013,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------------------------------
 
     // 頂点リソースを作る
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource = CreateBufferResource(device.Get(), sizeof(VertexData) * modelData.vertices.size());
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource = CreateBufferResource(graphicsDevice.GetDevice(), sizeof(VertexData) * modelData.vertices.size());
     // 頂点バッファービューを作成する
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView {};
     vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress(); // リソース先頭のアドレスを使う
@@ -1030,7 +1028,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //  マテリアル
     //--------------------------
     //   マテリアル用のリソースを作る今回はcolor一つ分のサイズを用意する05_03
-    Microsoft::WRL::ComPtr<ID3D12Resource> materialResource = CreateBufferResource(device.Get(), sizeof(Material));
+    Microsoft::WRL::ComPtr<ID3D12Resource> materialResource = CreateBufferResource(graphicsDevice.GetDevice(), sizeof(Material));
     // マテリアルにデータを書き込む
     Material* materialData = nullptr;
     // 書き込むためのアドレスを取得
@@ -1043,7 +1041,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // WVP行列
     //--------------------------
     // WVPリソースを作る02_02
-    Microsoft::WRL::ComPtr<ID3D12Resource> wvpResource = CreateBufferResource(device.Get(), sizeof(TransformationMatrix));
+    Microsoft::WRL::ComPtr<ID3D12Resource> wvpResource = CreateBufferResource(graphicsDevice.GetDevice(), sizeof(TransformationMatrix));
     // データを書き込む02_02
     TransformationMatrix* wvpData = nullptr;
     // 書き込むためのアドレスを取得02_02
@@ -1057,7 +1055,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // Sprite用リソース
     //--------------------------
     // sprite用の頂点リソースを作る04_00
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceSprite = CreateBufferResource(device.Get(), sizeof(VertexData) * 4);
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceSprite = CreateBufferResource(graphicsDevice.GetDevice(), sizeof(VertexData) * 4);
     // sprite用の頂点リソースにデータを書き込む04_00
     VertexData* vertexDataSprite = nullptr;
     //  書き込むためのアドレスを取得04_00
@@ -1085,7 +1083,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
 
     // 06_00_page6
-    Microsoft::WRL::ComPtr<ID3D12Resource> indexResourceSprite = CreateBufferResource(device.Get(), sizeof(uint32_t) * 6);
+    Microsoft::WRL::ComPtr<ID3D12Resource> indexResourceSprite = CreateBufferResource(graphicsDevice.GetDevice(), sizeof(uint32_t) * 6);
     uint32_t* indexDataSprite = nullptr;
     // インデックスリソースにデータを書き込む uint32_t *indexDataSprite =
     // nullptr;
@@ -1107,7 +1105,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     indexBufferViewSprite.Format = DXGI_FORMAT_R32_UINT;
 
     // Sprite用のマテリアルリソースを作る05_03
-    Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceSprite = CreateBufferResource(device.Get(), sizeof(Material));
+    Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceSprite = CreateBufferResource(graphicsDevice.GetDevice(), sizeof(Material));
     // Sprite用のマテリアルにデータを書き込む
     Material* materialDataSprite = nullptr;
     // 書き込むためのアドレスを取得
@@ -1119,7 +1117,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
     // 1つ分のサイズを用意する04_00
-    Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixResourceSprite = CreateBufferResource(device.Get(), sizeof(TransformationMatrix));
+    Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixResourceSprite = CreateBufferResource(graphicsDevice.GetDevice(), sizeof(TransformationMatrix));
     // sprite用のデータを書き込む04_00
     TransformationMatrix* transformationMatrixDataSprite = nullptr;
     // sprite用の書き込むためのアドレスを取得04_00
@@ -1131,7 +1129,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // 共通リソース
     //--------------------------
     // 03_01_Other
-    Microsoft::WRL::ComPtr<ID3D12Resource> depthStencillResource = CreateDepthStencilTextureResource(device.Get(), kClientWidth, kClientHeight);
+    Microsoft::WRL::ComPtr<ID3D12Resource> depthStencillResource = CreateDepthStencilTextureResource(graphicsDevice.GetDevice(), kClientWidth, kClientHeight);
     // DSVの設定
     D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc {};
     dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;

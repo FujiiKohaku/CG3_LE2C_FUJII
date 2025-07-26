@@ -36,8 +36,6 @@ std::string Utility::ConvertString(const std::wstring& str)
     return result;
 }
 
-
-
 //===エラーハンドリング用の身にダンプ出力関数===///
 LONG WINAPI Utility::ExportDump(EXCEPTION_POINTERS* exception)
 {
@@ -66,3 +64,4 @@ LONG WINAPI Utility::ExportDump(EXCEPTION_POINTERS* exception)
 
     return EXCEPTION_EXECUTE_HANDLER;
 }
+
