@@ -1320,8 +1320,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
     assert(SUCCEEDED(hr));
 
-    // スフィア作成_05_00_OTHER
-    // GenerateSphereVertices(vertexData, kSubdivision, 0.5f);
 
     // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
     // こういうもんである02_03
@@ -1382,8 +1380,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
             ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
             ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
-
-            /*   ImGui::ColorEdit4("Color", &(*materialData).x);*/
             ImGui::Text("useMonstarBall");
             ImGui::Checkbox("useMonstarBall", &useMonstarBall);
             ImGui::Text("LIgthng");
@@ -1439,8 +1435,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             Matrix4x4 worldMatrixSprite = MatrixMath::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
             Matrix4x4 viewMatrixSprite = MatrixMath::MakeIdentity4x4();
             Matrix4x4 projectionMatrixSprite = MatrixMath::MakeOrthographicMatrix(0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
-            Matrix4x4 worldViewProjectionMatrixSprite = MatrixMath::Multiply(worldMatrixSprite,
-                MatrixMath::Multiply(viewMatrixSprite, projectionMatrixSprite));
+            Matrix4x4 worldViewProjectionMatrixSprite = MatrixMath::Multiply(worldMatrixSprite, MatrixMath::Multiply(viewMatrixSprite, projectionMatrixSprite));
             // 単位行列を書き込んでおく04_00
             transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
             transformationMatrixDataSprite->World = worldMatrixSprite;
@@ -1471,56 +1466,45 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // TransitionBarrierを張る
             commandList->ResourceBarrier(1, &barrier);
 
-            //// 描画先のRTVうぃ設定する
-            /*     commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex],
-               false, nullptr);*/
-            // 描画先のRTVとDSVを設定する
+            //--- 画面クリア・描画準備 ---
             D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
             commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
-            // 指定した色で画面全体をクリアする
-            float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f }; /// 青っぽい色RGBAの順
-                                                              /// //これ最初の文字1.0fにするとピンク画面になる
+            float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
             commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
-            // 03_01
-            commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH,
-                1.0f, 0, 0, nullptr);
-            // 描画
-            commandList->RSSetViewports(1, &viewport); // viewportを設定
-            commandList->RSSetScissorRects(1, &scissorRect); // Scirssorを設定
-            // RootSignatureを設定。PS0に設定しているけど別途設定が必要
+            commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+            commandList->RSSetViewports(1, &viewport);
+            commandList->RSSetScissorRects(1, &scissorRect);
             commandList->SetGraphicsRootSignature(rootSignature.Get());
-            commandList->SetPipelineState(graphicsPinelineState.Get()); // PS0を設定
-            commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // VBVを設定
-            // 形状を設定。PS0に設定しているものとはまた別。同じものを設定すると考えていけばよい
-            commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            commandList->SetPipelineState(graphicsPinelineState.Get());
 
-            commandList->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
-
-            // マテリアルCbufferの場所を設定05_03変更
-            commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress()); // ここでmaterialResource使え
-
-            // wvp用のCBufferの場所を設定02_02
+            //--- 3Dモデル描画 ---
+            // 3D用の変換行列をルートパラメータ1にセット
             commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
-            // 平行光源用のCbufferの場所を設定05_03
+            // マテリアル（CBV）をセット（ルートパラメータ0）
+            commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
+            // ライト（CBV）をセット（ルートパラメータ3）
             commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+            // SRV（テクスチャ）をセット（ルートパラメータ2）
+            commandList->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+            // 頂点バッファ・プリミティブトポロジを設定
+            commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+            commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            // 描画実行
+            commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
-            // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
-            // commandList->DrawInstanced(kNumVertices, 1, 0, 0);
-            // obj
-            commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0); // オブジェクトのやつ
-            // マテリアルCbufferの場所を設定05_03変更これ書くとUvChackerがちゃんとする
-            commandList->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress()); // ここでmaterialResource使え
-
-            // 描画
-            commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-            // spriteの描画04_00
-            commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
-            // IBVを設定
-            commandList->IASetIndexBuffer(&indexBufferViewSprite);
-
+            //--- スプライト描画 ---
+            // スプライト用の変換行列をルートパラメータ1にセット（3Dと別の行列）
             commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
-            // UvChecker
-            commandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // 左上のやつ
+            // スプライト用マテリアル（CBV）をセット（ルートパラメータ0）
+            commandList->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
+            // スプライト用SRV（テクスチャ）をセット（ルートパラメータ2）
+            commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+            // 頂点バッファ・インデックスバッファを設定
+            commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+            commandList->IASetIndexBuffer(&indexBufferViewSprite);
+            // 描画実行
+            commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+
 
             //  描画の最後です//----------------------------------------------------
             //   実際のcommandListのImGuiの描画コマンドを積む
@@ -1574,7 +1558,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // リリースする場所
     // XAudio解放
     soundmanager.Finalize(&bgm);
-
 
     CoInitialize(nullptr);
     // #endif

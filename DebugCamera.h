@@ -225,7 +225,7 @@ private:
     // XYZ軸周りのローカル回転角
     Vector3 rotation_ = { 0.0f, 0.0f, 0.0f };
     // ローカル座標
-    Vector3 translation_ = { 0.0f, 0.0f, -5.0f };
+    Vector3 translation_ = { 0.0f, 0.0f, -10.0f };
 
     Matrix4x4 cameraMatrix = MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, rotation_, translation_); // ワールド変換行列
     Matrix4x4 viewMatrix = Inverse(cameraMatrix); // ビュー行列はカメラ行列の逆行列
