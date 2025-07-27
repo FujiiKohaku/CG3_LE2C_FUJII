@@ -130,11 +130,6 @@ CreateTextureResource(Microsoft::WRL::ComPtr<ID3D12Device> device,
     // 2.利用するHeapの設定。非常に特殊な運用。02_04exで一般的なケース版がある
     D3D12_HEAP_PROPERTIES heapProperties {};
     heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // 細かい設定を行う//03_00EX
-    // heapProperties.CPUPageProperty =
-    //     D3D12_CPU_PAGE_PROPERTY_WRITE_BACK; //
-    //     WriteBaackポリシーでCPUアクセス可能
-    // heapProperties.MemoryPoolPreference =
-    //     D3D12_MEMORY_POOL_L0; // プロセッサの近くに配置
 
     // 3.Resourceを生成する
     Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
@@ -431,119 +426,7 @@ GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap,
     return handleGPU;
 }
 
-///// CG_02_06
-// MaterialData LoadMaterialTemplateFile(const std::string& directoryPath,
-//     const std::string& filename)
-//{
-//     // 1.中で必要となる変数の宣言
-//     MaterialData materialData; // 構築するMaterialData
-//     // 2.ファイルを開く
-//     std::string line; // ファイルから読んだ１行を格納するもの
-//     std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
-//     assert(file.is_open()); // とりあえず開けなかったら止める
-//     // 3.実際にファイルを読み、MaterialDataを構築していく
-//     while (std::getline(file, line)) {
-//         std::string identifier;
-//         std::istringstream s(line);
-//         s >> identifier;
-//         // identifierに応じた処理
-//         if (identifier == "map_Kd") {
-//             std::string textureFilename;
-//             s >> textureFilename;
-//             // 連結してファイルパスにする
-//             materialData.textureFilePath = directoryPath + "/" + textureFilename;
-//         }
-//     }
-//     // 4.materialDataを返す
-//     return materialData;
-// }
-//// std::stringは文字列を扱う
-//// 06_02
-// ModelData LoadOjFile(const std::string& directoryPath,
-//     const std::string& filename)
-//{
-//
-//     // 1.中で必要となる変数の宣言
-//     ModelData modelData; // 構築するModelData
-//     std::vector<Vector4> positions; // 位置
-//     std::vector<Vector3> normals; // 法線
-//     std::vector<Vector2> texcoords; // テクスチャ座標
-//     std::string line; // ファイルから読んだ一行を格納するもの
-//
-//     // 2.ファイルを開く
-//     std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
-//     assert(file.is_open()); // とりあえず開けなかったら止める
-//
-//     // 3.実際にファイルを読み,ModelDataを構築していく
-//     while (std::getline(file, line)) {
-//         std::string identifiler;
-//         std::istringstream s(line);
-//         s >> identifiler; // 先頭の識別子を読む
-//
-//         // identifierに応じた処理
-//         if (identifiler == "v") {
-//             Vector4 position;
-//             s >> position.x >> position.y >> position.z;
-//             // 左手座標にする
-//             position.x *= -1.0f;
-//
-//             position.w = 1.0f;
-//             positions.push_back(position);
-//         } else if (identifiler == "vt") {
-//             Vector2 texcoord;
-//             s >> texcoord.x >> texcoord.y;
-//             // 上下逆にする
-//
-//             // texcoord.y *= -1.0f;
-//             texcoord.y = 1.0f - texcoord.y;
-//             // CG2_06_02_kusokusosjsusuawihoafwhgiuwhkgfau
-//             texcoords.push_back(texcoord);
-//         } else if (identifiler == "vn") {
-//             Vector3 normal;
-//             s >> normal.x >> normal.y >> normal.z;
-//             // 左手座標にする
-//             normal.x *= -1.0f;
-//
-//             normals.push_back(normal);
-//         } else if (identifiler == "f") {
-//             VertexData triangle[3]; // 三つの頂点を保存
-//             // 面は三角形限定。その他は未対応
-//             for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
-//                 std::string vertexDefinition;
-//                 s >> vertexDefinition;
-//                 // 頂点の要素へのIndexは「位置/UV/法線」で格納されているので、分解してえIndexを取得する
-//                 std::istringstream v(vertexDefinition);
-//                 uint32_t elementIndices[3];
-//                 for (int32_t element = 0; element < 3; ++element) {
-//                     std::string index;
-//
-//                     std::getline(v, index, '/'); // 区切りでインデックスを読んでいく
-//                     elementIndices[element] = std::stoi(index);
-//                 }
-//                 // 要素へのIndexから、実際の要素の値を取得して、頂点を構築する
-//                 Vector4 position = positions[elementIndices[0] - 1];
-//                 Vector2 texcoord = texcoords[elementIndices[1] - 1];
-//                 Vector3 normal = normals[elementIndices[2] - 1];
-//                 // X軸を反転して左手座標系に
-//
-//                 triangle[faceVertex] = { position, texcoord, normal };
-//             }
-//             // 逆順にして格納（2 → 1 → 0）
-//             modelData.vertices.push_back(triangle[2]);
-//             modelData.vertices.push_back(triangle[1]);
-//             modelData.vertices.push_back(triangle[0]);
-//             //?
-//         } else if (identifiler == "mtllib") {
-//             // materialTemplateLibraryファイルの名前を取得する
-//             std::string materialFilename;
-//             s >> materialFilename;
-//             // 基本的にobjファイルと同一階層mtlは存在させるので、ディレクトリ名とファイル名を渡す。
-//             modelData.material = LoadMaterialTemplateFile(directoryPath, materialFilename);
-//         }
-//     }
-//     // 4.ModelDataを返す
-//     return modelData;
-// }
+
 
 ////////////////
 // main関数/////-------------------------------------------------------------------------------------------------
@@ -734,32 +617,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // ----------------------------
     // DirectX12 初期化ここまで！
     // ----------------------------
-    //==XAudioエンジンのインスタンスを生成==//
-    // HRESULT result = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
-
-    //==マスターボイスを生成==//
-    // result = xAudio2->CreateMasteringVoice(&masterVoice);
-
-    //=======================
-    //  入力デバイスの初期化
-    //=======================
-    // DirectInput全体の初期化(後からゲームパッドなどを追加するとしてもこのオブジェクトはひとつでいい)(winmainを改造、hinstanceに名づけをしました)
-    // Microsoft::WRL::ComPtr<IDirectInput8> directInput = nullptr;
-    // result = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
-    // assert(SUCCEEDED(result));
-    // キーボードデバイスの生成（GUID_Joystickなど指定すればほかの種類のデバイスも扱える）
-    // Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard = nullptr; // com
-    // result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, nullptr);
-    // assert(SUCCEEDED(result));
-    // 入六データ形式のセット(キーボードの場合c_dfDIKeyboardだけど入力デバイスの種類によってあらかじめ何種類か用意されている)
-    // result = keyboard->SetDataFormat(&c_dfDIKeyboard); // 標準形式
-    // assert(SUCCEEDED(result));
-    // 排他制御レベルのセット
-    // result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-    // assert(SUCCEEDED(result));
-    //=======================
-    //  入力デバイスの初期化ここまで
-    //=======================
+ 
 
     // スワップチェーンを生成する
     Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr; // com
@@ -1034,9 +892,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //////////////
     // 実際に生成//
     //////////////
-    ////--------------------------
-    //// 通常モデル用リソース
-    ////--------------------------
+    //--------------------------
+    // 通常モデル用リソース
+    //--------------------------
 
     //--------------------------------------------------
     // modelDataを使う
