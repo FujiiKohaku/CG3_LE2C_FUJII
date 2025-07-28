@@ -10,6 +10,7 @@
 #include "SoundManager.h"
 #include "Unknwn.h"
 #include "Utility.h"
+#include "WinApp.h"
 #include <cassert>
 #include <chrono>
 #include <cstdint>
@@ -38,9 +39,6 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "dxcompiler.lib")
-// ======================= ImGui用ウィンドウプロシージャ =====================
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-// ======================= 基本構造体 =====================
 
 //------------------
 // グローバル定数
@@ -49,6 +47,8 @@ const int kSubdivision = 16; // 16分割
 int kNumVertices = kSubdivision * kSubdivision * 6; // 頂点数
 
 float waveTime = 0.0f;
+const int32_t kClientWidth = 1280;
+const int32_t kClientHeight = 720;
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
@@ -71,102 +71,6 @@ struct D3DResourceLeakChecker {
         }
     }
 };
-
-// ウィンドウプロシージャ
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
-{
-    //
-    if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
-        return true;
-    }
-
-    // メッセージに応じて固有の処理を行う
-    switch (msg) {
-        // ウィンドウが破棄された
-    case WM_DESTROY:
-        // OSに対して、アプリの終了を伝える
-        PostQuitMessage(0);
-        return 0;
-    }
-    // 標準のメッセージ処理を行う
-    return DefWindowProc(hwnd, msg, wparam, lparam);
-}
-//// CompileShader関数02_00
-// Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
-//     // CompilerするSHaderファイルへのパス02_00
-//     const std::wstring& filepath,
-//     // Compilerに使用するprofile02_00
-//     const wchar_t* profile,
-//     // 初期化で生成したものを3つ02_00
-//     Microsoft::WRL::ComPtr<IDxcUtils> dxcUtils,
-//     Microsoft::WRL::ComPtr<IDxcCompiler3> dxcCompiler,
-//     Microsoft::WRL::ComPtr<IDxcIncludeHandler> includeHandler,
-//     std::ostream& os)
-//{
-//     // ここの中身を書いていく02_00
-//     // 1.hlslファイルを読み込む02_00
-//     // これからシェーダーをコンパイルする旨をログに出す02_00
-//     Utility::Log(os, Utility::ConvertString(std::format(L"Begin CompileShader,path:{},profike:{}\n", filepath, profile)));
-//     // hlslファイルを読む02_00
-//     Microsoft::WRL::ComPtr<IDxcBlobEncoding> shaderSource = nullptr;
-//     HRESULT hr = dxcUtils->LoadFile(filepath.c_str(), nullptr, &shaderSource);
-//     // 読めなかったら止める02_00
-//     assert(SUCCEEDED(hr));
-//     // 読み込んだファイルの内容を設定する02_00
-//     DxcBuffer shaderSourceBuffer;
-//     shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
-//     shaderSourceBuffer.Size = shaderSource->GetBufferSize();
-//     shaderSourceBuffer.Encoding = DXC_CP_UTF8; // UTF8の文字コードであることを通知02_00
-//     // 2.Compileする
-//     LPCWSTR arguments[] = {
-//         filepath.c_str(), // コンパイル対象のhlslファイル名02_00
-//         L"-E",
-//         L"main", // エントリーポイントの指定。基本的にmain以外にはしない02_00
-//         L"-T",
-//         profile, // shaderProfileの設定02_00
-//         L"-Zi",
-//         L"-Qembed_debug", // デバック用の設定を埋め込む02_00
-//         L"-Od", /// 最適化を外しておく02_00
-//         L"-Zpr" // メモリレイアウトは行優先02_00
-//
-//     };
-//     // 実際にShaderをコンパイルする02_00
-//     Microsoft::WRL::ComPtr<IDxcResult> shaderResult = nullptr;
-//     hr = dxcCompiler->Compile(
-//
-//         &shaderSourceBuffer, // 読み込んだファイル02_00
-//         arguments, // コンパイルオプション02_00
-//         _countof(arguments), // コンパイルオプションの数02_00
-//         includeHandler.Get(), // includeが含まれた諸々02_00
-//         IID_PPV_ARGS(&shaderResult) // コンパイル結果02_00
-//     );
-//     // コンパイルエラーではなくdxcが起動できないなど致命的な状況02_00
-//     assert(SUCCEEDED(hr));
-//     // 3.警告、エラーが出ていないか確認する02_00
-//     // 警告.エラーが出ていたらログに出して止める02_00
-//     IDxcBlobUtf8* shaderError = nullptr;
-//     shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
-//     if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
-//         Utility::Log(os, shaderError->GetStringPointer());
-//         // 警告、エラーダメ絶対02_00
-//         assert(false);
-//     }
-//     // 4.Compile結果を受け取って返す02_00
-//     // コンパイル結果から実行用のバイナリ部分を取得02_00
-//     Microsoft::WRL::ComPtr<IDxcBlob> shaderBlob = nullptr;
-//     hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob),
-//         nullptr);
-//     assert(SUCCEEDED(hr));
-//     // 成功したログを出す02_00
-//     Utility::Log(os,
-//         Utility::ConvertString(std::format(L"Compile Succeeded, path:{}, profike:{}\n ",
-//             filepath, profile)));
-//     // もう使わないリソースを解放02_00
-//     // shaderSource->Release();
-//     // shaderResult->Release();
-//     // 実行用のバイナリを返却02_00
-//     return shaderBlob.Get(); // get
-// }
 
 // CG2_05_01_page_5
 D3D12_CPU_DESCRIPTOR_HANDLE
@@ -195,6 +99,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
     D3DResourceLeakChecker leakChecker;
 
+    WinApp win;
+
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
@@ -217,42 +123,77 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     std::string logFilePath = std::string("logs/") + dateString + ".log";
     // ファイルを作って書き込み準備
     std::ofstream logStream(logFilePath);
+    std::wstring title = L"CG2 Engine"; // ← ここでウィンドウタイトルを定義
     // 出力
+    win.Initialize(hInstance, nCmdShow, title, 1280, 720);
 
-    WNDCLASS wc {};
-    // ウィンドウプロシージャ
-    wc.lpfnWndProc = WindowProc;
-    // ウィンドウクラス名(何でもよい)
-    wc.lpszClassName = L"CG2WindowClass";
-    // インスタンスバンドル
-    wc.hInstance = GetModuleHandle(nullptr);
-    // カーソル
-    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    // ウィンドウクラスを登録する
-    RegisterClass(&wc);
-    // クライアント領域のサイズ
-    const int32_t kClientWidth = 1280;
-    const int32_t kClientHeight = 720;
+    //============================
+    // 消す
+    //============================
+    //// ウィンドウプロシージャ
+    // LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+    //{
+    //     //
+    //     if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
+    //         return true;
+    //     }
 
-    // ウィンドウサイズを表す構造体体にクライアント領域を入れる
-    RECT wrc = { 0, 0, kClientWidth, kClientHeight };
+    //    // メッセージに応じて固有の処理を行う
+    //    switch (msg) {
+    //        // ウィンドウが破棄された
+    //    case WM_DESTROY:
+    //        // OSに対して、アプリの終了を伝える
+    //        PostQuitMessage(0);
+    //        return 0;
+    //    }
+    //    // 標準のメッセージ処理を行う
+    //    return DefWindowProc(hwnd, msg, wparam, lparam);
+    //}
+    //// ウィンドウクラス登録
+    // WNDCLASS wc {};
+    //// ウィンドウプロシージャ
+    // wc.lpfnWndProc = WindowProc;
+    //// ウィンドウクラス名(何でもよい)
+    // wc.lpszClassName = L"CG2WindowClass";
+    //// インスタンスバンドル
+    // wc.hInstance = GetModuleHandle(nullptr);
+    //// カーソル
+    // wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    //// ウィンドウクラスを登録する
+    // RegisterClass(&wc);
+    //// クライアント領域のサイズ
+    // const int32_t kClientWidth = 1280;
+    // const int32_t kClientHeight = 720;
 
-    // クライアント領域をもとに実際のサイズにwrcを変更してもらう
-    AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
+    //// ウィンドウサイズを表す構造体体にクライアント領域を入れる
+    // RECT wrc = { 0, 0, kClientWidth, kClientHeight };
 
-    // ウィンドウの生成
-    HWND hwnd = CreateWindow(wc.lpszClassName, // 利用するクラス名
-        L"CG2", // タイトルバーの文字(何でもよい)
-        WS_OVERLAPPEDWINDOW, // よく見るウィンドウスタイル
-        CW_USEDEFAULT, // 表示X座標(Windowsに任せる)
-        CW_USEDEFAULT, // 表示Y座標(WindowsOSに任せる)
-        wrc.right - wrc.left, // ウィンドウ横幅
-        wrc.bottom - wrc.top, // ウィンドウ縦幅
-        nullptr, // 親ウィンドウハンドル
-        nullptr, // メニューハンドル
-        wc.hInstance, // インスタンスハンドル
-        nullptr); // オプション
+    //// クライアント領域をもとに実際のサイズにwrcを変更してもらう
+    // AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
 
+    //// ウィンドウの生成
+    // HWND hwnd = CreateWindow(wc.lpszClassName, // 利用するクラス名
+    //     L"CG2", // タイトルバーの文字(何でもよい)
+    //     WS_OVERLAPPEDWINDOW, // よく見るウィンドウスタイル
+    //     CW_USEDEFAULT, // 表示X座標(Windowsに任せる)
+    //     CW_USEDEFAULT, // 表示Y座標(WindowsOSに任せる)
+    //     wrc.right - wrc.left, // ウィンドウ横幅
+    //     wrc.bottom - wrc.top, // ウィンドウ縦幅
+    //     nullptr, // 親ウィンドウハンドル
+    //     nullptr, // メニューハンドル
+    //     wc.hInstance, // インスタンスハンドル
+    //     nullptr); // オプション
+
+    //// ウィンドウを表示する
+    // ShowWindow(hwnd, SW_SHOW);
+
+    //============================
+    // 消す
+    //============================
+    // ImGuiのWndProcハンドラを登録！
+    /* win.SetMsgCallback([](HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+         return ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam);
+     });*/
 #ifdef _DEBUG
 
     Microsoft::WRL::ComPtr<ID3D12Debug1> debugController = nullptr; // COM
@@ -263,9 +204,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         debugController->SetEnableGPUBasedValidation(TRUE);
     }
 #endif // _DEBUG
-
-    // ウィンドウを表示する
-    ShowWindow(hwnd, SW_SHOW);
 
     // DXGIファクトリーの生成
     Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr; // com
@@ -380,15 +318,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // スワップチェーンを生成する
     Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr; // com
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc {};
-    swapChainDesc.Width = kClientWidth; // 画面の幅。ウィンドウのクライアント領域を同じものんにしておく
-    swapChainDesc.Height = kClientHeight; // 画面の高さ。ウィンドウのクライアント領域を同じものにしておく
+    swapChainDesc.Width = 1280; // 画面の幅。ウィンドウのクライアント領域を同じものんにしておく
+    swapChainDesc.Height = 720; // 画面の高さ。ウィンドウのクライアント領域を同じものにしておく
     swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式
     swapChainDesc.SampleDesc.Count = 1; // マルチサンプルしない
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // 描画のターゲットとしてりようする
     swapChainDesc.BufferCount = 2; // ダブルバッファ
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニターに移したら,中身を吐き
     // コマンドキュー,ウィンドウバンドル、設定を渡して生成する
-    hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue.Get(), hwnd, &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf())); // com.Get,OF
+    hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue.Get(), win.GetHwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf())); // com.Get,OF
     assert(SUCCEEDED(hr));
 
     // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
@@ -845,7 +783,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::StyleColorsClassic();
-    ImGui_ImplWin32_Init(hwnd);
+    ImGui_ImplWin32_Init(win.GetHwnd());
     ImGui_ImplDX12_Init(device.Get(), swapChainDesc.BufferCount, rtvDesc.Format,
         srvDescriptorHeap.Get(),
         srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
@@ -859,14 +797,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //=================================
     // キーボード情報の取得開始
     //=================================
-    input.Initialize(hInstance, hwnd);
+    input.Initialize(hInstance, win.GetHwnd());
 
     //=================================
     // デバックカメラインスタンス作成
     //=================================
     DebugCamera debugCamera;
     // debugcamera初期化一回だけ
-    debugCamera.Initialize(hInstance, hwnd);
+    debugCamera.Initialize(hInstance, win.GetHwnd());
     //=================================
     // サウンドマネージャーインスタンス作成
     //=================================
@@ -1078,7 +1016,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     CoInitialize(nullptr);
     // #endif
-    CloseWindow(hwnd);
+    CloseWindow(win.GetHwnd());
 
     return 0;
 
