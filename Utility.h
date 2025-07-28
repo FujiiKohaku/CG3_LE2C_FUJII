@@ -14,5 +14,9 @@ public:
     //=== ログ出力関数（コンソールとデバッグ出力）==//
     static void Log(std::ostream& os, const std::string& message);
 
+    static void Log(const std::wstring& message);
+
+    static void Log(const std::string& message);
+
     static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception);
 };

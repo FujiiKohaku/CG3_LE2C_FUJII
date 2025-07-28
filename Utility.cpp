@@ -43,6 +43,17 @@ void Utility::Log(std::ostream& os, const std::string& message)
     OutputDebugStringA(message.c_str());
 }
 
+// Utility.cpp に実装を追加
+void Utility::Log(const std::wstring& message)
+{
+    OutputDebugStringW(message.c_str());
+}
+
+void Utility::Log(const std::string& message)
+{
+    std::cout << message << std::endl;
+    OutputDebugStringA(message.c_str());
+}
 //===エラーハンドリング用の身にダンプ出力関数===///
 LONG WINAPI Utility::ExportDump(EXCEPTION_POINTERS* exception)
 {
