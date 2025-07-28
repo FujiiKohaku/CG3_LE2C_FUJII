@@ -180,39 +180,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //  DirectX12 初期化ここまで！
     //  ----------------------------
 
-    //// RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
-    // Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap = // com
-    //     CreateDescriptorHeap(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
-
     // DSV用のヒープでディスクリプタの数は１。DSVはshader内で触るものではないので,ShaderVisibleはfalse
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap = // com
         CreateDescriptorHeap(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
 
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap = // com
         CreateDescriptorHeap(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
-
-    // SwapChainからResourceを引っ張ってくる
-    // Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = { nullptr };
-    /*  hr = deviceManager.GetSwapChain()->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
-      assert(SUCCEEDED(hr));
-      hr = deviceManager.GetSwapChain()->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
-      assert(SUCCEEDED(hr));*/
-
-    // RTVの設定
-    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc {};
-    rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-    // ディスクリプタの先頭を取得する
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = deviceManager.GetRTVDescriptorHeap()->GetCPUDescriptorHandleForHeapStart();
-    // RTVを2つ作るのでディスクリプタを２つ用意
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2];
-    // まず１つ目をつくる。１つ目は最初のところに作る。作る場所をこちらで指定して上げる必要がある
-    rtvHandles[0] = rtvStartHandle;
-    deviceManager.GetDevice()->CreateRenderTargetView(deviceManager.GetSwapChainResource(0), &rtvDesc, rtvHandles[0]);
-    // 2つ目のディスクリプタハンドルを得る（自力で）
-    rtvHandles[1].ptr = rtvHandles[0].ptr + deviceManager.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    // 2つ目を作る
-    deviceManager.GetDevice()->CreateRenderTargetView(deviceManager.GetSwapChainResource(1), &rtvDesc, rtvHandles[1]);
 
     // 初期値でFenceを作る01_02
     Microsoft::WRL::ComPtr<ID3D12Fence> fence = nullptr; // com
@@ -632,7 +605,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ImGui::CreateContext();
     ImGui::StyleColorsClassic();
     ImGui_ImplWin32_Init(win.GetHwnd());
-    ImGui_ImplDX12_Init(deviceManager.GetDevice(), deviceManager.GetSwapChainDesc().BufferCount, rtvDesc.Format,
+    ImGui_ImplDX12_Init(deviceManager.GetDevice(), deviceManager.GetSwapChainDesc().BufferCount, deviceManager.GetRTVDesc().Format,
         srvDescriptorHeap.Get(),
         srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
         srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
@@ -772,9 +745,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             //--- 画面クリア・描画準備 ---
             D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-            deviceManager.GetCommandList()->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
+            deviceManager.GetCommandList()->OMSetRenderTargets(1, &deviceManager.GetRTVHandles()[backBufferIndex], false, &dsvHandle);
             float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
-            deviceManager.GetCommandList()->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+            deviceManager.GetCommandList()->ClearRenderTargetView(deviceManager.GetRTVHandles()[backBufferIndex], clearColor, 0, nullptr);
             deviceManager.GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
             deviceManager.GetCommandList()->RSSetViewports(1, &viewport);
             deviceManager.GetCommandList()->RSSetScissorRects(1, &scissorRect);

@@ -85,9 +85,20 @@ void DeviceManager::Initialize(std::ofstream& logStream, WinApp* winApp, uint32_
     hr = device_->CreateDescriptorHeap(&rtvDescriptorHeapDesc_, IID_PPV_ARGS(&rtvDescriptorHeap_));
     // ディスクリプタ―ヒープが作れなかったので起動できない
     assert(SUCCEEDED(hr));
-
+    // ==== SwapChain からバックバッファを取得 ====
     hr = swapChain_->GetBuffer(0, IID_PPV_ARGS(&swapChainResources_[0]));
     assert(SUCCEEDED(hr));
     hr = swapChain_->GetBuffer(1, IID_PPV_ARGS(&swapChainResources_[1]));
     assert(SUCCEEDED(hr));
+    //==RTVを作成==//
+    rtvDesc_.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    rtvDesc_.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = rtvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
+    // 1つ目
+    rtvHandles_[0] = rtvStartHandle;
+    device_->CreateRenderTargetView(swapChainResources_[0].Get(), &rtvDesc_, rtvHandles_[0]);
+
+    // 2つ目
+    rtvHandles_[1].ptr = rtvHandles_[0].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    device_->CreateRenderTargetView(swapChainResources_[1].Get(), &rtvDesc_, rtvHandles_[1]);
 }

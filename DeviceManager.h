@@ -29,6 +29,19 @@ public:
         assert(index < _countof(swapChainResources_));
         return swapChainResources_[index].Get();
     }
+    // RTVの設定情報を取得（描画設定の確認や再設定に使える）
+    const D3D12_RENDER_TARGET_VIEW_DESC& GetRTVDesc() const { return rtvDesc_; }
+
+    // RTVハンドル（OMSetRenderTargetsなどで使う）
+    const D3D12_CPU_DESCRIPTOR_HANDLE* GetRTVHandles() const { return rtvHandles_; }
+
+    // 特定のインデックスのRTVハンドルを取得
+    D3D12_CPU_DESCRIPTOR_HANDLE GetRTVHandle(size_t index) const
+    {
+        assert(index < _countof(rtvHandles_));
+        return rtvHandles_[index];
+    }
+
 
 private:
     Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory_;
@@ -42,4 +55,6 @@ private:
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap_;
     D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc_ {};
     Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources_[2];
+    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc_ {};
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[2] {};
 };
