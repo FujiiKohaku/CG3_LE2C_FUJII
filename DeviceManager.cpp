@@ -85,4 +85,9 @@ void DeviceManager::Initialize(std::ofstream& logStream, WinApp* winApp, uint32_
     hr = device_->CreateDescriptorHeap(&rtvDescriptorHeapDesc_, IID_PPV_ARGS(&rtvDescriptorHeap_));
     // ディスクリプタ―ヒープが作れなかったので起動できない
     assert(SUCCEEDED(hr));
+
+    hr = swapChain_->GetBuffer(0, IID_PPV_ARGS(&swapChainResources_[0]));
+    assert(SUCCEEDED(hr));
+    hr = swapChain_->GetBuffer(1, IID_PPV_ARGS(&swapChainResources_[1]));
+    assert(SUCCEEDED(hr));
 }

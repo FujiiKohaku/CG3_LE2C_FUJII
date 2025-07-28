@@ -24,6 +24,11 @@ public:
     IDXGISwapChain4* GetSwapChain() const { return swapChain_.Get(); }
     const DXGI_SWAP_CHAIN_DESC1& GetSwapChainDesc() const { return swapChainDesc_; }
     ID3D12DescriptorHeap* GetRTVDescriptorHeap() const { return rtvDescriptorHeap_.Get(); }
+    ID3D12Resource* GetSwapChainResource(size_t index) const
+    {
+        assert(index < _countof(swapChainResources_));
+        return swapChainResources_[index].Get();
+    }
 
 private:
     Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory_;
@@ -36,4 +41,5 @@ private:
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc_ {};
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap_;
     D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc_ {};
+    Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources_[2];
 };

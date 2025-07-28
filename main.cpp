@@ -192,11 +192,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         CreateDescriptorHeap(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
     // SwapChainからResourceを引っ張ってくる
-    Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = { nullptr };
-    hr = deviceManager.GetSwapChain()->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
-    assert(SUCCEEDED(hr));
-    hr = deviceManager.GetSwapChain()->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
-    assert(SUCCEEDED(hr));
+    // Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = { nullptr };
+    /*  hr = deviceManager.GetSwapChain()->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
+      assert(SUCCEEDED(hr));
+      hr = deviceManager.GetSwapChain()->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
+      assert(SUCCEEDED(hr));*/
 
     // RTVの設定
     D3D12_RENDER_TARGET_VIEW_DESC rtvDesc {};
@@ -208,11 +208,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2];
     // まず１つ目をつくる。１つ目は最初のところに作る。作る場所をこちらで指定して上げる必要がある
     rtvHandles[0] = rtvStartHandle;
-    deviceManager.GetDevice()->CreateRenderTargetView(swapChainResources[0].Get(), &rtvDesc, rtvHandles[0]);
+    deviceManager.GetDevice()->CreateRenderTargetView(deviceManager.GetSwapChainResource(0), &rtvDesc, rtvHandles[0]);
     // 2つ目のディスクリプタハンドルを得る（自力で）
     rtvHandles[1].ptr = rtvHandles[0].ptr + deviceManager.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     // 2つ目を作る
-    deviceManager.GetDevice()->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
+    deviceManager.GetDevice()->CreateRenderTargetView(deviceManager.GetSwapChainResource(1), &rtvDesc, rtvHandles[1]);
 
     // 初期値でFenceを作る01_02
     Microsoft::WRL::ComPtr<ID3D12Fence> fence = nullptr; // com
@@ -762,7 +762,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // Noneにしておく
             barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
             // バリアをはる対象のリソース。現在のバックバッファに対して行う
-            barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
+            barrier.Transition.pResource = deviceManager.GetSwapChainResource(backBufferIndex);
             // 遷移前(現在)のResourceState
             barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
             // 遷移後のResourceState
