@@ -131,7 +131,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     std::ofstream logStream(logFilePath);
     std::wstring title = L"CG2 Engine"; // ← ここでウィンドウタイトルを定義
     // 出力
-    win.Initialize(hInstance, nCmdShow, title, 1280, 720);
+    win.Initialize(hInstance, nCmdShow, title, kClientWidth, kClientHeight);
 
 #ifdef _DEBUG
 
@@ -144,7 +144,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 #endif // _DEBUG
 
-    deviceManager.Initialize(logStream);
+    deviceManager.Initialize(logStream, &win, kClientWidth, kClientHeight);
 
 #ifdef _DEBUG
 
@@ -172,29 +172,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // 指定したメッセージの表示wp抑制する
         infoQueue->PushStorageFilter(&filter);
         // 解放
-
     }
 
 #endif // DEBUG
 
-
     //  ----------------------------
     //  DirectX12 初期化ここまで！
     //  ----------------------------
-
-    // スワップチェーンを生成する
-    Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr; // com
-    DXGI_SWAP_CHAIN_DESC1 swapChainDesc {};
-    swapChainDesc.Width = 1280; // 画面の幅。ウィンドウのクライアント領域を同じものんにしておく
-    swapChainDesc.Height = 720; // 画面の高さ。ウィンドウのクライアント領域を同じものにしておく
-    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式
-    swapChainDesc.SampleDesc.Count = 1; // マルチサンプルしない
-    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // 描画のターゲットとしてりようする
-    swapChainDesc.BufferCount = 2; // ダブルバッファ
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニターに移したら,中身を吐き
-    // コマンドキュー,ウィンドウバンドル、設定を渡して生成する
-    hr = deviceManager.GetFactory()->CreateSwapChainForHwnd(deviceManager.GetCommandQueue(), win.GetHwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf())); // com.Get,OF
-    assert(SUCCEEDED(hr));
 
 
     // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
@@ -212,10 +196,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = {
         nullptr
     }; // com
-    hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
+    hr = deviceManager.GetSwapChain()->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
     // 上手く取得できなければ起動できない
     assert(SUCCEEDED(hr));
-    hr = swapChain->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
+    hr = deviceManager.GetSwapChain()->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
     assert(SUCCEEDED(hr));
 
     // RTVの設定
@@ -652,7 +636,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ImGui::CreateContext();
     ImGui::StyleColorsClassic();
     ImGui_ImplWin32_Init(win.GetHwnd());
-    ImGui_ImplDX12_Init(deviceManager.GetDevice(), swapChainDesc.BufferCount, rtvDesc.Format,
+    ImGui_ImplDX12_Init(deviceManager.GetDevice(), deviceManager.GetSwapChainDesc().BufferCount, rtvDesc.Format,
         srvDescriptorHeap.Get(),
         srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
         srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
@@ -774,7 +758,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             // 画面のクリア処理
             //   これから書き込むバックバッファのインデックスを取得
-            UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+            UINT backBufferIndex = deviceManager.GetSwapChain()->GetCurrentBackBufferIndex();
             // TransitionBarrieの設定01_02
             D3D12_RESOURCE_BARRIER barrier {};
             // 今回のバリアはTransion
@@ -847,7 +831,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             Microsoft::WRL::ComPtr<ID3D12CommandList> commandLists[] = { deviceManager.GetCommandList() };
             deviceManager.GetCommandQueue()->ExecuteCommandLists(1, commandLists->GetAddressOf());
             // GPUとosに画面の交換を行うよう通知する
-            swapChain->Present(1, 0);
+            deviceManager.GetSwapChain()->Present(1, 0);
             // Fenceの値を更新01_02
             fenceValue++;
             // GPUがじじなでたどり着いたときに,Fenceの値を指定した値に代入する01_02

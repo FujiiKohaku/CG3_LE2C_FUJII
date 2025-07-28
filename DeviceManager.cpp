@@ -1,7 +1,10 @@
 #include "DeviceManager.h"
 
-void DeviceManager::Initialize(std::ofstream& logStream)
+void DeviceManager::Initialize(std::ofstream& logStream, WinApp* winApp, uint32_t width, uint32_t height)
 {
+
+   
+
     // DXGIファクトリ作成
     // HRESULTはWindows系のエラー子どであり
     // 関数が成功したかをSUCCEEDEDマクロで判定できる
@@ -64,5 +67,17 @@ void DeviceManager::Initialize(std::ofstream& logStream)
 
     hr = device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator_.Get(), nullptr, IID_PPV_ARGS(&commandList_));
     // コマンドリストの生成が上手くいかなかったので起動できない
+    assert(SUCCEEDED(hr));
+
+    // スワップチェーンを生成する
+    swapChainDesc_.Width = 1280; // 画面の幅。ウィンドウのクライアント領域を同じものんにしておく
+    swapChainDesc_.Height = 720; // 画面の高さ。ウィンドウのクライアント領域を同じものにしておく
+    swapChainDesc_.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式
+    swapChainDesc_.SampleDesc.Count = 1; // マルチサンプルしない
+    swapChainDesc_.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // 描画のターゲットとしてりようする
+    swapChainDesc_.BufferCount = 2; // ダブルバッファ
+    swapChainDesc_.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニターに移したら,中身を吐き
+    // コマンドキュー,ウィンドウバンドル、設定を渡して生成する
+    hr = dxgiFactory_->CreateSwapChainForHwnd(commandQueue_.Get(), winApp->GetHwnd(), &swapChainDesc_, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain_.GetAddressOf())); // com.Get,OF
     assert(SUCCEEDED(hr));
 }
