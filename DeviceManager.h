@@ -1,4 +1,5 @@
 #pragma once
+#include "BufferHelper.h"
 #include "Utility.h"
 #include "WinApp.h"
 #include <cassert>
@@ -22,6 +23,7 @@ public:
     ID3D12GraphicsCommandList* GetCommandList() const { return commandList_.Get(); }
     IDXGISwapChain4* GetSwapChain() const { return swapChain_.Get(); }
     const DXGI_SWAP_CHAIN_DESC1& GetSwapChainDesc() const { return swapChainDesc_; }
+    ID3D12DescriptorHeap* GetRTVDescriptorHeap() const { return rtvDescriptorHeap_.Get(); }
 
 private:
     Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory_;
@@ -31,5 +33,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator_;
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList_;
     Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain_;
-    DXGI_SWAP_CHAIN_DESC1 swapChainDesc_ {}; // ← swapChainDescを保存する変数
+    DXGI_SWAP_CHAIN_DESC1 swapChainDesc_ {};
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap_;
+    D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc_ {};
 };

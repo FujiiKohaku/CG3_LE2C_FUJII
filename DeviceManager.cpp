@@ -3,8 +3,6 @@
 void DeviceManager::Initialize(std::ofstream& logStream, WinApp* winApp, uint32_t width, uint32_t height)
 {
 
-   
-
     // DXGIファクトリ作成
     // HRESULTはWindows系のエラー子どであり
     // 関数が成功したかをSUCCEEDEDマクロで判定できる
@@ -79,5 +77,12 @@ void DeviceManager::Initialize(std::ofstream& logStream, WinApp* winApp, uint32_
     swapChainDesc_.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニターに移したら,中身を吐き
     // コマンドキュー,ウィンドウバンドル、設定を渡して生成する
     hr = dxgiFactory_->CreateSwapChainForHwnd(commandQueue_.Get(), winApp->GetHwnd(), &swapChainDesc_, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain_.GetAddressOf())); // com.Get,OF
+    assert(SUCCEEDED(hr));
+
+    // ディスクリプタ―ヒープの生成
+    rtvDescriptorHeapDesc_.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    rtvDescriptorHeapDesc_.NumDescriptors = 2;
+    hr = device_->CreateDescriptorHeap(&rtvDescriptorHeapDesc_, IID_PPV_ARGS(&rtvDescriptorHeap_));
+    // ディスクリプタ―ヒープが作れなかったので起動できない
     assert(SUCCEEDED(hr));
 }

@@ -180,10 +180,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //  DirectX12 初期化ここまで！
     //  ----------------------------
 
-
-    // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap = // com
-        CreateDescriptorHeap(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
+    //// RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
+    // Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap = // com
+    //     CreateDescriptorHeap(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
 
     // DSV用のヒープでディスクリプタの数は１。DSVはshader内で触るものではないので,ShaderVisibleはfalse
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap = // com
@@ -193,11 +192,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         CreateDescriptorHeap(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
     // SwapChainからResourceを引っ張ってくる
-    Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = {
-        nullptr
-    }; // com
+    Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = { nullptr };
     hr = deviceManager.GetSwapChain()->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
-    // 上手く取得できなければ起動できない
     assert(SUCCEEDED(hr));
     hr = deviceManager.GetSwapChain()->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
     assert(SUCCEEDED(hr));
@@ -207,7 +203,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
     // ディスクリプタの先頭を取得する
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = deviceManager.GetRTVDescriptorHeap()->GetCPUDescriptorHandleForHeapStart();
     // RTVを2つ作るのでディスクリプタを２つ用意
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2];
     // まず１つ目をつくる。１つ目は最初のところに作る。作る場所をこちらで指定して上げる必要がある
