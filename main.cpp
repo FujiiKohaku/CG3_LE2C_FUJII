@@ -46,7 +46,6 @@
 //------------------
 const int kSubdivision = 16; // 16分割
 int kNumVertices = kSubdivision * kSubdivision * 6; // 頂点数
-
 float waveTime = 0.0f;
 const int32_t kClientWidth = 1280;
 const int32_t kClientHeight = 720;
@@ -178,14 +177,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #endif // DEBUG
 
-    // コマンドキューを生成する
-    Microsoft::WRL::ComPtr<ID3D12CommandQueue>
-        commandQueue = nullptr; // com
-    D3D12_COMMAND_QUEUE_DESC commandQueueDesc {};
-    hr = deviceManager.GetDevice()->CreateCommandQueue(&commandQueueDesc,
-        IID_PPV_ARGS(&commandQueue));
-    // コマンドキューの生成が上手くいかなかったので起動できない
-    assert(SUCCEEDED(hr));
+    //// コマンドキューを生成する
+    // Microsoft::WRL::ComPtr<ID3D12CommandQueue>commandQueue = nullptr; // com
+    // D3D12_COMMAND_QUEUE_DESC commandQueueDesc {};
+    // hr = deviceManager.GetDevice()->CreateCommandQueue(&commandQueueDesc,
+    //     IID_PPV_ARGS(&commandQueue));
+    //// コマンドキューの生成が上手くいかなかったので起動できない
+    // assert(SUCCEEDED(hr));
+
     // コマンドアロケーターを生成する
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator = nullptr; // com
     hr = deviceManager.GetDevice()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
@@ -212,7 +211,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     swapChainDesc.BufferCount = 2; // ダブルバッファ
     swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニターに移したら,中身を吐き
     // コマンドキュー,ウィンドウバンドル、設定を渡して生成する
-    hr = deviceManager.GetFactory()->CreateSwapChainForHwnd(commandQueue.Get(), win.GetHwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf())); // com.Get,OF
+    hr = deviceManager.GetFactory()->CreateSwapChainForHwnd(deviceManager.GetCommandQueue(), win.GetHwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf())); // com.Get,OF
     assert(SUCCEEDED(hr));
 
     // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
@@ -863,13 +862,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             // GPUにコマンドリストの実行を行わせる;
             Microsoft::WRL::ComPtr<ID3D12CommandList> commandLists[] = { commandList };
-            commandQueue->ExecuteCommandLists(1, commandLists->GetAddressOf());
+            deviceManager.GetCommandQueue()->ExecuteCommandLists(1, commandLists->GetAddressOf());
             // GPUとosに画面の交換を行うよう通知する
             swapChain->Present(1, 0);
             // Fenceの値を更新01_02
             fenceValue++;
             // GPUがじじなでたどり着いたときに,Fenceの値を指定した値に代入する01_02
-            commandQueue->Signal(fence.Get(), fenceValue);
+            deviceManager.GetCommandQueue()->Signal(fence.Get(), fenceValue);
             // Fenceの値が指定したSignal値にたどりついているか確認する01_02
             // GetCompleteValueの初期値はFence作成時に渡した初期値01_02
             if (fence->GetCompletedValue() < fenceValue) {

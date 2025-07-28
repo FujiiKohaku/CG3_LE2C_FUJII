@@ -17,9 +17,11 @@ public:
     ID3D12Device* GetDevice() const { return device_.Get(); }
     IDXGIAdapter4* GetAdapter() const { return useAdapter_.Get(); }
     IDXGIFactory7* GetFactory() const { return dxgiFactory_.Get(); }
+    ID3D12CommandQueue* GetCommandQueue() const { return commandQueue_.Get(); }
 
 private:
     Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory_;
     Microsoft::WRL::ComPtr<IDXGIAdapter4> useAdapter_;
     Microsoft::WRL::ComPtr<ID3D12Device> device_;
+    Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue_; // ← 追加
 };

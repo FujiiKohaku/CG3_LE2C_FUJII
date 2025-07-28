@@ -48,4 +48,11 @@ void DeviceManager::Initialize(std::ofstream& logStream)
     }
     assert(device_ != nullptr);
     Utility::Log("Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
+
+    // コマンドキューを生成する
+
+    D3D12_COMMAND_QUEUE_DESC commandQueueDesc {};
+    hr = device_->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue_));
+    // コマンドキューの生成が上手くいかなかったので起動できない
+    assert(SUCCEEDED(hr));
 }
