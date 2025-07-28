@@ -172,33 +172,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         // 指定したメッセージの表示wp抑制する
         infoQueue->PushStorageFilter(&filter);
         // 解放
-        /*  infoQueue->Release();*/
+
     }
 
 #endif // DEBUG
 
-    //// コマンドキューを生成する
-    // Microsoft::WRL::ComPtr<ID3D12CommandQueue>commandQueue = nullptr; // com
-    // D3D12_COMMAND_QUEUE_DESC commandQueueDesc {};
-    // hr = deviceManager.GetDevice()->CreateCommandQueue(&commandQueueDesc,
-    //     IID_PPV_ARGS(&commandQueue));
-    //// コマンドキューの生成が上手くいかなかったので起動できない
-    // assert(SUCCEEDED(hr));
 
-    // コマンドアロケーターを生成する
-    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator = nullptr; // com
-    hr = deviceManager.GetDevice()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
-    // コマンドキューアロケーターの生成があ上手くいかなかったので起動できない
-    assert(SUCCEEDED(hr));
-
-    // コマンドリストを生成する
-    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList = nullptr; // com
-    hr = deviceManager.GetDevice()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
-    // コマンドリストの生成が上手くいかなかったので起動できない
-    assert(SUCCEEDED(hr));
-    // ----------------------------
-    // DirectX12 初期化ここまで！
-    // ----------------------------
+    //  ----------------------------
+    //  DirectX12 初期化ここまで！
+    //  ----------------------------
 
     // スワップチェーンを生成する
     Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr; // com
@@ -213,6 +195,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // コマンドキュー,ウィンドウバンドル、設定を渡して生成する
     hr = deviceManager.GetFactory()->CreateSwapChainForHwnd(deviceManager.GetCommandQueue(), win.GetHwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf())); // com.Get,OF
     assert(SUCCEEDED(hr));
+
 
     // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap = // com
@@ -344,7 +327,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     DirectX::ScratchImage mipImages = LoadTexture("resources/uvChecker.png");
     const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
     Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = CreateTextureResource(deviceManager.GetDevice(), metadata); // get
-    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = UploadTextureData(textureResource.Get(), mipImages, deviceManager.GetDevice(), commandList.Get()); //?
+    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = UploadTextureData(textureResource.Get(), mipImages, deviceManager.GetDevice(), deviceManager.GetCommandList()); //?
     // モデル読み込み
     ModelData modelData = LoadObjFile("resources", "Plane.obj");
 
@@ -360,7 +343,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
     Microsoft::WRL::ComPtr<ID3D12Resource> textureResource2 = CreateTextureResource(deviceManager.GetDevice(), metadata2); // get
-    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource2 = UploadTextureData(textureResource2.Get(), mipImages2, deviceManager.GetDevice(), commandList.Get());
+    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource2 = UploadTextureData(textureResource2.Get(), mipImages2, deviceManager.GetDevice(), deviceManager.GetCommandList());
 
     // 03_00EX
     // ID3D12Resource *intermediateResource =
@@ -741,7 +724,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeaps[] = {
                 srvDescriptorHeap
             };
-            commandList->SetDescriptorHeaps(1, descriptorHeaps->GetAddressOf());
+            deviceManager.GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps->GetAddressOf());
             //===================================
             //  ゲームの処理02_02
             //===================================
@@ -805,63 +788,63 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // 遷移後のResourceState
             barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
             // TransitionBarrierを張る
-            commandList->ResourceBarrier(1, &barrier);
+            deviceManager.GetCommandList()->ResourceBarrier(1, &barrier);
 
             //--- 画面クリア・描画準備 ---
             D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-            commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
+            deviceManager.GetCommandList()->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
             float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
-            commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
-            commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-            commandList->RSSetViewports(1, &viewport);
-            commandList->RSSetScissorRects(1, &scissorRect);
-            commandList->SetGraphicsRootSignature(rootSignature.Get());
-            commandList->SetPipelineState(graphicsPinelineState.Get());
+            deviceManager.GetCommandList()->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+            deviceManager.GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+            deviceManager.GetCommandList()->RSSetViewports(1, &viewport);
+            deviceManager.GetCommandList()->RSSetScissorRects(1, &scissorRect);
+            deviceManager.GetCommandList()->SetGraphicsRootSignature(rootSignature.Get());
+            deviceManager.GetCommandList()->SetPipelineState(graphicsPinelineState.Get());
 
             //--- 3Dモデル描画 ---
             // 3D用の変換行列をルートパラメータ1にセット
-            commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
             // マテリアル（CBV）をセット（ルートパラメータ0）
-            commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
             // ライト（CBV）をセット（ルートパラメータ3）
-            commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
             // SRV（テクスチャ）をセット（ルートパラメータ2）
-            commandList->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
             // 頂点バッファ・プリミティブトポロジを設定
-            commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-            commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
+            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             // 描画実行
-            commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+            deviceManager.GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
             //--- スプライト描画 ---
             // スプライト用の変換行列をルートパラメータ1にセット（3Dと別の行列）
-            commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
             // スプライト用マテリアル（CBV）をセット（ルートパラメータ0）
-            commandList->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
             // スプライト用SRV（テクスチャ）をセット（ルートパラメータ2）
-            commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
             // 頂点バッファ・インデックスバッファを設定
-            commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
-            commandList->IASetIndexBuffer(&indexBufferViewSprite);
+            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+            deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
             // 描画実行
-            commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+            deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
             //  描画の最後です//----------------------------------------------------
             //   実際のcommandListのImGuiの描画コマンドを積む
-            ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
+            ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), deviceManager.GetCommandList());
 
             //  画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
             barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
             barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
             // TransitionBarrierを張る
-            commandList->ResourceBarrier(1, &barrier);
+            deviceManager.GetCommandList()->ResourceBarrier(1, &barrier);
 
             // コマンドリストの内容を確定させる。すべ手のコマンドを積んでからCloseすること
-            hr = commandList->Close();
+            hr = deviceManager.GetCommandList()->Close();
             assert(SUCCEEDED(hr));
 
             // GPUにコマンドリストの実行を行わせる;
-            Microsoft::WRL::ComPtr<ID3D12CommandList> commandLists[] = { commandList };
+            Microsoft::WRL::ComPtr<ID3D12CommandList> commandLists[] = { deviceManager.GetCommandList() };
             deviceManager.GetCommandQueue()->ExecuteCommandLists(1, commandLists->GetAddressOf());
             // GPUとosに画面の交換を行うよう通知する
             swapChain->Present(1, 0);
@@ -879,9 +862,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 WaitForSingleObject(fenceEvent, INFINITE);
             }
             // 次のｆｒａｍｅ用のコマンドりイストを準備
-            hr = commandAllocator->Reset();
+            hr = deviceManager.GetCommandAllocator()->Reset();
             assert(SUCCEEDED(hr));
-            hr = commandList->Reset(commandAllocator.Get(), nullptr);
+            hr = deviceManager.GetCommandList()->Reset(deviceManager.GetCommandAllocator(), nullptr);
             assert(SUCCEEDED(hr));
         }
     }

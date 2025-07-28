@@ -55,4 +55,14 @@ void DeviceManager::Initialize(std::ofstream& logStream)
     hr = device_->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue_));
     // コマンドキューの生成が上手くいかなかったので起動できない
     assert(SUCCEEDED(hr));
+
+    // コマンドアロケーターを生成する
+
+    hr = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator_));
+    // コマンドキューアロケーターの生成があ上手くいかなかったので起動できない
+    assert(SUCCEEDED(hr));
+
+    hr = device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator_.Get(), nullptr, IID_PPV_ARGS(&commandList_));
+    // コマンドリストの生成が上手くいかなかったので起動できない
+    assert(SUCCEEDED(hr));
 }
