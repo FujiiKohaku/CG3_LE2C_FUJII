@@ -13,8 +13,10 @@
 
 class DeviceManager {
 public:
+    // 関数
     void Initialize(std::ofstream& logStream, WinApp* winApp, uint32_t width, uint32_t height);
-
+    void ClearBackBuffer(D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle, const float clearColor[4]);
+    // ゲッター
     ID3D12Device* GetDevice() const { return device_.Get(); }
     IDXGIAdapter4* GetAdapter() const { return useAdapter_.Get(); }
     IDXGIFactory7* GetFactory() const { return dxgiFactory_.Get(); }
@@ -41,7 +43,7 @@ public:
         assert(index < _countof(rtvHandles_));
         return rtvHandles_[index];
     }
-
+    D3D12_RESOURCE_BARRIER& GetTempBarrier() { return Barrier_; }
 
 private:
     Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory_;
@@ -57,4 +59,5 @@ private:
     Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources_[2];
     D3D12_RENDER_TARGET_VIEW_DESC rtvDesc_ {};
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[2] {};
+    D3D12_RESOURCE_BARRIER Barrier_ {}; // 一時的に使う
 };

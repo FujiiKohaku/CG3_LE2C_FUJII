@@ -725,29 +725,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
             materialDataSprite->uvTransform = uvTransformMatrix;
 
-            // 画面のクリア処理
-            //   これから書き込むバックバッファのインデックスを取得
-            UINT backBufferIndex = deviceManager.GetSwapChain()->GetCurrentBackBufferIndex();
-            // TransitionBarrieの設定01_02
-            D3D12_RESOURCE_BARRIER barrier {};
-            // 今回のバリアはTransion
-            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            // Noneにしておく
-            barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            // バリアをはる対象のリソース。現在のバックバッファに対して行う
-            barrier.Transition.pResource = deviceManager.GetSwapChainResource(backBufferIndex);
-            // 遷移前(現在)のResourceState
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-            // 遷移後のResourceState
-            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-            // TransitionBarrierを張る
-            deviceManager.GetCommandList()->ResourceBarrier(1, &barrier);
 
             //--- 画面クリア・描画準備 ---
-            D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-            deviceManager.GetCommandList()->OMSetRenderTargets(1, &deviceManager.GetRTVHandles()[backBufferIndex], false, &dsvHandle);
             float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
-            deviceManager.GetCommandList()->ClearRenderTargetView(deviceManager.GetRTVHandles()[backBufferIndex], clearColor, 0, nullptr);
+            deviceManager.ClearBackBuffer(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), clearColor);
+
+            D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(); //?
+
+           /* float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };*/
+           /* deviceManager.GetCommandList()->ClearRenderTargetView(deviceManager.GetRTVHandles()[backBufferIndex], clearColor, 0, nullptr);*/
+            /////
             deviceManager.GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
             deviceManager.GetCommandList()->RSSetViewports(1, &viewport);
             deviceManager.GetCommandList()->RSSetScissorRects(1, &scissorRect);
@@ -787,10 +774,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), deviceManager.GetCommandList());
 
             //  画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+            deviceManager.GetTempBarrier().Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+            deviceManager.GetTempBarrier().Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
             // TransitionBarrierを張る
-            deviceManager.GetCommandList()->ResourceBarrier(1, &barrier);
+            deviceManager.GetCommandList()->ResourceBarrier(1, &deviceManager.GetTempBarrier());
 
             // コマンドリストの内容を確定させる。すべ手のコマンドを積んでからCloseすること
             hr = deviceManager.GetCommandList()->Close();

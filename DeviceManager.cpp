@@ -102,3 +102,29 @@ void DeviceManager::Initialize(std::ofstream& logStream, WinApp* winApp, uint32_
     rtvHandles_[1].ptr = rtvHandles_[0].ptr + device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     device_->CreateRenderTargetView(swapChainResources_[1].Get(), &rtvDesc_, rtvHandles_[1]);
 }
+
+void DeviceManager::ClearBackBuffer(D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle, const float clearColor[4])
+{
+
+    // 画面のクリア処理
+    //   これから書き込むバックバッファのインデックスを取得
+    UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
+    // 今回のバリアはTransion
+    Barrier_.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    // Noneにしておく
+    Barrier_.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    // バリアをはる対象のリソース。現在のバックバッファに対して行う
+    Barrier_.Transition.pResource = swapChainResources_[backBufferIndex].Get();
+    // 遷移前(現在)のResourceState
+    Barrier_.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+    // 遷移後のResourceState
+    Barrier_.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    // TransitionBarrierを張る
+    commandList_->ResourceBarrier(1, &Barrier_);
+
+    //--- 画面クリア・描画準備 ---
+  
+    commandList_->OMSetRenderTargets(1, &rtvHandles_[backBufferIndex], false, &dsvHandle);
+    commandList_->ClearRenderTargetView(rtvHandles_[backBufferIndex], clearColor, 0, nullptr);
+   
+}
