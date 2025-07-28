@@ -16,6 +16,7 @@ public:
     // 関数
     void Initialize(std::ofstream& logStream, WinApp* winApp, uint32_t width, uint32_t height);
     void ClearBackBuffer(D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle, const float clearColor[4]);
+    void ExecuteCommandListAndPresent(ID3D12Fence* fence, HANDLE fenceEvent, uint64_t& fenceValue);
     // ゲッター
     ID3D12Device* GetDevice() const { return device_.Get(); }
     IDXGIAdapter4* GetAdapter() const { return useAdapter_.Get(); }

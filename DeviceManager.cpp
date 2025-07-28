@@ -90,6 +90,7 @@ void DeviceManager::Initialize(std::ofstream& logStream, WinApp* winApp, uint32_
     assert(SUCCEEDED(hr));
     hr = swapChain_->GetBuffer(1, IID_PPV_ARGS(&swapChainResources_[1]));
     assert(SUCCEEDED(hr));
+
     //==RTVを作成==//
     rtvDesc_.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     rtvDesc_.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
@@ -127,4 +128,31 @@ void DeviceManager::ClearBackBuffer(D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle, const
     commandList_->OMSetRenderTargets(1, &rtvHandles_[backBufferIndex], false, &dsvHandle);
     commandList_->ClearRenderTargetView(rtvHandles_[backBufferIndex], clearColor, 0, nullptr);
    
+}
+void DeviceManager::ExecuteCommandListAndPresent(ID3D12Fence* fence, HANDLE fenceEvent, uint64_t& fenceValue)
+{
+    // コマンドリストを閉じる
+    HRESULT hr = commandList_->Close();
+    assert(SUCCEEDED(hr));
+
+    // コマンドリストの実行
+    ID3D12CommandList* lists[] = { commandList_.Get() };
+    commandQueue_->ExecuteCommandLists(1, lists);
+
+    // Present（画面に表示）
+    swapChain_->Present(1, 0);
+
+    // フェンスでGPUの完了を待つ
+    fenceValue++;
+    commandQueue_->Signal(fence, fenceValue);
+    if (fence->GetCompletedValue() < fenceValue) {
+        fence->SetEventOnCompletion(fenceValue, fenceEvent);
+        WaitForSingleObject(fenceEvent, INFINITE);
+    }
+
+    // 次フレーム用のリセット
+    hr = commandAllocator_->Reset();
+    assert(SUCCEEDED(hr));
+    hr = commandList_->Reset(commandAllocator_.Get(), nullptr);
+    assert(SUCCEEDED(hr));
 }

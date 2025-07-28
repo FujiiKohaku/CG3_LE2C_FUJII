@@ -725,15 +725,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
             materialDataSprite->uvTransform = uvTransformMatrix;
 
-
             //--- 画面クリア・描画準備 ---
             float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
             deviceManager.ClearBackBuffer(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), clearColor);
 
             D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(); //?
 
-           /* float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };*/
-           /* deviceManager.GetCommandList()->ClearRenderTargetView(deviceManager.GetRTVHandles()[backBufferIndex], clearColor, 0, nullptr);*/
+            /* float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };*/
+            /* deviceManager.GetCommandList()->ClearRenderTargetView(deviceManager.GetRTVHandles()[backBufferIndex], clearColor, 0, nullptr);*/
             /////
             deviceManager.GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
             deviceManager.GetCommandList()->RSSetViewports(1, &viewport);
@@ -779,33 +778,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // TransitionBarrierを張る
             deviceManager.GetCommandList()->ResourceBarrier(1, &deviceManager.GetTempBarrier());
 
-            // コマンドリストの内容を確定させる。すべ手のコマンドを積んでからCloseすること
-            hr = deviceManager.GetCommandList()->Close();
-            assert(SUCCEEDED(hr));
-
-            // GPUにコマンドリストの実行を行わせる;
-            Microsoft::WRL::ComPtr<ID3D12CommandList> commandLists[] = { deviceManager.GetCommandList() };
-            deviceManager.GetCommandQueue()->ExecuteCommandLists(1, commandLists->GetAddressOf());
-            // GPUとosに画面の交換を行うよう通知する
-            deviceManager.GetSwapChain()->Present(1, 0);
-            // Fenceの値を更新01_02
-            fenceValue++;
-            // GPUがじじなでたどり着いたときに,Fenceの値を指定した値に代入する01_02
-            deviceManager.GetCommandQueue()->Signal(fence.Get(), fenceValue);
-            // Fenceの値が指定したSignal値にたどりついているか確認する01_02
-            // GetCompleteValueの初期値はFence作成時に渡した初期値01_02
-            if (fence->GetCompletedValue() < fenceValue) {
-
-                // 指定したSignalにたどり着いていないので,たどり着くまで待つようにイベントを設定する01_02
-                fence->SetEventOnCompletion(fenceValue, fenceEvent);
-                // イベント待つ01_02
-                WaitForSingleObject(fenceEvent, INFINITE);
-            }
-            // 次のｆｒａｍｅ用のコマンドりイストを準備
-            hr = deviceManager.GetCommandAllocator()->Reset();
-            assert(SUCCEEDED(hr));
-            hr = deviceManager.GetCommandList()->Reset(deviceManager.GetCommandAllocator(), nullptr);
-            assert(SUCCEEDED(hr));
+            deviceManager.ExecuteCommandListAndPresent(fence.Get(), fenceEvent, fenceValue); // 終わらせる関数
         }
     }
 
