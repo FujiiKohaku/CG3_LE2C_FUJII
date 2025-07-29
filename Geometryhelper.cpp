@@ -1,10 +1,10 @@
-#include "Geometryhelper.h"
+ï»¿#include "Geometryhelper.h"
 
 void GenerateSphereVertices(VertexData* vertices, int kSubdivision, float radius)
 {
-    // Œo“x(360)
+    // çµŒåº¦(360)
     const float kLonEvery = static_cast<float>(M_PI * 2.0f) / kSubdivision;
-    // ˆÜ“x(180)
+    // ç·¯åº¦(180)
     const float kLatEvery = static_cast<float>(M_PI) / kSubdivision;
 
     for (int latIndex = 0; latIndex < kSubdivision; ++latIndex) {
@@ -47,7 +47,7 @@ void GenerateSphereVertices(VertexData* vertices, int kSubdivision, float radius
                 1.0f - static_cast<float>(latIndex + 1) / kSubdivision };
             vertD.normal = { vertD.position.x, vertD.position.y, vertD.position.z };
 
-            // ‰ŠúˆÊ’u//
+            // åˆæœŸä½ç½®//
             uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
 
             vertices[startIndex + 0] = vertA;

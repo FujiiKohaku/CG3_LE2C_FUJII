@@ -1,8 +1,8 @@
-#pragma once
+ï»¿#pragma once
 #define _USE_MATH_DEFINES
 #include "CommonStructs.h"
-      // M_PI ‚â sinf/cosf —p
-// ‹…‚Ì’¸“_‚ğ¶¬‚·‚éŠÖ”
+      // M_PI ã‚„ sinf/cosf ç”¨
+// çƒã®é ‚ç‚¹ã‚’ç”Ÿæˆã™ã‚‹é–¢æ•°
 void GenerateSphereVertices(
     VertexData* vertices,
     int kSubdivision,
