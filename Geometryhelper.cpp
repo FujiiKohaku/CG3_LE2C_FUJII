@@ -1,61 +1,78 @@
 ﻿#include "Geometryhelper.h"
+#include <cmath> // for sinf, cosf
 
 void GenerateSphereVertices(VertexData* vertices, int kSubdivision, float radius)
 {
-    // 経度(360)
-    const float kLonEvery = static_cast<float>(M_PI * 2.0f) / kSubdivision;
-    // 緯度(180)
-    const float kLatEvery = static_cast<float>(M_PI) / kSubdivision;
+    const float kLonEvery = static_cast<float>(M_PI * 2.0f) / kSubdivision; // 経度刻み
+    const float kLatEvery = static_cast<float>(M_PI) / kSubdivision; // 緯度刻み
 
     for (int latIndex = 0; latIndex < kSubdivision; ++latIndex) {
         float lat = -static_cast<float>(M_PI) / 2.0f + kLatEvery * latIndex;
-        float nextLat = lat + kLatEvery;
 
         for (int lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
             float lon = kLonEvery * lonIndex;
-            float nextLon = lon + kLonEvery;
 
-            // verA
-            VertexData vertA;
-            vertA.position = { cosf(lat) * cosf(lon), sinf(lat), cosf(lat) * sinf(lon),
-                1.0f };
-            vertA.texcoord = { static_cast<float>(lonIndex) / kSubdivision,
-                1.0f - static_cast<float>(latIndex) / kSubdivision };
-            vertA.normal = { vertA.position.x, vertA.position.y, vertA.position.z };
+            // 頂点A
+            Vector3 posA = {
+                cosf(lat) * cosf(lon),
+                sinf(lat),
+                cosf(lat) * sinf(lon)
+            };
+            VertexData vertA = {
+                { posA.x * radius, posA.y * radius, posA.z * radius, 1.0f },
+                { static_cast<float>(lonIndex) / kSubdivision,
+                    1.0f - static_cast<float>(latIndex) / kSubdivision },
+                posA // 法線 = 単位球の位置ベクトル
+            };
 
-            // verB
-            VertexData vertB;
-            vertB.position = { cosf(nextLat) * cosf(lon), sinf(nextLat),
-                cosf(nextLat) * sinf(lon), 1.0f };
-            vertB.texcoord = { static_cast<float>(lonIndex) / kSubdivision,
-                1.0f - static_cast<float>(latIndex + 1) / kSubdivision };
-            vertB.normal = { vertB.position.x, vertB.position.y, vertB.position.z };
+            // 頂点B
+            Vector3 posB = {
+                cosf(lat + kLatEvery) * cosf(lon),
+                sinf(lat + kLatEvery),
+                cosf(lat + kLatEvery) * sinf(lon)
+            };
+            VertexData vertB = {
+                { posB.x * radius, posB.y * radius, posB.z * radius, 1.0f },
+                { static_cast<float>(lonIndex) / kSubdivision,
+                    1.0f - static_cast<float>(latIndex + 1) / kSubdivision },
+                posB
+            };
 
-            // vertC
-            VertexData vertC;
-            vertC.position = { cosf(lat) * cosf(nextLon), sinf(lat),
-                cosf(lat) * sinf(nextLon), 1.0f };
-            vertC.texcoord = { static_cast<float>(lonIndex + 1) / kSubdivision,
-                1.0f - static_cast<float>(latIndex) / kSubdivision };
-            vertC.normal = { vertC.position.x, vertC.position.y, vertC.position.z };
+            // 頂点C
+            Vector3 posC = {
+                cosf(lat) * cosf(lon + kLonEvery),
+                sinf(lat),
+                cosf(lat) * sinf(lon + kLonEvery)
+            };
+            VertexData vertC = {
+                { posC.x * radius, posC.y * radius, posC.z * radius, 1.0f },
+                { static_cast<float>(lonIndex + 1) / kSubdivision,
+                    1.0f - static_cast<float>(latIndex) / kSubdivision },
+                posC
+            };
 
-            // vertD
-            VertexData vertD;
-            vertD.position = { cosf(nextLat) * cosf(nextLon), sinf(nextLat),
-                cosf(nextLat) * sinf(nextLon), 1.0f };
-            vertD.texcoord = { static_cast<float>(lonIndex + 1) / kSubdivision,
-                1.0f - static_cast<float>(latIndex + 1) / kSubdivision };
-            vertD.normal = { vertD.position.x, vertD.position.y, vertD.position.z };
+            // 頂点D
+            Vector3 posD = {
+                cosf(lat + kLatEvery) * cosf(lon + kLonEvery),
+                sinf(lat + kLatEvery),
+                cosf(lat + kLatEvery) * sinf(lon + kLonEvery)
+            };
+            VertexData vertD = {
+                { posD.x * radius, posD.y * radius, posD.z * radius, 1.0f },
+                { static_cast<float>(lonIndex + 1) / kSubdivision,
+                    1.0f - static_cast<float>(latIndex + 1) / kSubdivision },
+                posD
+            };
 
-            // 初期位置//
+            // 書き込み
             uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
-
             vertices[startIndex + 0] = vertA;
             vertices[startIndex + 1] = vertB;
             vertices[startIndex + 2] = vertC;
+
             vertices[startIndex + 3] = vertC;
-            vertices[startIndex + 4] = vertD;
-            vertices[startIndex + 5] = vertB;
+            vertices[startIndex + 4] = vertB;
+            vertices[startIndex + 5] = vertD;
         }
     }
 }

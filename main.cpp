@@ -372,7 +372,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // RasiterzerStateの設定
     D3D12_RASTERIZER_DESC rasterizerDesc {};
     // 裏面(時計回り)を表示しない
-    rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+    rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
     // 三角形の中を塗りつぶす
     rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
     rasterizerDesc.FrontCounterClockwise = FALSE;
@@ -435,7 +435,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // sphere用のWVP用のリソースを作る
     Microsoft::WRL::ComPtr<ID3D12Resource> wvpResourceSphere = CreateBufferResource(deviceManager.GetDevice(), sizeof(TransformationMatrix));
     // データを書き込む
-    Matrix4x4* wvpDataSphere = nullptr;
+    TransformationMatrix* wvpDataSphere = nullptr;
     // 書き込むためのアドレスを取得
     wvpResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&wvpDataSphere));
     // Sphere用のマテリアルリソースを作成
@@ -450,7 +450,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     materialDataSphere->uvTransform = MatrixMath::MakeIdentity4x4();
     materialDataSphere->enableLighting = true;
 
-    GenerateSphereVertices(vertexDataSphere, kSubdivision, 0.5f); // 半径1.0
+    GenerateSphereVertices(vertexDataSphere, kSubdivision, 1.0f); // 半径1.0
 
     //--------------------------
     //  通常モデル用リソース
@@ -700,31 +700,54 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
             // ImGuiの始まりの場所-----------------------------
-            ImGui::Begin("Materialcolor");
-            ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 5.0f);
-            ImGui::SliderAngle("RotateX", &transform.rotate.x, -180.0f, 180.0f);
-            ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
-            ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
-            ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
+            ImGui::Begin("Scene Editor");
 
-            ImGui::SliderFloat3("Scale (Sphere)", &transformSphere.scale.x, 0.1f, 5.0f);
-            ImGui::SliderAngle("RotateX (Sphere)", &transformSphere.rotate.x, -180.0f, 180.0f);
-            ImGui::SliderAngle("RotateY (Sphere)", &transformSphere.rotate.y, -180.0f, 180.0f);
-            ImGui::SliderAngle("RotateZ (Sphere)", &transformSphere.rotate.z, -180.0f, 180.0f);
-            ImGui::SliderFloat3("Translate (Sphere)", &transformSphere.translate.x, -5.0f, 5.0f);
-            ImGui::ColorEdit3("Sphere Color", &materialDataSphere->color.x); // RGB
+            // ========= モデル ========= //
+            ImGui::Text("Model Transform");
+            ImGui::Separator();
+            ImGui::SliderFloat3("Model Scale", &transform.scale.x, 0.1f, 5.0f);
+            ImGui::SliderAngle("Model Rotate X", &transform.rotate.x, -180.0f, 180.0f);
+            ImGui::SliderAngle("Model Rotate Y", &transform.rotate.y, -180.0f, 180.0f);
+            ImGui::SliderAngle("Model Rotate Z", &transform.rotate.z, -180.0f, 180.0f);
+            ImGui::SliderFloat3("Model Translate", &transform.translate.x, -5.0f, 5.0f);
 
-            ImGui::Text("useMonstarBall");
-            ImGui::Checkbox("useMonstarBall", &useMonstarBall);
-            ImGui::Text("LIgthng");
-            ImGui::SliderFloat("x", &directionalLightData->direction.x, -10.0f, 10.0f);
-            ImGui::SliderFloat("y", &directionalLightData->direction.y, -10.0f, 10.0f);
-            ImGui::SliderFloat("z", &directionalLightData->direction.z, -10.0f, 10.0f);
-            ImGui::Text("UVTransform");
-            ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
-            ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
-            ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
+            // ========= スフィア ========= //
+            ImGui::Spacing();
+            ImGui::Text("Sphere Transform");
+            ImGui::Separator();
+            ImGui::SliderFloat3("Sphere Scale", &transformSphere.scale.x, 0.1f, 5.0f);
+            ImGui::SliderAngle("Sphere Rotate X", &transformSphere.rotate.x, -180.0f, 180.0f);
+            ImGui::SliderAngle("Sphere Rotate Y", &transformSphere.rotate.y, -180.0f, 180.0f);
+            ImGui::SliderAngle("Sphere Rotate Z", &transformSphere.rotate.z, -180.0f, 180.0f);
+            ImGui::SliderFloat3("Sphere Translate", &transformSphere.translate.x, -5.0f, 5.0f);
+            ImGui::ColorEdit3("Sphere Color", &materialDataSphere->color.x);
+
+            // ========= スプライト ========= //
+            ImGui::Spacing();
+            ImGui::Text("Sprite Transform");
+            ImGui::Separator();
+            ImGui::SliderFloat3("Sprite Scale", &transformSprite.scale.x, 0.1f, 5.0f);
+            ImGui::SliderAngle("Sprite Rotate Z", &transformSprite.rotate.z, -180.0f, 180.0f);
+            ImGui::SliderFloat3("Sprite Translate", &transformSprite.translate.x, -640.0f, 640.0f);
+
+            // ========= ライティング ========= //
+            ImGui::Spacing();
+            ImGui::Text("Lighting Direction");
+            ImGui::Separator();
+            ImGui::SliderFloat("Light Dir X", &directionalLightData->direction.x, -1.0f, 1.0f);
+            ImGui::SliderFloat("Light Dir Y", &directionalLightData->direction.y, -1.0f, 1.0f);
+            ImGui::SliderFloat("Light Dir Z", &directionalLightData->direction.z, -1.0f, 1.0f);
+
+            // ========= UV変換 ========= //
+            ImGui::Spacing();
+            ImGui::Text("UV Transform (Sprite)");
+            ImGui::Separator();
+            ImGui::DragFloat2("UV Translate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+            ImGui::DragFloat2("UV Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+            ImGui::SliderAngle("UV Rotate", &uvTransformSprite.rotate.z);
+
             ImGui::End();
+
 
             // ImGuiの内部コマンドを生成する02_03
             ImGui::Render(); // ImGui終わりの場所。描画の前02_03--------------------------
@@ -740,7 +763,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             //  ゲームの処理02_02
             //===================================
             //  02_02
-            waveTime += 0.05f;
+            // waveTime += 0.05f;
             // インプットの更新
             input.Update();
             // デバッグカメラの更新
@@ -786,10 +809,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             //==============
             // 評価課題
             //==============
-
             Matrix4x4 worldMatrixSphere = MatrixMath::MakeAffineMatrix(transformSphere.scale, transformSphere.rotate, transformSphere.translate);
-            Matrix4x4 worldViewProjectionMatrixSphere = MatrixMath::Multiply(worldMatrixSphere, MatrixMath::Multiply(viewMatrix, projectionMatrix));
-            *wvpDataSphere = worldViewProjectionMatrixSphere;
+            Matrix4x4 viewMatrixSphere = debugCamera.GetViewMatrix();
+            Matrix4x4 projectionMatrixSpehre = MatrixMath::MakePerspectiveFovMatrix(
+                0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
+
+            Matrix4x4 wvpMatrixSphere = MatrixMath::Multiply(worldMatrixSphere, MatrixMath::Multiply(viewMatrixSphere, projectionMatrixSpehre));
+
+            // ★ ここ！構造体ごと代入！
+            wvpDataSphere->World = worldMatrixSphere;
+            wvpDataSphere->WVP = wvpMatrixSphere;
 
             //==============
             // 評価課題↑↑↑
@@ -810,50 +839,52 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             deviceManager.GetCommandList()->SetGraphicsRootSignature(rootSignature.Get()); // ルートシグネチャ
             deviceManager.GetCommandList()->SetPipelineState(graphicsPinelineState.Get()); // PSO
 
-            ////--- 3Dモデル描画 ---
-            //// 3D用の変換行列をルートパラメータ1にセット
-            // deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
-            //// マテリアル（CBV）をセット（ルートパラメータ0）
-            // deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
-            //// ライト（CBV）をセット（ルートパラメータ3）
-            // deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
-            //// SRV（テクスチャ）をセット（ルートパラメータ2）
-            // deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
-            //// 頂点バッファ・プリミティブトポロジを設定
-            // deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
-            // deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            //// 描画実行
-            // deviceManager.GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+            //--- 3Dモデル描画 ---
+            // 3D用の変換行列をルートパラメータ1にセット
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
+            // マテリアル（CBV）をセット（ルートパラメータ0）
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
+            // ライト（CBV）をセット（ルートパラメータ3）
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+            // SRV（テクスチャ）をセット（ルートパラメータ2）
+            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+            // 頂点バッファ・プリミティブトポロジを設定
+            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
+            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            // 描画実行
+            deviceManager.GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
             // スフィア用
 
             //=========
             // 評価課題
             //=========
+            // 評価課題（スフィア描画）
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSphere->GetGPUVirtualAddress());
             deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceSphere->GetGPUVirtualAddress());
             deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-            // ↓これを元の materialResource から変更！
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
 
             deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSphere);
             deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             deviceManager.GetCommandList()->DrawInstanced(kNumVertices, 1, 0, 0);
+
             //=========
             // 評価課題
             //=========
 
-            ////--- スプライト描画 ---
-            //// スプライト用の変換行列をルートパラメータ1にセット（3Dと別の行列）
-            // deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
-            //// スプライト用マテリアル（CBV）をセット（ルートパラメータ0）
-            // deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
-            //// スプライト用SRV（テクスチャ）をセット（ルートパラメータ2）
-            // deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-            //// 頂点バッファ・インデックスバッファを設定
-            // deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
-            // deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
-            //// 描画実行
-            // deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 一旦消しただけ
+            //--- スプライト描画 ---
+            // スプライト用の変換行列をルートパラメータ1にセット（3Dと別の行列）
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
+            // スプライト用マテリアル（CBV）をセット（ルートパラメータ0）
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
+            // スプライト用SRV（テクスチャ）をセット（ルートパラメータ2）
+            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+            // 頂点バッファ・インデックスバッファを設定
+            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+            deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
+            // 描画実行
+            deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 一旦消しただけ
 
             //  描画の最後です//----------------------------------------------------
             //   実際のcommandListのImGuiの描画コマンドを積む
