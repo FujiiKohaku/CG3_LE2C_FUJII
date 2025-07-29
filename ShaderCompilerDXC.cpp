@@ -1,13 +1,4 @@
 ﻿#include "ShaderCompilerDXC.h"
-#include <cassert>
-
-ShaderCompilerDXC::ShaderCompilerDXC()
-{
-}
-
-ShaderCompilerDXC::~ShaderCompilerDXC()
-{
-}
 
 void ShaderCompilerDXC::Initialize()
 {

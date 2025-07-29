@@ -201,8 +201,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     assert(fenceEvent != nullptr);
 
-    //
-    //
     // dxcCompilerを初期化CG2_02_00
     // IDxcUtils* dxcUtils = nullptr;
     // IDxcCompiler3* dxcCompiler = nullptr;

@@ -4,6 +4,10 @@
 #include <format> // C++20以降、std::formatを使う場合
 #pragma comment(lib, "dxcompiler.lib")
 
+
+
+#pragma region コンパイルシェーダー
+
 Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     const std::wstring& filepath,
     const wchar_t* profile,
@@ -59,3 +63,4 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
 
     return shaderBlob;
 }
+#pragma endregion
