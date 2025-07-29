@@ -53,65 +53,65 @@ const int32_t kClientHeight = 720;
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
-void GenerateSphereVertices(VertexData* vertices, int kSubdivision, float radius)
-{
-    // 経度(360)
-    const float kLonEvery = static_cast<float>(M_PI * 2.0f) / kSubdivision;
-    // 緯度(180)
-    const float kLatEvery = static_cast<float>(M_PI) / kSubdivision;
-
-    for (int latIndex = 0; latIndex < kSubdivision; ++latIndex) {
-        float lat = -static_cast<float>(M_PI) / 2.0f + kLatEvery * latIndex;
-        float nextLat = lat + kLatEvery;
-
-        for (int lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
-            float lon = kLonEvery * lonIndex;
-            float nextLon = lon + kLonEvery;
-
-            // verA
-            VertexData vertA;
-            vertA.position = { cosf(lat) * cosf(lon), sinf(lat), cosf(lat) * sinf(lon),
-                1.0f };
-            vertA.texcoord = { static_cast<float>(lonIndex) / kSubdivision,
-                1.0f - static_cast<float>(latIndex) / kSubdivision };
-            vertA.normal = { vertA.position.x, vertA.position.y, vertA.position.z };
-
-            // verB
-            VertexData vertB;
-            vertB.position = { cosf(nextLat) * cosf(lon), sinf(nextLat),
-                cosf(nextLat) * sinf(lon), 1.0f };
-            vertB.texcoord = { static_cast<float>(lonIndex) / kSubdivision,
-                1.0f - static_cast<float>(latIndex + 1) / kSubdivision };
-            vertB.normal = { vertB.position.x, vertB.position.y, vertB.position.z };
-
-            // vertC
-            VertexData vertC;
-            vertC.position = { cosf(lat) * cosf(nextLon), sinf(lat),
-                cosf(lat) * sinf(nextLon), 1.0f };
-            vertC.texcoord = { static_cast<float>(lonIndex + 1) / kSubdivision,
-                1.0f - static_cast<float>(latIndex) / kSubdivision };
-            vertC.normal = { vertC.position.x, vertC.position.y, vertC.position.z };
-
-            // vertD
-            VertexData vertD;
-            vertD.position = { cosf(nextLat) * cosf(nextLon), sinf(nextLat),
-                cosf(nextLat) * sinf(nextLon), 1.0f };
-            vertD.texcoord = { static_cast<float>(lonIndex + 1) / kSubdivision,
-                1.0f - static_cast<float>(latIndex + 1) / kSubdivision };
-            vertD.normal = { vertD.position.x, vertD.position.y, vertD.position.z };
-
-            // 初期位置//
-            uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
-
-            vertices[startIndex + 0] = vertA;
-            vertices[startIndex + 1] = vertB;
-            vertices[startIndex + 2] = vertC;
-            vertices[startIndex + 3] = vertC;
-            vertices[startIndex + 4] = vertD;
-            vertices[startIndex + 5] = vertB;
-        }
-    }
-}
+// void GenerateSphereVertices(VertexData* vertices, int kSubdivision, float radius)
+//{
+//     // 経度(360)
+//     const float kLonEvery = static_cast<float>(M_PI * 2.0f) / kSubdivision;
+//     // 緯度(180)
+//     const float kLatEvery = static_cast<float>(M_PI) / kSubdivision;
+//
+//     for (int latIndex = 0; latIndex < kSubdivision; ++latIndex) {
+//         float lat = -static_cast<float>(M_PI) / 2.0f + kLatEvery * latIndex;
+//         float nextLat = lat + kLatEvery;
+//
+//         for (int lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
+//             float lon = kLonEvery * lonIndex;
+//             float nextLon = lon + kLonEvery;
+//
+//             // verA
+//             VertexData vertA;
+//             vertA.position = { cosf(lat) * cosf(lon), sinf(lat), cosf(lat) * sinf(lon),
+//                 1.0f };
+//             vertA.texcoord = { static_cast<float>(lonIndex) / kSubdivision,
+//                 1.0f - static_cast<float>(latIndex) / kSubdivision };
+//             vertA.normal = { vertA.position.x, vertA.position.y, vertA.position.z };
+//
+//             // verB
+//             VertexData vertB;
+//             vertB.position = { cosf(nextLat) * cosf(lon), sinf(nextLat),
+//                 cosf(nextLat) * sinf(lon), 1.0f };
+//             vertB.texcoord = { static_cast<float>(lonIndex) / kSubdivision,
+//                 1.0f - static_cast<float>(latIndex + 1) / kSubdivision };
+//             vertB.normal = { vertB.position.x, vertB.position.y, vertB.position.z };
+//
+//             // vertC
+//             VertexData vertC;
+//             vertC.position = { cosf(lat) * cosf(nextLon), sinf(lat),
+//                 cosf(lat) * sinf(nextLon), 1.0f };
+//             vertC.texcoord = { static_cast<float>(lonIndex + 1) / kSubdivision,
+//                 1.0f - static_cast<float>(latIndex) / kSubdivision };
+//             vertC.normal = { vertC.position.x, vertC.position.y, vertC.position.z };
+//
+//             // vertD
+//             VertexData vertD;
+//             vertD.position = { cosf(nextLat) * cosf(nextLon), sinf(nextLat),
+//                 cosf(nextLat) * sinf(nextLon), 1.0f };
+//             vertD.texcoord = { static_cast<float>(lonIndex + 1) / kSubdivision,
+//                 1.0f - static_cast<float>(latIndex + 1) / kSubdivision };
+//             vertD.normal = { vertD.position.x, vertD.position.y, vertD.position.z };
+//
+//             // 初期位置//
+//             uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
+//
+//             vertices[startIndex + 0] = vertA;
+//             vertices[startIndex + 1] = vertB;
+//             vertices[startIndex + 2] = vertC;
+//             vertices[startIndex + 3] = vertC;
+//             vertices[startIndex + 4] = vertD;
+//             vertices[startIndex + 5] = vertB;
+//         }
+//     }
+// }
 
 // データを転送するUploadTextureData関数を作る03_00EX
 //[[nodiscard]] // 03_00EX
@@ -168,6 +168,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HRESULT hr; // 各種DirectX関数の戻り値用。ローカルスコープで十分だが、複数関数で使い回すためここで宣言
 
     ShaderCompilerDXC dxc;
+
+    MatrixMath math;
 
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
@@ -473,8 +475,36 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //////////////
     // 実際に生成//
     //////////////
+
     //--------------------------
-    // 通常モデル用リソース
+    // 評価課題球体
+    //--------------------------
+    // 頂点リソースを作る
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceSphere = CreateBufferResource(deviceManager.GetDevice(), sizeof(Vector4) * 3);
+
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSphere {};
+    vertexBufferViewSphere.BufferLocation = vertexResourceSphere->GetGPUVirtualAddress();
+    vertexBufferViewSphere.SizeInBytes = sizeof(Vector4) * 3;
+    vertexBufferViewSphere.StrideInBytes = sizeof(Vector4);
+
+    // 頂点リソースにデータを書き込む
+    Vector4* vertexDataSphere = nullptr;
+    vertexResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSphere));
+
+    vertexDataSphere[0] = { -0.5f, -0.5f, 0.0f, 1.0f };
+
+    vertexDataSphere[1] = { 0.0f, 0.5f, 0.0f, 1.0f };
+
+    vertexDataSphere[2] = { 0.5f, -0.5f, 0.0f, 1.0f };
+    // sphere用のWVP用のリソースを作る
+    Microsoft::WRL::ComPtr<ID3D12Resource> wvpResourceSphere = CreateBufferResource(deviceManager.GetDevice(), sizeof(TransformationMatrix));
+    // データを書き込む
+    Matrix4x4* wvpDataSphere = nullptr;
+    // 書き込むためのアドレスを取得
+    wvpResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&wvpDataSphere));
+
+    //--------------------------
+    //  通常モデル用リソース
     //--------------------------
 
     //--------------------------------------------------
@@ -482,7 +512,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------------------------------
 
     // 頂点リソースを作る
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * modelData.vertices.size());
+    Microsoft::WRL::ComPtr<ID3D12Resource>
+        vertexResource = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * modelData.vertices.size());
     // 頂点バッファービューを作成する
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView {};
     vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress(); // リソース先頭のアドレスを使う
@@ -645,6 +676,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Transform transform {
         { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }
     };
+
+    Transform transformSphere {
+        { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 2.0f, 0.0f, 0.0f }
+    };
+
     // カメラトランスフォーム
     Transform cameraTransform {
         { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -5.0f }
@@ -701,7 +737,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // ウィンドウの×ボタンが押されるまでループ
     while (msg.message != WM_QUIT) {
-
         // Windowにメッセージが来てたら最優先で処理させる
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
@@ -714,13 +749,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::NewFrame();
 
             // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
-            ImGui::ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
+            // ImGuiの始まりの場所-----------------------------
             ImGui::Begin("Materialcolor");
             ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 5.0f);
             ImGui::SliderAngle("RotateX", &transform.rotate.x, -180.0f, 180.0f);
             ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
             ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
             ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
+
+            ImGui::SliderFloat3("Scale (Sphere)", &transformSphere.scale.x, 0.1f, 5.0f);
+            ImGui::SliderAngle("RotateX (Sphere)", &transformSphere.rotate.x, -180.0f, 180.0f);
+            ImGui::SliderAngle("RotateY (Sphere)", &transformSphere.rotate.y, -180.0f, 180.0f);
+            ImGui::SliderAngle("RotateZ (Sphere)", &transformSphere.rotate.z, -180.0f, 180.0f);
+            ImGui::SliderFloat3("Translate (Sphere)", &transformSphere.translate.x, -5.0f, 5.0f);
+
             ImGui::Text("useMonstarBall");
             ImGui::Checkbox("useMonstarBall", &useMonstarBall);
             ImGui::Text("LIgthng");
@@ -731,7 +773,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
             ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
             ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
-
             ImGui::End();
 
             // ImGuiの内部コマンドを生成する02_03
@@ -789,6 +830,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
             materialDataSprite->uvTransform = uvTransformMatrix;
 
+            //==============
+            // 評価課題
+            //==============
+
+            Matrix4x4 worldMatrixSphere = MatrixMath::MakeAffineMatrix(transformSphere.scale, transformSphere.rotate, transformSphere.translate);
+            Matrix4x4 worldViewProjectionMatrixSphere = MatrixMath::Multiply(worldMatrixSphere, MatrixMath::Multiply(viewMatrix, projectionMatrix));
+            *wvpDataSphere = worldViewProjectionMatrixSphere;
+
+            //==============
+            // 評価課題↑↑↑
+            //==============
+
             //--- 画面クリア・描画準備 ---
             float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
             deviceManager.ClearBackBuffer(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), clearColor);
@@ -799,10 +852,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             /* deviceManager.GetCommandList()->ClearRenderTargetView(deviceManager.GetRTVHandles()[backBufferIndex], clearColor, 0, nullptr);*/
             /////
             deviceManager.GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-            deviceManager.GetCommandList()->RSSetViewports(1, &viewport);
-            deviceManager.GetCommandList()->RSSetScissorRects(1, &scissorRect);
-            deviceManager.GetCommandList()->SetGraphicsRootSignature(rootSignature.Get());
-            deviceManager.GetCommandList()->SetPipelineState(graphicsPinelineState.Get());
+            deviceManager.GetCommandList()->RSSetViewports(1, &viewport); // ビューポート
+            deviceManager.GetCommandList()->RSSetScissorRects(1, &scissorRect); // シザー
+            deviceManager.GetCommandList()->SetGraphicsRootSignature(rootSignature.Get()); // ルートシグネチャ
+            deviceManager.GetCommandList()->SetPipelineState(graphicsPinelineState.Get()); // PSO
 
             //--- 3Dモデル描画 ---
             // 3D用の変換行列をルートパラメータ1にセット
@@ -819,6 +872,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // 描画実行
             deviceManager.GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
+            // スフィア用
+
+            //=========
+            // 評価課題
+            //=========
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceSphere->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSphere);
+            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            deviceManager.GetCommandList()->DrawInstanced(3, 1, 0, 0);
+
             //--- スプライト描画 ---
             // スプライト用の変換行列をルートパラメータ1にセット（3Dと別の行列）
             deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
@@ -830,7 +893,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
             deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
             // 描画実行
-            deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
+            // deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 一旦消しただけ
 
             //  描画の最後です//----------------------------------------------------
             //   実際のcommandListのImGuiの描画コマンドを積む
