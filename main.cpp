@@ -198,6 +198,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     assert(fenceEvent != nullptr);
 
+
+    //
+    
     // dxcCompilerを初期化CG2_02_00
     IDxcUtils* dxcUtils = nullptr;
     IDxcCompiler3* dxcCompiler = nullptr;
@@ -205,11 +208,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     assert(SUCCEEDED(hr));
     hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
     assert(SUCCEEDED(hr));
-
     // 現時点でincludeはしないがincludeに対応するための設定を行っておく
     IDxcIncludeHandler* includHandler = nullptr;
     hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
     assert(SUCCEEDED(hr));
+
+
+
     // ==== ルートシグネチャを作る準備 ====
     // RootSignature作成02_00
     // 頂点データの形式を使っていいよ！というフラグを立てる
