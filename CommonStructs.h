@@ -18,9 +18,11 @@ struct VertexData {
 struct Material {
     Vector4 color;
     int32_t enableLighting;
-    float padding[3];
+    int32_t lightingMode; // ★追加
+    float padding[2]; // 16バイトアラインメント用
     Matrix4x4 uvTransform;
 };
+
 struct TransformationMatrix {
     Matrix4x4 WVP;
     Matrix4x4 World;

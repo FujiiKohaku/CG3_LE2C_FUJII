@@ -412,6 +412,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // どのように画面に色を打ち込むかの設定(気にしなくて良い)
     graphicsPipelineStateDesc.SampleDesc.Count = 1;
     graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPinelineState = nullptr;
+    hr = deviceManager.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
+    assert(SUCCEEDED(hr));
 
     //////////////
     // 実際に生成//
@@ -643,10 +646,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // Textureの切り替え
     bool useMonstarBall = true;
 
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPinelineState = nullptr;
-    hr = deviceManager.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
-    assert(SUCCEEDED(hr));
-
     // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
     // こういうもんである02_03
     IMGUI_CHECKVERSION();
@@ -746,8 +745,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::DragFloat2("UV Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
             ImGui::SliderAngle("UV Rotate", &uvTransformSprite.rotate.z);
 
-            ImGui::End();
+            static int lightingMode = 1; // 0: None, 1: Lambert, 2: Half-Lambert
+            ImGui::Text("Lighting Mode");
+            ImGui::RadioButton("None", &lightingMode, 0);
+            ImGui::SameLine();
+            ImGui::RadioButton("Lambert", &lightingMode, 1);
+            ImGui::SameLine();
+            ImGui::RadioButton("Half-Lambert", &lightingMode, 2);
+            // モデルと球体両方に適用
+            materialData->lightingMode = lightingMode;
+            materialDataSphere->lightingMode = lightingMode;
 
+            ImGui::End();
 
             // ImGuiの内部コマンドを生成する02_03
             ImGui::Render(); // ImGui終わりの場所。描画の前02_03--------------------------
@@ -775,6 +784,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 soundmanager.SoundPlayWave(bgm);
             }
 
+            if (input.IsGamepadButtonPressed(1)) { // Bボタン
+                soundmanager.SoundPlayWave(bgm);
+            }
+            if (input.IsGamepadButtonPressed(0)) { // Aボタン
+                soundmanager.SoundPlayWave(bgm);
+            }
+            if (input.IsGamepadConnected()) {//ゲームパッド接続してない時も動くので追加気をつけろ
+                Vector2 stick = input.GetLeftStick(); // 左のジョイスティック（感度クソ高い）
+                if (stick.x > 0.9f) {
+                    transformSphere.rotate.x++;
+                    // 右に倒してる
+                } else if (stick.x < -0.9f) {
+                    transformSphere.rotate.x--;
+                    // 左に倒してる
+                }
+            }
             //  メイクアフィンマトリックス02_02
             Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
             // カメラのメイクアフィンマトリックス02_02

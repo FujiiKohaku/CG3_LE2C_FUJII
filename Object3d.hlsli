@@ -7,12 +7,13 @@ struct VertexShaderOutput
 };
 
 //05_03
-struct Material
+struct Material 
 {
-    float32_t4 color;
-    int32_t enableLighting;
-    float32_t4x4 uvTransform;
-    
+    float4 color;
+    int enableLighting;
+    int lightingMode; // 0: None, 1: Lambert, 2: Half-Lambert
+    float2 padding; // 16バイトアラインメント
+    matrix uvTransform;
 };
 //05_03
 struct TransformationMatrix
