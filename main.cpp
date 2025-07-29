@@ -8,6 +8,7 @@
 #include "MatrixMath.h"
 #include "ModelLoder.h"
 #include "ShaderCompiler.h"
+#include "ShaderCompilerDXC.h"
 #include "SoundManager.h"
 #include "Unknwn.h"
 #include "Utility.h"
@@ -107,6 +108,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     HRESULT hr; // 各種DirectX関数の戻り値用。ローカルスコープで十分だが、複数関数で使い回すためここで宣言
 
+    ShaderCompilerDXC dxc;
+
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
@@ -198,22 +201,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     assert(fenceEvent != nullptr);
 
-
     //
-    
+    //
     // dxcCompilerを初期化CG2_02_00
-    IDxcUtils* dxcUtils = nullptr;
-    IDxcCompiler3* dxcCompiler = nullptr;
-    hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
-    assert(SUCCEEDED(hr));
-    hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
-    assert(SUCCEEDED(hr));
-    // 現時点でincludeはしないがincludeに対応するための設定を行っておく
-    IDxcIncludeHandler* includHandler = nullptr;
-    hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
-    assert(SUCCEEDED(hr));
+    // IDxcUtils* dxcUtils = nullptr;
+    // IDxcCompiler3* dxcCompiler = nullptr;
+    // hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
+    // assert(SUCCEEDED(hr));
+    // hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
+    // assert(SUCCEEDED(hr));
+    //// 現時点でincludeはしないがincludeに対応するための設定を行っておく
+    // IDxcIncludeHandler* includHandler = nullptr;
+    // hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
+    // assert(SUCCEEDED(hr));
 
-
+    dxc.Initialize();
 
     // ==== ルートシグネチャを作る準備 ====
     // RootSignature作成02_00
@@ -375,10 +377,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
     rasterizerDesc.FrontCounterClockwise = FALSE;
     // Shaderをコンパイルする
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includHandler, logStream);
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), logStream);
     assert(vertexShaderBlob != nullptr);
 
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includHandler, logStream);
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), logStream);
     assert(pixelShaderBlob != nullptr);
 
     // PSOを生成する
