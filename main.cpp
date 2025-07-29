@@ -53,6 +53,65 @@ const int32_t kClientHeight = 720;
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
+void GenerateSphereVertices(VertexData* vertices, int kSubdivision, float radius)
+{
+    // 経度(360)
+    const float kLonEvery = static_cast<float>(M_PI * 2.0f) / kSubdivision;
+    // 緯度(180)
+    const float kLatEvery = static_cast<float>(M_PI) / kSubdivision;
+
+    for (int latIndex = 0; latIndex < kSubdivision; ++latIndex) {
+        float lat = -static_cast<float>(M_PI) / 2.0f + kLatEvery * latIndex;
+        float nextLat = lat + kLatEvery;
+
+        for (int lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
+            float lon = kLonEvery * lonIndex;
+            float nextLon = lon + kLonEvery;
+
+            // verA
+            VertexData vertA;
+            vertA.position = { cosf(lat) * cosf(lon), sinf(lat), cosf(lat) * sinf(lon),
+                1.0f };
+            vertA.texcoord = { static_cast<float>(lonIndex) / kSubdivision,
+                1.0f - static_cast<float>(latIndex) / kSubdivision };
+            vertA.normal = { vertA.position.x, vertA.position.y, vertA.position.z };
+
+            // verB
+            VertexData vertB;
+            vertB.position = { cosf(nextLat) * cosf(lon), sinf(nextLat),
+                cosf(nextLat) * sinf(lon), 1.0f };
+            vertB.texcoord = { static_cast<float>(lonIndex) / kSubdivision,
+                1.0f - static_cast<float>(latIndex + 1) / kSubdivision };
+            vertB.normal = { vertB.position.x, vertB.position.y, vertB.position.z };
+
+            // vertC
+            VertexData vertC;
+            vertC.position = { cosf(lat) * cosf(nextLon), sinf(lat),
+                cosf(lat) * sinf(nextLon), 1.0f };
+            vertC.texcoord = { static_cast<float>(lonIndex + 1) / kSubdivision,
+                1.0f - static_cast<float>(latIndex) / kSubdivision };
+            vertC.normal = { vertC.position.x, vertC.position.y, vertC.position.z };
+
+            // vertD
+            VertexData vertD;
+            vertD.position = { cosf(nextLat) * cosf(nextLon), sinf(nextLat),
+                cosf(nextLat) * sinf(nextLon), 1.0f };
+            vertD.texcoord = { static_cast<float>(lonIndex + 1) / kSubdivision,
+                1.0f - static_cast<float>(latIndex + 1) / kSubdivision };
+            vertD.normal = { vertD.position.x, vertD.position.y, vertD.position.z };
+
+            // 初期位置//
+            uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
+
+            vertices[startIndex + 0] = vertA;
+            vertices[startIndex + 1] = vertB;
+            vertices[startIndex + 2] = vertC;
+            vertices[startIndex + 3] = vertC;
+            vertices[startIndex + 4] = vertD;
+            vertices[startIndex + 5] = vertB;
+        }
+    }
+}
 
 // データを転送するUploadTextureData関数を作る03_00EX
 //[[nodiscard]] // 03_00EX
@@ -201,19 +260,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     assert(fenceEvent != nullptr);
 
-    // dxcCompilerを初期化CG2_02_00
-    // IDxcUtils* dxcUtils = nullptr;
-    // IDxcCompiler3* dxcCompiler = nullptr;
-    // hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
-    // assert(SUCCEEDED(hr));
-    // hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
-    // assert(SUCCEEDED(hr));
-    //// 現時点でincludeはしないがincludeに対応するための設定を行っておく
-    // IDxcIncludeHandler* includHandler = nullptr;
-    // hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
-    // assert(SUCCEEDED(hr));
+    /*    dxcCompilerを初期化CG2_02_00*/
+    IDxcUtils* dxcUtils = nullptr;
+    IDxcCompiler3* dxcCompiler = nullptr;
+    hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
+    assert(SUCCEEDED(hr));
+    hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
+    assert(SUCCEEDED(hr));
+    // 現時点でincludeはしないがincludeに対応するための設定を行っておく
+    IDxcIncludeHandler* includHandler = nullptr;
+    hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
+    assert(SUCCEEDED(hr));
 
-    dxc.Initialize();
+    /* dxc.Initialize();*/
 
     // ==== ルートシグネチャを作る準備 ====
     // RootSignature作成02_00
@@ -375,10 +434,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
     rasterizerDesc.FrontCounterClockwise = FALSE;
     // Shaderをコンパイルする
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), logStream);
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includHandler, logStream);
     assert(vertexShaderBlob != nullptr);
 
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), logStream);
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includHandler, logStream);
     assert(pixelShaderBlob != nullptr);
 
     // PSOを生成する
