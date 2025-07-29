@@ -4,12 +4,12 @@
 #include "BufferHelper.h"
 #include "DebugCamera.h"
 #include "DeviceManager.h"
+#include "Geometryhelper.h"
 #include "Input.h"
 #include "MatrixMath.h"
 #include "ModelLoder.h"
 #include "ShaderCompiler.h"
 #include "ShaderCompilerDXC.h"
-#include "Geometryhelper.h"
 #include "SoundManager.h"
 #include "Unknwn.h"
 #include "Utility.h"
@@ -54,7 +54,6 @@ const int32_t kClientHeight = 720;
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
-
 
 // データを転送するUploadTextureData関数を作る03_00EX
 //[[nodiscard]] // 03_00EX
@@ -293,8 +292,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // モデル読み込み
     ModelData modelData = LoadObjFile("resources", "Plane.obj");
 
-    std::cout << "テクスチャファイルパス: " << modelData.material.textureFilePath
-              << std::endl;
+    std::cout << "テクスチャファイルパス: " << modelData.material.textureFilePath << std::endl;
 
     if (!std::filesystem::exists(modelData.material.textureFilePath)) {
         std::cerr << "ファイルが存在しません！" << std::endl;
@@ -374,7 +372,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // RasiterzerStateの設定
     D3D12_RASTERIZER_DESC rasterizerDesc {};
     // 裏面(時計回り)を表示しない
-    rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+    rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
     // 三角形の中を塗りつぶす
     rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
     rasterizerDesc.FrontCounterClockwise = FALSE;
@@ -452,8 +450,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     materialDataSphere->uvTransform = MatrixMath::MakeIdentity4x4();
     materialDataSphere->enableLighting = true;
 
-    GenerateSphereVertices(vertexDataSphere, kSubdivision, 1.0f); // 半径1.0
-   
+    GenerateSphereVertices(vertexDataSphere, kSubdivision, 0.5f); // 半径1.0
+
     //--------------------------
     //  通常モデル用リソース
     //--------------------------
@@ -463,8 +461,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------------------------------
 
     // 頂点リソースを作る
-    Microsoft::WRL::ComPtr<ID3D12Resource>
-        vertexResource = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * modelData.vertices.size());
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * modelData.vertices.size());
     // 頂点バッファービューを作成する
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView {};
     vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress(); // リソース先頭のアドレスを使う
@@ -694,6 +691,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             DispatchMessage(&msg);
         } else {
 
+#pragma region IMGUI
+
             // ここがframeの先頭02_03
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
@@ -729,6 +728,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             // ImGuiの内部コマンドを生成する02_03
             ImGui::Render(); // ImGui終わりの場所。描画の前02_03--------------------------
+
+#pragma endregion
 
             // 描画用のDescrriptorHeapの設定02_03
             Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeaps[] = {
@@ -809,20 +810,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             deviceManager.GetCommandList()->SetGraphicsRootSignature(rootSignature.Get()); // ルートシグネチャ
             deviceManager.GetCommandList()->SetPipelineState(graphicsPinelineState.Get()); // PSO
 
-            //--- 3Dモデル描画 ---
-            // 3D用の変換行列をルートパラメータ1にセット
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
-            // マテリアル（CBV）をセット（ルートパラメータ0）
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
-            // ライト（CBV）をセット（ルートパラメータ3）
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
-            // SRV（テクスチャ）をセット（ルートパラメータ2）
-            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
-            // 頂点バッファ・プリミティブトポロジを設定
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
-            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            // 描画実行
-            deviceManager.GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+            ////--- 3Dモデル描画 ---
+            //// 3D用の変換行列をルートパラメータ1にセット
+            // deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
+            //// マテリアル（CBV）をセット（ルートパラメータ0）
+            // deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
+            //// ライト（CBV）をセット（ルートパラメータ3）
+            // deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+            //// SRV（テクスチャ）をセット（ルートパラメータ2）
+            // deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+            //// 頂点バッファ・プリミティブトポロジを設定
+            // deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
+            // deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            //// 描画実行
+            // deviceManager.GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
             // スフィア用
 
@@ -832,24 +833,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceSphere->GetGPUVirtualAddress());
             deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
             // ↓これを元の materialResource から変更！
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSphere->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
 
             deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSphere);
             deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             deviceManager.GetCommandList()->DrawInstanced(kNumVertices, 1, 0, 0);
+            //=========
+            // 評価課題
+            //=========
 
-            //--- スプライト描画 ---
-            // スプライト用の変換行列をルートパラメータ1にセット（3Dと別の行列）
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
-            // スプライト用マテリアル（CBV）をセット（ルートパラメータ0）
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
-            // スプライト用SRV（テクスチャ）をセット（ルートパラメータ2）
-            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-            // 頂点バッファ・インデックスバッファを設定
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
-            deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
-            // 描画実行
-             deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 一旦消しただけ
+            ////--- スプライト描画 ---
+            //// スプライト用の変換行列をルートパラメータ1にセット（3Dと別の行列）
+            // deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
+            //// スプライト用マテリアル（CBV）をセット（ルートパラメータ0）
+            // deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
+            //// スプライト用SRV（テクスチャ）をセット（ルートパラメータ2）
+            // deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+            //// 頂点バッファ・インデックスバッファを設定
+            // deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+            // deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
+            //// 描画実行
+            // deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 一旦消しただけ
 
             //  描画の最後です//----------------------------------------------------
             //   実際のcommandListのImGuiの描画コマンドを積む
