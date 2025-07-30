@@ -290,7 +290,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = CreateTextureResource(deviceManager.GetDevice(), metadata); // get
     Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = UploadTextureData(textureResource.Get(), mipImages, deviceManager.GetDevice(), deviceManager.GetCommandList()); //?
     // モデル読み込み
-    ModelData modelData = LoadObjFile("resources", "Plane.obj");
+    ModelData modelData = LoadObjFile("resources", "plane.obj");
 
     std::cout << "テクスチャファイルパス: " << modelData.material.textureFilePath << std::endl;
 
@@ -594,7 +594,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     DirectionalLight* directionalLightData = nullptr;
     directionalLightResource->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData));
     directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 白色光
-    directionalLightData->direction = MatrixMath::Normalize({ 0.0f, -1.0f, 0.0f }); // 真上から下方向
+    directionalLightData->direction = MatrixMath::Normalize({ 0.0f, 0.0f, 0.0f }); // 真上から下方向
     directionalLightData->intensity = 1.0f; // 標準の明るさ
 
     //--------------------------
@@ -812,8 +812,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
             // CBVのバッファに書き込む02_02
             // CBVに正しい行列を書き込む
-            memcpy(&wvpData->WVP, &worldViewProjectionMatrix, sizeof(Matrix4x4));
-
+            wvpData->WVP = worldViewProjectionMatrix;
+            wvpData->World = worldMatrix;
             // Sprite用のworldviewProjectionMatrixを作る04_00
             Matrix4x4 worldMatrixSprite = MatrixMath::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
             Matrix4x4 viewMatrixSprite = MatrixMath::MakeIdentity4x4();

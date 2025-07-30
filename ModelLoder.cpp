@@ -43,38 +43,40 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
         if (identifier == "v") {
             Vector4 position;
             s >> position.x >> position.y >> position.z;
-            position.x *= -1.0f;
+            position.x *= -1.0f; // 右手系→左手系（位置）
             position.w = 1.0f;
             positions.push_back(position);
         } else if (identifier == "vt") {
             Vector2 texcoord;
             s >> texcoord.x >> texcoord.y;
-            texcoord.y = 1.0f - texcoord.y;
+            texcoord.y = 1.0f - texcoord.y; // Y軸反転（DirectX用）
             texcoords.push_back(texcoord);
         } else if (identifier == "vn") {
             Vector3 normal;
             s >> normal.x >> normal.y >> normal.z;
-            normal.x *= -1.0f;
+            normal.x *= -1.0f; // 右手系→左手系（法線）
             normals.push_back(normal);
         } else if (identifier == "f") {
             VertexData triangle[3];
             for (int i = 0; i < 3; ++i) {
                 std::string vertexDefinition;
                 s >> vertexDefinition;
+
                 std::istringstream v(vertexDefinition);
-                uint32_t idx[3];
+                uint32_t idx[3] = {};
                 for (int e = 0; e < 3; ++e) {
                     std::string index;
                     std::getline(v, index, '/');
                     idx[e] = std::stoi(index);
                 }
+
                 triangle[i] = {
                     positions[idx[0] - 1],
                     texcoords[idx[1] - 1],
                     normals[idx[2] - 1]
                 };
             }
-            // 逆順
+            // 頂点の順序を逆順にして左手系対応
             modelData.vertices.push_back(triangle[2]);
             modelData.vertices.push_back(triangle[1]);
             modelData.vertices.push_back(triangle[0]);
@@ -84,5 +86,6 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
             modelData.material = LoadMaterialTemplateFile(directoryPath, mtlFile);
         }
     }
+
     return modelData;
 }
