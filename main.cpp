@@ -52,6 +52,15 @@ int kNumVertices = kSubdivision * kSubdivision * 6; // 頂点数
 float waveTime;
 const int32_t kClientWidth = 1280;
 const int32_t kClientHeight = 720;
+// ImGuiでON/OFFを操作できるように
+bool drawSphere = false;
+bool drawPlane = false;
+bool drawTeapot = false;
+bool drawSprite = false;
+bool drawWave = false;
+bool drawSuzanne = false;
+bool drawBunny = false;
+bool drawAxis = false;
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
@@ -535,6 +544,43 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------
 
     //--------------------------
+    // アクシス
+    //--------------------------
+
+    // モデル読み込み
+    ModelData axisModelData = LoadObjFile("resources", "axis.obj");
+
+    // 頂点リソース作成
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceAxis = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * axisModelData.vertices.size());
+
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferViewAxis {};
+    vertexBufferViewAxis.BufferLocation = vertexResourceAxis->GetGPUVirtualAddress();
+    vertexBufferViewAxis.SizeInBytes = UINT(sizeof(VertexData) * axisModelData.vertices.size());
+    vertexBufferViewAxis.StrideInBytes = sizeof(VertexData);
+
+    VertexData* vertexDataAxis = nullptr;
+    vertexResourceAxis->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataAxis));
+    std::memcpy(vertexDataAxis, axisModelData.vertices.data(), sizeof(VertexData) * axisModelData.vertices.size());
+
+    // マテリアル
+    Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceAxis = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
+
+    Material* materialDataAxis = nullptr;
+    materialResourceAxis->Map(0, nullptr, reinterpret_cast<void**>(&materialDataAxis));
+    materialDataAxis->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); 
+    materialDataAxis->uvTransform = MatrixMath::MakeIdentity4x4();
+    materialDataAxis->enableLighting = true; 
+
+    // WVP
+    Microsoft::WRL::ComPtr<ID3D12Resource> wvpResourceAxis = CreateBufferResource(deviceManager.GetDevice(), sizeof(TransformationMatrix));
+
+    TransformationMatrix* wvpDataAxis = nullptr;
+    wvpResourceAxis->Map(0, nullptr, reinterpret_cast<void**>(&wvpDataAxis));
+
+    //--------------------------
+    // アクシス
+    //--------------------------
+    //--------------------------
     // 評価課題monkey
     //--------------------------
     ModelData suzanneModelData = LoadObjFileNoTexture("resources", "suzanne.obj");
@@ -856,6 +902,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         { 0.0f, 0.0f, 0.0f }, // rotate
         { 0.0f, 0.0f, 0.0f } // translate
     };
+
+    Transform transformAxis = {
+        { 0.5f, 0.5f, 0.5f }, // scale（座標軸は少し小さめ）
+        { 0.0f, 0.0f, 0.0f }, // rotate
+        { 0.0f, 0.0f, 0.0f } // translate
+    };
+
     // Textureの切り替え
     bool useMonstarBall = true;
 
@@ -915,64 +968,95 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
             // ImGuiの始まりの場所-----------------------------
+
             ImGui::Begin("Scene Editor");
+            ImGui::Checkbox("Draw Axis", &drawAxis);
+            ImGui::Checkbox("Draw Sphere", &drawSphere);
+            ImGui::Checkbox("Draw Plane", &drawPlane);
+            ImGui::Checkbox("Draw Bunny", &drawBunny);
+            ImGui::Checkbox("Draw Teapot", &drawTeapot);
+            ImGui::Checkbox("Draw Sprite", &drawSprite);
+            ImGui::Checkbox("Draw Wave", &drawWave);
+            ImGui::Checkbox("Draw Suzanne", &drawSuzanne);
 
-            // ========= モデル ========= //
-            ImGui::Text("Model Transform");
-            ImGui::Separator();
-            ImGui::SliderFloat3("Model Scale", &transform.scale.x, 0.1f, 5.0f);
-            ImGui::SliderAngle("Model Rotate X", &transform.rotate.x, -180.0f, 180.0f);
-            ImGui::SliderAngle("Model Rotate Y", &transform.rotate.y, -180.0f, 180.0f);
-            ImGui::SliderAngle("Model Rotate Z", &transform.rotate.z, -180.0f, 180.0f);
-            ImGui::SliderFloat3("Model Translate", &transform.translate.x, -5.0f, 5.0f);
-            // ========= モデル ========= //
-            ImGui::Spacing();
-            ImGui::Text("Plane Transform");
-            ImGui::Separator();
-            ImGui::SliderFloat3("Plane Scale", &transformPlane.scale.x, 0.1f, 5.0f);
-            ImGui::SliderAngle("Plane Rotate X", &transformPlane.rotate.x, -180.0f, 180.0f);
-            ImGui::SliderAngle("Plane Rotate Y", &transformPlane.rotate.y, -180.0f, 180.0f);
-            ImGui::SliderAngle("Plane Rotate Z", &transformPlane.rotate.z, -180.0f, 180.0f);
-            ImGui::SliderFloat3("Plane Translate", &transformPlane.translate.x, -5.0f, 5.0f);
-            // ========= ティーポット ========= //
-            ImGui::Spacing();
-            ImGui::Text("Teapot Transform");
-            ImGui::Separator();
-            ImGui::SliderFloat3("Teapot Scale", &transformTeapot.scale.x, 0.1f, 5.0f);
-            ImGui::SliderAngle("Teapot Rotate X", &transformTeapot.rotate.x, -180.0f, 180.0f);
-            ImGui::SliderAngle("Teapot Rotate Y", &transformTeapot.rotate.y, -180.0f, 180.0f);
-            ImGui::SliderAngle("Teapot Rotate Z", &transformTeapot.rotate.z, -180.0f, 180.0f);
-            ImGui::SliderFloat3("Teapot Translate", &transformTeapot.translate.x, -5.0f, 5.0f);
-            ImGui::ColorEdit3("Teapot Color", &materialDataTeapot->color.x);
-            // ========= スフィア ========= //
-            ImGui::Spacing();
-            ImGui::Text("Sphere Transform");
-            ImGui::Separator();
-            ImGui::SliderFloat3("Sphere Scale", &transformSphere.scale.x, 0.1f, 5.0f);
-            ImGui::SliderAngle("Sphere Rotate X", &transformSphere.rotate.x, -180.0f, 180.0f);
-            ImGui::SliderAngle("Sphere Rotate Y", &transformSphere.rotate.y, -180.0f, 180.0f);
-            ImGui::SliderAngle("Sphere Rotate Z", &transformSphere.rotate.z, -180.0f, 180.0f);
-            ImGui::SliderFloat3("Sphere Translate", &transformSphere.translate.x, -5.0f, 5.0f);
-            ImGui::ColorEdit3("Sphere Color", &materialDataSphere->color.x);
-            // モンキー
-            ImGui::Spacing();
-            ImGui::Text("Suzanne Transform");
-            ImGui::Separator();
-            ImGui::SliderFloat3("Suzanne Scale", &transformSuzanne.scale.x, 0.1f, 5.0f);
-            ImGui::SliderAngle("Suzanne Rotate X", &transformSuzanne.rotate.x, -180.0f, 180.0f);
-            ImGui::SliderAngle("Suzanne Rotate Y", &transformSuzanne.rotate.y, -180.0f, 180.0f);
-            ImGui::SliderAngle("Suzanne Rotate Z", &transformSuzanne.rotate.z, -180.0f, 180.0f);
-            ImGui::SliderFloat3("Suzanne Translate", &transformSuzanne.translate.x, -5.0f, 5.0f);
-            ImGui::ColorEdit3("Sphere Color", &materialDataSuzanne->color.x);
+            // アクシス
+            if (drawAxis) {
+                ImGui::Spacing();
+                ImGui::Text("Axis Transform");
+                ImGui::Separator();
+                ImGui::SliderFloat3("Axis Scale", &transformAxis.scale.x, 0.1f, 5.0f);
+                ImGui::SliderAngle("Axis Rotate X", &transformAxis.rotate.x, -180.0f, 180.0f);
+                ImGui::SliderAngle("Axis Rotate Y", &transformAxis.rotate.y, -180.0f, 180.0f);
+                ImGui::SliderAngle("Axis Rotate Z", &transformAxis.rotate.z, -180.0f, 180.0f);
+                ImGui::SliderFloat3("Axis Translate", &transformAxis.translate.x, -5.0f, 5.0f);
+            }
 
-            // ========= スプライト ========= //
-            ImGui::Spacing();
-            ImGui::Text("Sprite Transform");
-            ImGui::Separator();
-            ImGui::SliderFloat3("Sprite Scale", &transformSprite.scale.x, 0.1f, 5.0f);
-            ImGui::SliderAngle("Sprite Rotate Z", &transformSprite.rotate.z, -180.0f, 180.0f);
-            ImGui::SliderFloat3("Sprite Translate", &transformSprite.translate.x, -640.0f, 640.0f);
-
+            if (drawBunny) {
+                // ========= モデル ========= //
+                ImGui::Text("Model Transform");
+                ImGui::Separator();
+                ImGui::SliderFloat3("Model Scale", &transform.scale.x, 0.1f, 5.0f);
+                ImGui::SliderAngle("Model Rotate X", &transform.rotate.x, -180.0f, 180.0f);
+                ImGui::SliderAngle("Model Rotate Y", &transform.rotate.y, -180.0f, 180.0f);
+                ImGui::SliderAngle("Model Rotate Z", &transform.rotate.z, -180.0f, 180.0f);
+                ImGui::SliderFloat3("Model Translate", &transform.translate.x, -5.0f, 5.0f);
+            }
+            if (drawPlane) {
+                // ========= モデル ========= //
+                ImGui::Spacing();
+                ImGui::Text("Plane Transform");
+                ImGui::Separator();
+                ImGui::SliderFloat3("Plane Scale", &transformPlane.scale.x, 0.1f, 5.0f);
+                ImGui::SliderAngle("Plane Rotate X", &transformPlane.rotate.x, -180.0f, 180.0f);
+                ImGui::SliderAngle("Plane Rotate Y", &transformPlane.rotate.y, -180.0f, 180.0f);
+                ImGui::SliderAngle("Plane Rotate Z", &transformPlane.rotate.z, -180.0f, 180.0f);
+                ImGui::SliderFloat3("Plane Translate", &transformPlane.translate.x, -5.0f, 5.0f);
+            }
+            if (drawTeapot) {
+                // ========= ティーポット ========= //
+                ImGui::Spacing();
+                ImGui::Text("Teapot Transform");
+                ImGui::Separator();
+                ImGui::SliderFloat3("Teapot Scale", &transformTeapot.scale.x, 0.1f, 5.0f);
+                ImGui::SliderAngle("Teapot Rotate X", &transformTeapot.rotate.x, -180.0f, 180.0f);
+                ImGui::SliderAngle("Teapot Rotate Y", &transformTeapot.rotate.y, -180.0f, 180.0f);
+                ImGui::SliderAngle("Teapot Rotate Z", &transformTeapot.rotate.z, -180.0f, 180.0f);
+                ImGui::SliderFloat3("Teapot Translate", &transformTeapot.translate.x, -5.0f, 5.0f);
+                ImGui::ColorEdit3("Teapot Color", &materialDataTeapot->color.x);
+            }
+            if (drawSphere) {
+                // ========= スフィア ========= //
+                ImGui::Spacing();
+                ImGui::Text("Sphere Transform");
+                ImGui::Separator();
+                ImGui::SliderFloat3("Sphere Scale", &transformSphere.scale.x, 0.1f, 5.0f);
+                ImGui::SliderAngle("Sphere Rotate X", &transformSphere.rotate.x, -180.0f, 180.0f);
+                ImGui::SliderAngle("Sphere Rotate Y", &transformSphere.rotate.y, -180.0f, 180.0f);
+                ImGui::SliderAngle("Sphere Rotate Z", &transformSphere.rotate.z, -180.0f, 180.0f);
+                ImGui::SliderFloat3("Sphere Translate", &transformSphere.translate.x, -5.0f, 5.0f);
+                ImGui::ColorEdit3("Sphere Color", &materialDataSphere->color.x);
+            }
+            if (drawSuzanne) {
+                // モンキー
+                ImGui::Spacing();
+                ImGui::Text("Suzanne Transform");
+                ImGui::Separator();
+                ImGui::SliderFloat3("Suzanne Scale", &transformSuzanne.scale.x, 0.1f, 5.0f);
+                ImGui::SliderAngle("Suzanne Rotate X", &transformSuzanne.rotate.x, -180.0f, 180.0f);
+                ImGui::SliderAngle("Suzanne Rotate Y", &transformSuzanne.rotate.y, -180.0f, 180.0f);
+                ImGui::SliderAngle("Suzanne Rotate Z", &transformSuzanne.rotate.z, -180.0f, 180.0f);
+                ImGui::SliderFloat3("Suzanne Translate", &transformSuzanne.translate.x, -5.0f, 5.0f);
+                ImGui::ColorEdit3("Sphere Color", &materialDataSuzanne->color.x);
+            }
+            if (drawSprite) {
+                // ========= スプライト ========= //
+                ImGui::Spacing();
+                ImGui::Text("Sprite Transform");
+                ImGui::Separator();
+                ImGui::SliderFloat3("Sprite Scale", &transformSprite.scale.x, 0.1f, 5.0f);
+                ImGui::SliderAngle("Sprite Rotate Z", &transformSprite.rotate.z, -180.0f, 180.0f);
+                ImGui::SliderFloat3("Sprite Translate", &transformSprite.translate.x, -640.0f, 640.0f);
+            }
             // ========= ライティング ========= //
             ImGui::Spacing();
             ImGui::Text("Lighting Direction");
@@ -981,14 +1065,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::SliderFloat("Light Dir Y", &directionalLightData->direction.y, -1.0f, 1.0f);
             ImGui::SliderFloat("Light Dir Z", &directionalLightData->direction.z, -1.0f, 1.0f);
 
-            // ========= UV変換 ========= //
-            ImGui::Spacing();
-            ImGui::Text("UV Transform (Sprite)");
-            ImGui::Separator();
-            ImGui::DragFloat2("UV Translate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
-            ImGui::DragFloat2("UV Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
-            ImGui::SliderAngle("UV Rotate", &uvTransformSprite.rotate.z);
+            if (drawSprite) {
+                // ========= UV変換 ========= //
+                ImGui::Spacing();
+                ImGui::Text("UV Transform (Sprite)");
+                ImGui::Separator();
+                ImGui::DragFloat2("UV Translate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+                ImGui::DragFloat2("UV Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+                ImGui::SliderAngle("UV Rotate", &uvTransformSprite.rotate.z);
+            }
 
+            if (drawWave) {
+
+                ImGui::Spacing();
+                ImGui::Text("Wave Transform");
+                ImGui::Separator();
+                ImGui::SliderFloat3("Wave Scale", &transformWave.scale.x, 0.1f, 5.0f);
+                ImGui::SliderAngle("Wave Rotate X", &transformWave.rotate.x, -180.0f, 180.0f);
+                ImGui::SliderAngle("Wave Rotate Y", &transformWave.rotate.y, -180.0f, 180.0f);
+                ImGui::SliderAngle("Wave Rotate Z", &transformWave.rotate.z, -180.0f, 180.0f);
+                ImGui::SliderFloat3("Wave Translate", &transformWave.translate.x, -5.0f, 5.0f);
+            }
             static int lightingMode = 1; // 0: None, 1: Lambert, 2: Half-Lambert
             ImGui::Text("Lighting Mode");
             ImGui::RadioButton("None", &lightingMode, 0);
@@ -1004,6 +1101,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             materialDataPlane->lightingMode = lightingMode;
             materialDataTeapot->lightingMode = lightingMode;
             materialDataSuzanne->lightingMode = lightingMode;
+            materialDataAxis->lightingMode = lightingMode;
             ImGui::End();
 
             // ImGuiの内部コマンドを生成する02_03
@@ -1114,6 +1212,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             wvpDataTeapot->World = worldMatrixTeapot;
             wvpDataTeapot->WVP = wvpMatrixTeapot;
 
+            // アクシス
+            //   アクシスのワールド行列を作成
+            Matrix4x4 worldMatrixAxis = MatrixMath::MakeAffineMatrix(transformAxis.scale, transformAxis.rotate, transformAxis.translate);
+
+            // カメラのビュー行列
+            Matrix4x4 viewMatrixAxis = debugCamera.GetViewMatrix();
+
+            // 投影行列（パースあり）
+            Matrix4x4 projectionMatrixAxis = MatrixMath::MakePerspectiveFovMatrix(
+                0.45f, static_cast<float>(kClientWidth) / static_cast<float>(kClientHeight), 0.1f, 100.0f);
+
+            // WVP 行列を作成
+            Matrix4x4 wvpMatrixAxis = MatrixMath::Multiply(worldMatrixAxis, MatrixMath::Multiply(viewMatrixAxis, projectionMatrixAxis));
+
+            // リソースにデータ書き込み
+            wvpDataAxis->World = worldMatrixAxis;
+            wvpDataAxis->WVP = wvpMatrixAxis;
+
             // monkeys
             Matrix4x4 worldMatrixSuzanne = MatrixMath::MakeAffineMatrix(transformSuzanne.scale, transformSuzanne.rotate, transformSuzanne.translate);
             Matrix4x4 viewMatrixSuzanne = debugCamera.GetViewMatrix();
@@ -1152,84 +1268,100 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             deviceManager.GetCommandList()->RSSetScissorRects(1, &scissorRect); // シザー
             deviceManager.GetCommandList()->SetGraphicsRootSignature(rootSignature.Get()); // ルートシグネチャ
             deviceManager.GetCommandList()->SetPipelineState(graphicsPinelineState.Get()); // PSO
-
-            //--- 3Dモデル描画 ---
-            // 3D用の変換行列をルートパラメータ1にセット
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
-            // マテリアル（CBV）をセット（ルートパラメータ0）
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
-            // ライト（CBV）をセット（ルートパラメータ3）
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
-            // SRV（テクスチャ）をセット（ルートパラメータ2）
-            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
-            // 頂点バッファ・プリミティブトポロジを設定
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
-            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            // 描画実行
-            deviceManager.GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
-
+            if (drawBunny) {
+                //--- 3Dモデル描画 ---
+                // 3D用の変換行列をルートパラメータ1にセット
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
+                // マテリアル（CBV）をセット（ルートパラメータ0）
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
+                // ライト（CBV）をセット（ルートパラメータ3）
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+                // SRV（テクスチャ）をセット（ルートパラメータ2）
+                deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+                // 頂点バッファ・プリミティブトポロジを設定
+                deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
+                deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                // 描画実行
+                deviceManager.GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+            }
             // スフィア用
 
             //=========
             // 評価課題
             //=========
             // 評価課題（スフィア描画）
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSphere->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceSphere->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+            if (drawSphere) {
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSphere->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceSphere->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
 
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSphere);
-            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            deviceManager.GetCommandList()->DrawInstanced(kNumVertices, 1, 0, 0);
+                deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSphere);
+                deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                deviceManager.GetCommandList()->DrawInstanced(kNumVertices, 1, 0, 0);
+            }
+            if (drawPlane) {
+                // プレーン
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourcePlane->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourcePlane->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU); // テクスチャ共通ならこれでOK
+                deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewPlane);
+                deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                deviceManager.GetCommandList()->DrawInstanced(UINT(planeModelData.vertices.size()), 1, 0, 0);
+            }
+            if (drawTeapot) {
+                // pod
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceTeapot->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceTeapot->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU); // 共通でOK
 
-            // プレーン
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourcePlane->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourcePlane->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU); // テクスチャ共通ならこれでOK
+                deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewTeapot);
+                deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                deviceManager.GetCommandList()->DrawInstanced(UINT(teapotModelData.vertices.size()), 1, 0, 0);
+            }
+            if (drawAxis) {
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceAxis->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceAxis->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+                deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewAxis);
+                deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                deviceManager.GetCommandList()->DrawInstanced(UINT(axisModelData.vertices.size()), 1, 0, 0);
+            }
+            if (drawSprite) {
+                //--- スプライト描画 ---
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+                deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+                deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
+                deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // または LINELIST
+                deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
+            }
 
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewPlane);
-            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            deviceManager.GetCommandList()->DrawInstanced(UINT(planeModelData.vertices.size()), 1, 0, 0);
-
-            // pod
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceTeapot->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceTeapot->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU); // 共通でOK
-
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewTeapot);
-            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            deviceManager.GetCommandList()->DrawInstanced(UINT(teapotModelData.vertices.size()), 1, 0, 0);
-            //--- スプライト描画 ---
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
-            deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
-            deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
-            // 波
-            deviceManager.GetCommandList()->SetPipelineState(psoWave.Get());
-            // 例：波用テクスチャを使いたい場合（RootParameter[2]がSRVの場合）
-
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceWave->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceWave->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPUWave);
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewWave);
-            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            deviceManager.GetCommandList()->DrawInstanced(kWaveNumVertices, 1, 0, 0);
-
-            // monkey
-            deviceManager.GetCommandList()->SetPipelineState(psoSuzanne.Get());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceSuzanne->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSuzanne->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSuzanne);
-            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            deviceManager.GetCommandList()->DrawInstanced(UINT(suzanneModelData.vertices.size()), 1, 0, 0);
-
+            if (drawWave) {
+                // 波
+                deviceManager.GetCommandList()->SetPipelineState(psoWave.Get());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceWave->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceWave->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPUWave);
+                deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewWave);
+                deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                deviceManager.GetCommandList()->DrawInstanced(kWaveNumVertices, 1, 0, 0);
+            }
+            if (drawSuzanne) {
+                // monkey
+                deviceManager.GetCommandList()->SetPipelineState(psoSuzanne.Get());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceSuzanne->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSuzanne->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSuzanne);
+                deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                deviceManager.GetCommandList()->DrawInstanced(UINT(suzanneModelData.vertices.size()), 1, 0, 0);
+            }
             //=========
             // 評価課題
             //=========
