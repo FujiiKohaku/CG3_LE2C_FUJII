@@ -121,3 +121,53 @@ void GenerateFloorVertices(VertexData* vertices, float size)
         vertices[i].normal = { 0.0f, 1.0f, 0.0f };
     }
 }
+void GenerateFlatGridVertices(VertexData* vertices, int kSubdivision, float gridSize)
+{
+    const float cellSize = gridSize / kSubdivision;
+    const float half = gridSize / 2.0f;
+
+    for (int row = 0; row < kSubdivision; ++row) {
+        float z = -half + cellSize * row;
+        float nextZ = z + cellSize;
+
+        for (int col = 0; col < kSubdivision; ++col) {
+            float x = -half + cellSize * col;
+            float nextX = x + cellSize;
+
+            // y = 0 の平面
+            Vector3 leftTop = { x, 0.0f, z };
+            Vector3 leftBottom = { x, 0.0f, nextZ };
+            Vector3 rightTop = { nextX, 0.0f, z };
+            Vector3 rightBottom = { nextX, 0.0f, nextZ };
+
+            VertexData vA = {
+                { leftTop.x, leftTop.y, leftTop.z, 1.0f },
+                { (leftTop.x + half) / gridSize, 1.0f - (leftTop.z + half) / gridSize },
+                { 0, 1, 0 }
+            };
+            VertexData vB = {
+                { leftBottom.x, leftBottom.y, leftBottom.z, 1.0f },
+                { (leftBottom.x + half) / gridSize, 1.0f - (leftBottom.z + half) / gridSize },
+                { 0, 1, 0 }
+            };
+            VertexData vC = {
+                { rightTop.x, rightTop.y, rightTop.z, 1.0f },
+                { (rightTop.x + half) / gridSize, 1.0f - (rightTop.z + half) / gridSize },
+                { 0, 1, 0 }
+            };
+            VertexData vD = {
+                { rightBottom.x, rightBottom.y, rightBottom.z, 1.0f },
+                { (rightBottom.x + half) / gridSize, 1.0f - (rightBottom.z + half) / gridSize },
+                { 0, 1, 0 }
+            };
+
+            int index = (row * kSubdivision + col) * 6;
+            vertices[index + 0] = vA;
+            vertices[index + 1] = vB;
+            vertices[index + 2] = vC;
+            vertices[index + 3] = vC;
+            vertices[index + 4] = vB;
+            vertices[index + 5] = vD;
+        }
+    }
+}

@@ -49,6 +49,9 @@
 //------------------
 const int kSubdivision = 16; // 16分割
 int kNumVertices = kSubdivision * kSubdivision * 6; // 頂点数
+
+const int kFloorSubdivision = 16; // 床の分割数（例: 16分割）
+const int kFloorNumVertices = kFloorSubdivision * kFloorSubdivision * 6; // 床の頂点数
 float waveTime;
 const int32_t kClientWidth = 1280;
 const int32_t kClientHeight = 720;
@@ -61,6 +64,7 @@ bool drawWave = false;
 bool drawSuzanne = false;
 bool drawBunny = false;
 bool drawAxis = false;
+bool drawFloor = false;
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
@@ -567,9 +571,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     Material* materialDataAxis = nullptr;
     materialResourceAxis->Map(0, nullptr, reinterpret_cast<void**>(&materialDataAxis));
-    materialDataAxis->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); 
+    materialDataAxis->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
     materialDataAxis->uvTransform = MatrixMath::MakeIdentity4x4();
-    materialDataAxis->enableLighting = true; 
+    materialDataAxis->enableLighting = true;
 
     // WVP
     Microsoft::WRL::ComPtr<ID3D12Resource> wvpResourceAxis = CreateBufferResource(deviceManager.GetDevice(), sizeof(TransformationMatrix));
@@ -695,6 +699,37 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     //--------------------------
     //  波↑↑
+    //--------------------------
+
+    //--------------------------
+    //  床
+    //--------------------------
+    // --- 頂点リソース作成（床） ---
+ 
+
+    VertexData* vertexDataFloor = nullptr;
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceFloor = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * kWaveNumVertices);
+    vertexResourceFloor->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataFloor));
+    // --- 頂点バッファビュー（床） ---
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferViewFloor {};
+    vertexBufferViewFloor.BufferLocation = vertexResourceFloor->GetGPUVirtualAddress();
+    vertexBufferViewFloor.SizeInBytes = sizeof(VertexData) * kWaveNumVertices;
+    vertexBufferViewFloor.StrideInBytes = sizeof(VertexData);
+    // --- WVPリソース作成（床） ---
+    Microsoft::WRL::ComPtr<ID3D12Resource> wvpResourceFloor = CreateBufferResource(deviceManager.GetDevice(), sizeof(TransformationMatrix));
+    TransformationMatrix* wvpDataFloor = nullptr;
+    wvpResourceFloor->Map(0, nullptr, reinterpret_cast<void**>(&wvpDataFloor));
+    // --- マテリアルリソース作成（床） ---
+    Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceFloor = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
+
+    Material* materialDataFloor = nullptr;
+    materialResourceFloor->Map(0, nullptr, reinterpret_cast<void**>(&materialDataFloor));
+    materialDataFloor->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // 白（caustics などにも使える）
+    materialDataFloor->uvTransform = MatrixMath::MakeIdentity4x4();
+    materialDataFloor->enableLighting = true; 
+    GenerateFlatGridVertices(vertexDataFloor, kFloorSubdivision, 1.0f);
+    //--------------------------
+    //  床↑↑
     //--------------------------
     //--------------------------
     //  通常モデル用リソース
@@ -909,6 +944,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         { 0.0f, 0.0f, 0.0f } // translate
     };
 
+    Transform transformFloor = {
+        { 1.0f, 1.0f, 1.0f }, // scale
+        { 0.0f, 0.0f, 0.0f }, // rotate
+        { 0.0f, 0.0f, 0.0f } // translate
+    };
+
     // Textureの切り替え
     bool useMonstarBall = true;
 
@@ -977,6 +1018,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::Checkbox("Draw Teapot", &drawTeapot);
             ImGui::Checkbox("Draw Sprite", &drawSprite);
             ImGui::Checkbox("Draw Wave", &drawWave);
+            ImGui::Checkbox("Draw Floor", &drawFloor);
             ImGui::Checkbox("Draw Suzanne", &drawSuzanne);
 
             // アクシス
@@ -1074,7 +1116,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 ImGui::DragFloat2("UV Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
                 ImGui::SliderAngle("UV Rotate", &uvTransformSprite.rotate.z);
             }
-
+            ImGui::Spacing();
+            ImGui::Text("Floor Transform");
+            ImGui::Separator();
+            ImGui::SliderFloat3("Floor Scale", &transformFloor.scale.x, 0.1f, 5.0f);
+            ImGui::SliderAngle("Floor Rotate X", &transformFloor.rotate.x, -180.0f, 180.0f);
+            ImGui::SliderAngle("Floor Rotate Y", &transformFloor.rotate.y, -180.0f, 180.0f);
+            ImGui::SliderAngle("Floor Rotate Z", &transformFloor.rotate.z, -180.0f, 180.0f);
+            ImGui::SliderFloat3("Floor Translate", &transformFloor.translate.x, -10.0f, 10.0f);
             if (drawWave) {
 
                 ImGui::Spacing();
@@ -1102,6 +1151,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             materialDataTeapot->lightingMode = lightingMode;
             materialDataSuzanne->lightingMode = lightingMode;
             materialDataAxis->lightingMode = lightingMode;
+            materialDataFloor->lightingMode = lightingMode;
             ImGui::End();
 
             // ImGuiの内部コマンドを生成する02_03
@@ -1250,6 +1300,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             wvpDataWave->World = worldMatrixWave;
             wvpDataWave->WVP = wvpMatrixWave;
 
+            // 床
+            Matrix4x4 worldMatrixFloor = MatrixMath::MakeAffineMatrix(transformFloor.scale, transformFloor.rotate, transformFloor.translate);
+            Matrix4x4 viewMatrixFloor = debugCamera.GetViewMatrix();
+            Matrix4x4 projectionMatrixFloor = MatrixMath::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
+            Matrix4x4 wvpMatrixFloor = MatrixMath::Multiply(worldMatrixFloor, MatrixMath::Multiply(viewMatrixFloor, projectionMatrixFloor));
+            wvpDataFloor->World = worldMatrixFloor;
+            wvpDataFloor->WVP = wvpMatrixFloor;
+
             //==============
             // 評価課題↑↑↑
             //==============
@@ -1330,6 +1388,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
                 deviceManager.GetCommandList()->DrawInstanced(UINT(axisModelData.vertices.size()), 1, 0, 0);
             }
+            // 床
+            if (drawFloor) {
+
+                
+
+                deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceFloor->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceFloor->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewFloor);
+                deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                deviceManager.GetCommandList()->DrawInstanced(kFloorNumVertices, 1, 0, 0);
+            }
+
             if (drawSprite) {
                 //--- スプライト描画 ---
                 deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
@@ -1340,6 +1412,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // または LINELIST
                 deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
             }
+ 
 
             if (drawWave) {
                 // 波
