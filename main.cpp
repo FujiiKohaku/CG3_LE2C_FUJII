@@ -290,7 +290,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = CreateTextureResource(deviceManager.GetDevice(), metadata); // get
     Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = UploadTextureData(textureResource.Get(), mipImages, deviceManager.GetDevice(), deviceManager.GetCommandList()); //?
     // モデル読み込み
-    ModelData modelData = LoadObjFile("resources", "plane.obj");
+    ModelData modelData = LoadObjFile("resources", "bunny.obj");
 
     std::cout << "テクスチャファイルパス: " << modelData.material.textureFilePath << std::endl;
 
@@ -419,7 +419,67 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //////////////
     // 実際に生成//
     //////////////
+    //--------------------------
+    // 評価課題プレーン
+    //--------------------------
+    ModelData planeModelData = LoadObjFile("resources", "plane.obj");
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourcePlane = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * planeModelData.vertices.size());
 
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferViewPlane {};
+    vertexBufferViewPlane.BufferLocation = vertexResourcePlane->GetGPUVirtualAddress();
+    vertexBufferViewPlane.SizeInBytes = UINT(sizeof(VertexData) * planeModelData.vertices.size());
+    vertexBufferViewPlane.StrideInBytes = sizeof(VertexData);
+
+    VertexData* vertexDataPlane = nullptr;
+    vertexResourcePlane->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataPlane));
+    std::memcpy(vertexDataPlane, planeModelData.vertices.data(), sizeof(VertexData) * planeModelData.vertices.size());
+    Microsoft::WRL::ComPtr<ID3D12Resource> materialResourcePlane = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
+
+    Material* materialDataPlane = nullptr;
+    materialResourcePlane->Map(0, nullptr, reinterpret_cast<void**>(&materialDataPlane));
+    materialDataPlane->color = Vector4(0.3f, 0.8f, 0.3f, 1.0f); // 緑系
+    materialDataPlane->uvTransform = MatrixMath::MakeIdentity4x4();
+    materialDataPlane->enableLighting = true;
+    Microsoft::WRL::ComPtr<ID3D12Resource> wvpResourcePlane = CreateBufferResource(deviceManager.GetDevice(), sizeof(TransformationMatrix));
+
+    TransformationMatrix* wvpDataPlane = nullptr;
+    wvpResourcePlane->Map(0, nullptr, reinterpret_cast<void**>(&wvpDataPlane));
+
+    //--------------------------
+    // 評価課題プレーン
+    //--------------------------
+    //--------------------------
+    // 評価課題ティーポッド
+    //--------------------------
+    // モデル読み込み
+    ModelData teapotModelData = LoadObjFile("resources", "teapot.obj");
+
+    // 頂点リソース作成
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceTeapot = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * teapotModelData.vertices.size());
+
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferViewTeapot {};
+    vertexBufferViewTeapot.BufferLocation = vertexResourceTeapot->GetGPUVirtualAddress();
+    vertexBufferViewTeapot.SizeInBytes = UINT(sizeof(VertexData) * teapotModelData.vertices.size());
+    vertexBufferViewTeapot.StrideInBytes = sizeof(VertexData);
+
+    VertexData* vertexDataTeapot = nullptr;
+    vertexResourceTeapot->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataTeapot));
+    std::memcpy(vertexDataTeapot, teapotModelData.vertices.data(), sizeof(VertexData) * teapotModelData.vertices.size());
+    Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceTeapot = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
+
+    Material* materialDataTeapot = nullptr;
+    materialResourceTeapot->Map(0, nullptr, reinterpret_cast<void**>(&materialDataTeapot));
+    materialDataTeapot->color = Vector4(0.6f, 0.4f, 1.0f, 1.0f); // 紫系
+    materialDataTeapot->uvTransform = MatrixMath::MakeIdentity4x4();
+    materialDataTeapot->enableLighting = true;
+    Microsoft::WRL::ComPtr<ID3D12Resource> wvpResourceTeapot = CreateBufferResource(deviceManager.GetDevice(), sizeof(TransformationMatrix));
+
+    TransformationMatrix* wvpDataTeapot = nullptr;
+    wvpResourceTeapot->Map(0, nullptr, reinterpret_cast<void**>(&wvpDataTeapot));
+
+    //--------------------------
+    // 評価課題ティーポッド
+    //--------------------------
     //--------------------------
     // 評価課題球体
     //--------------------------
@@ -643,6 +703,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         { 0.0f, 0.0f, 0.0f },
     };
 
+    Transform transformPlane {
+        { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 2.0f, 0.0f, 0.0f }
+    };
+    Transform transformTeapot {
+        { 1.0f, 1.0f, 1.0f }, // Scale
+        { 0.0f, 0.0f, 0.0f }, // Rotate
+        { 2.0f, 0.0f, 0.0f } // Translate
+    };
     // Textureの切り替え
     bool useMonstarBall = true;
 
@@ -709,7 +777,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::SliderAngle("Model Rotate Y", &transform.rotate.y, -180.0f, 180.0f);
             ImGui::SliderAngle("Model Rotate Z", &transform.rotate.z, -180.0f, 180.0f);
             ImGui::SliderFloat3("Model Translate", &transform.translate.x, -5.0f, 5.0f);
-
+            // ========= モデル ========= //
+            ImGui::Spacing();
+            ImGui::Text("Plane Transform");
+            ImGui::Separator();
+            ImGui::SliderFloat3("Plane Scale", &transformPlane.scale.x, 0.1f, 5.0f);
+            ImGui::SliderAngle("Plane Rotate X", &transformPlane.rotate.x, -180.0f, 180.0f);
+            ImGui::SliderAngle("Plane Rotate Y", &transformPlane.rotate.y, -180.0f, 180.0f);
+            ImGui::SliderAngle("Plane Rotate Z", &transformPlane.rotate.z, -180.0f, 180.0f);
+            ImGui::SliderFloat3("Plane Translate", &transformPlane.translate.x, -5.0f, 5.0f);
+            // ========= ティーポット ========= //
+            ImGui::Spacing();
+            ImGui::Text("Teapot Transform");
+            ImGui::Separator();
+            ImGui::SliderFloat3("Teapot Scale", &transformTeapot.scale.x, 0.1f, 5.0f);
+            ImGui::SliderAngle("Teapot Rotate X", &transformTeapot.rotate.x, -180.0f, 180.0f);
+            ImGui::SliderAngle("Teapot Rotate Y", &transformTeapot.rotate.y, -180.0f, 180.0f);
+            ImGui::SliderAngle("Teapot Rotate Z", &transformTeapot.rotate.z, -180.0f, 180.0f);
+            ImGui::SliderFloat3("Teapot Translate", &transformTeapot.translate.x, -5.0f, 5.0f);
+            ImGui::ColorEdit3("Teapot Color", &materialDataTeapot->color.x);
             // ========= スフィア ========= //
             ImGui::Spacing();
             ImGui::Text("Sphere Transform");
@@ -752,10 +838,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::RadioButton("Lambert", &lightingMode, 1);
             ImGui::SameLine();
             ImGui::RadioButton("Half-Lambert", &lightingMode, 2);
+            // ========= プレーン ========= //
+
             // モデルと球体両方に適用
             materialData->lightingMode = lightingMode;
             materialDataSphere->lightingMode = lightingMode;
-
+            materialDataPlane->lightingMode = lightingMode;
+            materialDataTeapot->lightingMode = lightingMode;
             ImGui::End();
 
             // ImGuiの内部コマンドを生成する02_03
@@ -790,7 +879,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             if (input.IsGamepadButtonPressed(0)) { // Aボタン
                 soundmanager.SoundPlayWave(bgm);
             }
-            if (input.IsGamepadConnected()) {//ゲームパッド接続してない時も動くので追加気をつけろ
+            if (input.IsGamepadConnected()) { // ゲームパッド接続してない時も動くので追加気をつけろ
                 Vector2 stick = input.GetLeftStick(); // 左のジョイスティック（感度クソ高い）
                 if (stick.x > 0.9f) {
                     transformSphere.rotate.x++;
@@ -840,10 +929,31 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
 
             Matrix4x4 wvpMatrixSphere = MatrixMath::Multiply(worldMatrixSphere, MatrixMath::Multiply(viewMatrixSphere, projectionMatrixSpehre));
-
-            // ★ ここ！構造体ごと代入！
             wvpDataSphere->World = worldMatrixSphere;
             wvpDataSphere->WVP = wvpMatrixSphere;
+
+            // プレーン
+
+            Matrix4x4 worldMatrixPlane = MatrixMath::MakeAffineMatrix(
+                transformPlane.scale, transformPlane.rotate, transformPlane.translate);
+            Matrix4x4 viewMatrixPlane = debugCamera.GetViewMatrix();
+            Matrix4x4 projectionMatrixPlane = MatrixMath::MakePerspectiveFovMatrix(
+                0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
+            Matrix4x4 wvpMatrixPlane = MatrixMath::Multiply(worldMatrixPlane, MatrixMath::Multiply(viewMatrixPlane, projectionMatrixPlane));
+
+            wvpDataPlane->World = worldMatrixPlane;
+            wvpDataPlane->WVP = wvpMatrixPlane;
+
+            // teapod
+            Matrix4x4 worldMatrixTeapot = MatrixMath::MakeAffineMatrix(transformTeapot.scale, transformTeapot.rotate, transformTeapot.translate);
+            Matrix4x4 viewMatrixTeapot = debugCamera.GetViewMatrix();
+            Matrix4x4 projectionMatrixTeapot = MatrixMath::MakePerspectiveFovMatrix(
+                0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
+
+            Matrix4x4 wvpMatrixTeapot = MatrixMath::Multiply(worldMatrixTeapot, MatrixMath::Multiply(viewMatrixTeapot, projectionMatrixTeapot));
+
+            wvpDataTeapot->World = worldMatrixTeapot;
+            wvpDataTeapot->WVP = wvpMatrixTeapot;
 
             //==============
             // 評価課題↑↑↑
@@ -893,6 +1003,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSphere);
             deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             deviceManager.GetCommandList()->DrawInstanced(kNumVertices, 1, 0, 0);
+
+            // プレーン
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourcePlane->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourcePlane->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU); // テクスチャ共通ならこれでOK
+
+            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewPlane);
+            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            deviceManager.GetCommandList()->DrawInstanced(UINT(planeModelData.vertices.size()), 1, 0, 0);
+
+            // pod
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceTeapot->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceTeapot->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU); // 共通でOK
+
+            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewTeapot);
+            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            deviceManager.GetCommandList()->DrawInstanced(UINT(teapotModelData.vertices.size()), 1, 0, 0);
 
             //=========
             // 評価課題
