@@ -13,6 +13,7 @@
 #include "SoundManager.h"
 #include "Unknwn.h"
 #include "Utility.h"
+#include "Wave.h"
 #include "WinApp.h"
 #include <cassert>
 #include <chrono>
@@ -48,7 +49,7 @@
 //------------------
 const int kSubdivision = 16; // 16分割
 int kNumVertices = kSubdivision * kSubdivision * 6; // 頂点数
-float waveTime = 0.0f;
+float waveTime;
 const int32_t kClientWidth = 1280;
 const int32_t kClientHeight = 720;
 //////////////---------------------------------------
@@ -305,6 +306,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Microsoft::WRL::ComPtr<ID3D12Resource> textureResource2 = CreateTextureResource(deviceManager.GetDevice(), metadata2); // get
     Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource2 = UploadTextureData(textureResource2.Get(), mipImages2, deviceManager.GetDevice(), deviceManager.GetCommandList());
 
+    //=================================================================
+    // 波面用のテクスチャを読み込む
+    //=================================================================
+    DirectX::ScratchImage mipImagesWave = LoadTexture("resources/wave.png");
+    const DirectX::TexMetadata& metadataWave = mipImagesWave.GetMetadata();
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> textureResourceWave = CreateTextureResource(deviceManager.GetDevice(), metadataWave);
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResourceWave = UploadTextureData(textureResourceWave.Get(), mipImagesWave, deviceManager.GetDevice(), deviceManager.GetCommandList());
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDescWave = {};
+    srvDescWave.Format = metadataWave.format;
+    srvDescWave.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDescWave.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDescWave.Texture2D.MipLevels = UINT(metadataWave.mipLevels);
+
     // 03_00EX
     // ID3D12Resource *intermediateResource =
     //    UploadTextureData(textureResource, mipImages, device, commandList);
@@ -338,6 +355,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // SRVを作成するDescriptorHeapの場所を決めるCG2_05_01_page_9
     D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = GetCPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 2);
     D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = GetGPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 2);
+
+    // 波！
+    D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPUWave = GetCPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 4);
+
+    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPUWave = GetGPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 4);
+
+    deviceManager.GetDevice()->CreateShaderResourceView(textureResourceWave.Get(), &srvDescWave, textureSrvHandleCPUWave);
 
     // SRVの生成03_00
     deviceManager.GetDevice()->CreateShaderResourceView(textureResource.Get(), &srvDesc, textureSrvHandleCPU);
@@ -438,7 +462,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     suzannePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     suzannePsoDesc.SampleDesc.Count = 1;
     suzannePsoDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-    
+
     Microsoft::WRL::ComPtr<ID3D12PipelineState> psoSuzanne;
     hr = deviceManager.GetDevice()->CreateGraphicsPipelineState(&suzannePsoDesc, IID_PPV_ARGS(&psoSuzanne));
     assert(SUCCEEDED(hr));
@@ -585,6 +609,47 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     GenerateSphereVertices(vertexDataSphere, kSubdivision, 1.0f); // 半径1.0
 
+    //--------------------------
+    //  波
+    //--------------------------
+    const int kWaveSubdivision = 64;
+    const float kWaveGridSize = 6.0f;
+    const int kWaveNumVertices = kWaveSubdivision * kWaveSubdivision * 6;
+
+    VertexData* vertexDataWave = nullptr;
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceWave = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * kWaveNumVertices);
+
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferViewWave {};
+    vertexBufferViewWave.BufferLocation = vertexResourceWave->GetGPUVirtualAddress();
+    vertexBufferViewWave.SizeInBytes = sizeof(VertexData) * kWaveNumVertices;
+    vertexBufferViewWave.StrideInBytes = sizeof(VertexData);
+    vertexResourceWave->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataWave));
+    GenerateGridVertices(vertexDataWave, kWaveSubdivision, kWaveGridSize, waveTime); // waveTimeは時間経過で更新
+    // WVP
+    Microsoft::WRL::ComPtr<ID3D12Resource> wvpResourceWave = CreateBufferResource(deviceManager.GetDevice(), sizeof(TransformationMatrix));
+
+    TransformationMatrix* wvpDataWave = nullptr;
+    wvpResourceWave->Map(0, nullptr, reinterpret_cast<void**>(&wvpDataWave));
+
+    // Material
+    Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceWave = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
+
+    Material* materialDataWave = nullptr;
+    materialResourceWave->Map(0, nullptr, reinterpret_cast<void**>(&materialDataWave));
+    materialDataWave->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // 白（caustics用）
+    materialDataWave->uvTransform = MatrixMath::MakeIdentity4x4();
+    materialDataWave->enableLighting = false; // 水面は光で照らさないならfalse
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC wavePsoDesc = graphicsPipelineStateDesc; // 既存のコピー
+
+    // 波用にワイヤーフレームに変更
+    wavePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> psoWave;
+    deviceManager.GetDevice()->CreateGraphicsPipelineState(&wavePsoDesc, IID_PPV_ARGS(&psoWave));
+
+    //--------------------------
+    //  波↑↑
+    //--------------------------
     //--------------------------
     //  通常モデル用リソース
     //--------------------------
@@ -786,7 +851,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         { 0.0f, 0.0f, 0.0f }, // Rotate
         { -2.0f, 0.0f, 0.0f } // Translate（左に表示）
     };
-
+    Transform transformWave = {
+        { 1.0f, 1.0f, 1.0f }, // scale
+        { 0.0f, 0.0f, 0.0f }, // rotate
+        { 0.0f, 0.0f, 0.0f } // translate
+    };
     // Textureの切り替え
     bool useMonstarBall = true;
 
@@ -836,6 +905,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #pragma region IMGUI
 
+            waveTime += 0.03f; // 好みに応じてスピード調整
+            GenerateGridVertices(vertexDataWave, kWaveSubdivision, kWaveGridSize, waveTime);
+
             // ここがframeの先頭02_03
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
@@ -882,7 +954,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::SliderAngle("Sphere Rotate Z", &transformSphere.rotate.z, -180.0f, 180.0f);
             ImGui::SliderFloat3("Sphere Translate", &transformSphere.translate.x, -5.0f, 5.0f);
             ImGui::ColorEdit3("Sphere Color", &materialDataSphere->color.x);
-            //モンキー
+            // モンキー
             ImGui::Spacing();
             ImGui::Text("Suzanne Transform");
             ImGui::Separator();
@@ -1042,7 +1114,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             wvpDataTeapot->World = worldMatrixTeapot;
             wvpDataTeapot->WVP = wvpMatrixTeapot;
 
-            //monkeys
+            // monkeys
             Matrix4x4 worldMatrixSuzanne = MatrixMath::MakeAffineMatrix(transformSuzanne.scale, transformSuzanne.rotate, transformSuzanne.translate);
             Matrix4x4 viewMatrixSuzanne = debugCamera.GetViewMatrix();
             Matrix4x4 projectionMatrixSuzanne = MatrixMath::MakePerspectiveFovMatrix(
@@ -1051,8 +1123,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             wvpDataSuzanne->World = worldMatrixSuzanne;
             wvpDataSuzanne->WVP = wvpMatrixSuzanne;
+            // 波
+            Matrix4x4 worldMatrixWave = MatrixMath::MakeAffineMatrix(transformWave.scale, transformWave.rotate, transformWave.translate);
+            Matrix4x4 viewMatrixWave = debugCamera.GetViewMatrix();
+            Matrix4x4 projectionMatrixWave = MatrixMath::MakePerspectiveFovMatrix(
+                0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
 
+            Matrix4x4 wvpMatrixWave = MatrixMath::Multiply(worldMatrixWave, MatrixMath::Multiply(viewMatrixWave, projectionMatrixWave));
 
+            wvpDataWave->World = worldMatrixWave;
+            wvpDataWave->WVP = wvpMatrixWave;
 
             //==============
             // 評価課題↑↑↑
@@ -1129,6 +1209,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
             deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
             deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
+            // 波
+            deviceManager.GetCommandList()->SetPipelineState(psoWave.Get());
+            // 例：波用テクスチャを使いたい場合（RootParameter[2]がSRVの場合）
+
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceWave->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceWave->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPUWave);
+            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewWave);
+            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            deviceManager.GetCommandList()->DrawInstanced(kWaveNumVertices, 1, 0, 0);
 
             // monkey
             deviceManager.GetCommandList()->SetPipelineState(psoSuzanne.Get());
