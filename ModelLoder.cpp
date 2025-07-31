@@ -24,6 +24,8 @@ MaterialData LoadMaterialTemplateFile(const std::string& directoryPath,
     return materialData;
 }
 
+
+
 ModelData LoadObjFile(const std::string& directoryPath, const std::string& filename)
 {
     ModelData modelData;
@@ -87,5 +89,67 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
         }
     }
 
+    return modelData;
+}
+
+ModelData LoadObjFileNoTexture(const std::filesystem::path& directoryPath, const std::string& filename)
+{
+    ModelData modelData;
+    std::vector<Vector4> positions;
+    std::vector<Vector3> normals;
+    std::string line;
+
+    // Use std::filesystem::path for proper path concatenation
+    std::filesystem::path filePath = directoryPath / filename;
+    std::ifstream file(filePath.string());
+    assert(file.is_open());
+
+    while (std::getline(file, line)) {
+        std::string identifier;
+        std::istringstream s(line);
+        s >> identifier;
+
+        if (identifier == "v") {
+            Vector4 position;
+            s >> position.x >> position.y >> position.z;
+            position.x *= -1.0f; // 右手系→左手系
+            position.w = 1.0f;
+            positions.push_back(position);
+        } else if (identifier == "vn") {
+            Vector3 normal;
+            s >> normal.x >> normal.y >> normal.z;
+            normal.x *= -1.0f; // 右手系→左手系（法線）
+            normals.push_back(normal);
+        } else if (identifier == "f") {
+            VertexData triangle[3];
+            for (int i = 0; i < 3; ++i) {
+                std::string vertexDefinition;
+                s >> vertexDefinition;
+
+                std::istringstream v(vertexDefinition);
+                std::string posIndexStr, texDummy, normIndexStr;
+
+                std::getline(v, posIndexStr, '/'); // v
+                std::getline(v, texDummy, '/'); // vt（無視）
+                std::getline(v, normIndexStr, '/'); // vn
+
+                int posIndex = std::stoi(posIndexStr);
+                int normIndex = std::stoi(normIndexStr);
+
+                triangle[i].position = positions[posIndex - 1];
+                triangle[i].texcoord = { 0.0f, 0.0f }; // UVはダミー
+                triangle[i].normal = normals[normIndex - 1];
+            }
+
+            // 左手系なので逆順
+            modelData.vertices.push_back(triangle[2]);
+            modelData.vertices.push_back(triangle[1]);
+            modelData.vertices.push_back(triangle[0]);
+        }
+
+        // ★ mtllibは完全に無視する
+    }
+
+    modelData.material.textureFilePath = ""; // 念のため空にしておく
     return modelData;
 }

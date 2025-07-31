@@ -416,6 +416,35 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     hr = deviceManager.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
     assert(SUCCEEDED(hr));
 
+#pragma region monkey
+    // Suzanne用Shaderの読み込み（UVなし）
+    auto vsSuzanne = CompileShader(L"Object3dNoUV.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includHandler, logStream);
+    auto psSuzanne = CompileShader(L"Object3dNoUV.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includHandler, logStream);
+    D3D12_INPUT_ELEMENT_DESC inputElementsNoUV[2] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+    };
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC suzannePsoDesc = {};
+    suzannePsoDesc.pRootSignature = rootSignature.Get();
+    suzannePsoDesc.InputLayout = { inputElementsNoUV, _countof(inputElementsNoUV) };
+    suzannePsoDesc.VS = { vsSuzanne->GetBufferPointer(), vsSuzanne->GetBufferSize() };
+    suzannePsoDesc.PS = { psSuzanne->GetBufferPointer(), psSuzanne->GetBufferSize() };
+    suzannePsoDesc.BlendState = blendDesc;
+    suzannePsoDesc.RasterizerState = rasterizerDesc;
+    suzannePsoDesc.DepthStencilState = depthStencilDesc;
+    suzannePsoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    suzannePsoDesc.NumRenderTargets = 1;
+    suzannePsoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    suzannePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    suzannePsoDesc.SampleDesc.Count = 1;
+    suzannePsoDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+    
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> psoSuzanne;
+    hr = deviceManager.GetDevice()->CreateGraphicsPipelineState(&suzannePsoDesc, IID_PPV_ARGS(&psoSuzanne));
+    assert(SUCCEEDED(hr));
+
+#pragma endregion
+
     //////////////
     // 実際に生成//
     //////////////
@@ -479,6 +508,47 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     //--------------------------
     // 評価課題ティーポッド
+    //--------------------------
+
+    //--------------------------
+    // 評価課題monkey
+    //--------------------------
+    ModelData suzanneModelData = LoadObjFileNoTexture("resources", "suzanne.obj");
+
+    // 頂点が空ならエラー表示
+    if (suzanneModelData.vertices.empty()) {
+        MessageBoxA(nullptr, "Suzanneの.objファイルの読み込みに失敗しました", "エラー", 0);
+        return -1;
+    }
+
+    // 頂点バッファ作成
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceSuzanne = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * suzanneModelData.vertices.size());
+
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSuzanne {};
+    vertexBufferViewSuzanne.BufferLocation = vertexResourceSuzanne->GetGPUVirtualAddress();
+    vertexBufferViewSuzanne.SizeInBytes = UINT(sizeof(VertexData) * suzanneModelData.vertices.size());
+    vertexBufferViewSuzanne.StrideInBytes = sizeof(VertexData);
+
+    VertexData* vertexDataSuzanne = nullptr;
+    vertexResourceSuzanne->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSuzanne));
+    std::memcpy(vertexDataSuzanne, suzanneModelData.vertices.data(), sizeof(VertexData) * suzanneModelData.vertices.size());
+
+    // マテリアル作成（UVなし用）
+    Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceSuzanne = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
+    Material* materialDataSuzanne = nullptr;
+    materialResourceSuzanne->Map(0, nullptr, reinterpret_cast<void**>(&materialDataSuzanne));
+    materialDataSuzanne->color = Vector4(0.6f, 0.6f, 0.6f, 1.0f); // 灰色
+    materialDataSuzanne->uvTransform = MatrixMath::MakeIdentity4x4();
+    materialDataSuzanne->enableLighting = true;
+    materialDataSuzanne->lightingMode = 1;
+
+    // WVP作成
+    Microsoft::WRL::ComPtr<ID3D12Resource> wvpResourceSuzanne = CreateBufferResource(deviceManager.GetDevice(), sizeof(TransformationMatrix));
+    TransformationMatrix* wvpDataSuzanne = nullptr;
+    wvpResourceSuzanne->Map(0, nullptr, reinterpret_cast<void**>(&wvpDataSuzanne));
+
+    //--------------------------
+    // 評価課題monkey
     //--------------------------
     //--------------------------
     // 評価課題球体
@@ -654,7 +724,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     DirectionalLight* directionalLightData = nullptr;
     directionalLightResource->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData));
     directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 白色光
-    directionalLightData->direction = MatrixMath::Normalize({ 0.0f, 0.0f, 0.0f }); // 真上から下方向
+    directionalLightData->direction = MatrixMath::Normalize({ 0.0f, -1.0f, 0.0f }); // 真上から下方向
     directionalLightData->intensity = 1.0f; // 標準の明るさ
 
     //--------------------------
@@ -711,6 +781,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         { 0.0f, 0.0f, 0.0f }, // Rotate
         { 2.0f, 0.0f, 0.0f } // Translate
     };
+    Transform transformSuzanne {
+        { 1.0f, 1.0f, 1.0f }, // Scale
+        { 0.0f, 0.0f, 0.0f }, // Rotate
+        { -2.0f, 0.0f, 0.0f } // Translate（左に表示）
+    };
+
     // Textureの切り替え
     bool useMonstarBall = true;
 
@@ -806,6 +882,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::SliderAngle("Sphere Rotate Z", &transformSphere.rotate.z, -180.0f, 180.0f);
             ImGui::SliderFloat3("Sphere Translate", &transformSphere.translate.x, -5.0f, 5.0f);
             ImGui::ColorEdit3("Sphere Color", &materialDataSphere->color.x);
+            //モンキー
+            ImGui::Spacing();
+            ImGui::Text("Suzanne Transform");
+            ImGui::Separator();
+            ImGui::SliderFloat3("Suzanne Scale", &transformSuzanne.scale.x, 0.1f, 5.0f);
+            ImGui::SliderAngle("Suzanne Rotate X", &transformSuzanne.rotate.x, -180.0f, 180.0f);
+            ImGui::SliderAngle("Suzanne Rotate Y", &transformSuzanne.rotate.y, -180.0f, 180.0f);
+            ImGui::SliderAngle("Suzanne Rotate Z", &transformSuzanne.rotate.z, -180.0f, 180.0f);
+            ImGui::SliderFloat3("Suzanne Translate", &transformSuzanne.translate.x, -5.0f, 5.0f);
+            ImGui::ColorEdit3("Sphere Color", &materialDataSuzanne->color.x);
 
             // ========= スプライト ========= //
             ImGui::Spacing();
@@ -845,6 +931,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             materialDataSphere->lightingMode = lightingMode;
             materialDataPlane->lightingMode = lightingMode;
             materialDataTeapot->lightingMode = lightingMode;
+            materialDataSuzanne->lightingMode = lightingMode;
             ImGui::End();
 
             // ImGuiの内部コマンドを生成する02_03
@@ -955,6 +1042,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             wvpDataTeapot->World = worldMatrixTeapot;
             wvpDataTeapot->WVP = wvpMatrixTeapot;
 
+            //monkeys
+            Matrix4x4 worldMatrixSuzanne = MatrixMath::MakeAffineMatrix(transformSuzanne.scale, transformSuzanne.rotate, transformSuzanne.translate);
+            Matrix4x4 viewMatrixSuzanne = debugCamera.GetViewMatrix();
+            Matrix4x4 projectionMatrixSuzanne = MatrixMath::MakePerspectiveFovMatrix(
+                0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
+            Matrix4x4 wvpMatrixSuzanne = MatrixMath::Multiply(worldMatrixSuzanne, MatrixMath::Multiply(viewMatrixSuzanne, projectionMatrixSuzanne));
+
+            wvpDataSuzanne->World = worldMatrixSuzanne;
+            wvpDataSuzanne->WVP = wvpMatrixSuzanne;
+
+
+
             //==============
             // 評価課題↑↑↑
             //==============
@@ -1023,23 +1122,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewTeapot);
             deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             deviceManager.GetCommandList()->DrawInstanced(UINT(teapotModelData.vertices.size()), 1, 0, 0);
+            //--- スプライト描画 ---
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+            deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
+            deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
+
+            // monkey
+            deviceManager.GetCommandList()->SetPipelineState(psoSuzanne.Get());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceSuzanne->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSuzanne->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSuzanne);
+            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            deviceManager.GetCommandList()->DrawInstanced(UINT(suzanneModelData.vertices.size()), 1, 0, 0);
 
             //=========
             // 評価課題
             //=========
-
-            //--- スプライト描画 ---
-            // スプライト用の変換行列をルートパラメータ1にセット（3Dと別の行列）
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
-            // スプライト用マテリアル（CBV）をセット（ルートパラメータ0）
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
-            // スプライト用SRV（テクスチャ）をセット（ルートパラメータ2）
-            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-            // 頂点バッファ・インデックスバッファを設定
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
-            deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
-            // 描画実行
-            deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 一旦消しただけ
 
             //  描画の最後です//----------------------------------------------------
             //   実際のcommandListのImGuiの描画コマンドを積む
