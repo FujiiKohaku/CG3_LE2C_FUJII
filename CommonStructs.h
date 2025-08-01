@@ -14,6 +14,7 @@ struct VertexData {
     Vector4 position;
     Vector2 texcoord;
     Vector3 normal;
+
 };
 struct Material {
     Vector4 color;
@@ -21,6 +22,7 @@ struct Material {
     int32_t lightingMode; // ★追加
     float padding[2]; // 16バイトアラインメント用
     Matrix4x4 uvTransform;
+    int32_t enableCaustics;
 };
 
 struct TransformationMatrix {

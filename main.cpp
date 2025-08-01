@@ -65,10 +65,26 @@ bool drawSuzanne = false;
 bool drawBunny = false;
 bool drawAxis = false;
 bool drawFloor = false;
+bool drawMultiMesh = false;
+
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
+void ApplyWaveMotion(Transform& transform, float waveTime)
+{
+    float x = transform.translate.x;
+    float z = transform.translate.z;
 
+    float delta = 0.05f;
+    float hCenter = totalHeight(Vector3(x, 0.0f, z), waveTime);
+    float hX = totalHeight(Vector3(x + delta, 0.0f, z), waveTime);
+    float hZ = totalHeight(Vector3(x, 0.0f, z + delta), waveTime);
+
+    Vector3 normal = MatrixMath::Normalize(Vector3(-hX + hCenter, delta, -hZ + hCenter));
+    transform.rotate.x = std::atan2(normal.z, normal.y);
+    transform.rotate.z = -std::atan2(normal.x, normal.y);
+    transform.translate.y = hCenter + 0.3f;
+}
 // データを転送するUploadTextureData関数を作る03_00EX
 //[[nodiscard]] // 03_00EX
 // 球の頂点生成関数_05_00_OTHER新しい書き方
@@ -335,6 +351,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     srvDescWave.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     srvDescWave.Texture2D.MipLevels = UINT(metadataWave.mipLevels);
 
+    //=================================================================
+    //  床用のテクスチャを読み込む
+    //=================================================================
+    // 床用のテクスチャを読み込む
+    DirectX::ScratchImage mipImagesFloor = LoadTexture("resources/floor.png");
+    const DirectX::TexMetadata& metadataFloor = mipImagesFloor.GetMetadata();
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> textureResourceFloor = CreateTextureResource(deviceManager.GetDevice(), metadataFloor);
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResourceFloor = UploadTextureData(textureResourceFloor.Get(), mipImagesFloor, deviceManager.GetDevice(), deviceManager.GetCommandList());
+    // SRV記述
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDescFloor = {};
+    srvDescFloor.Format = metadataFloor.format;
+    srvDescFloor.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDescFloor.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDescFloor.Texture2D.MipLevels = UINT(metadataFloor.mipLevels);
+
     // 03_00EX
     // ID3D12Resource *intermediateResource =
     //    UploadTextureData(textureResource, mipImages, device, commandList);
@@ -369,12 +402,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = GetCPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 2);
     D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = GetGPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 2);
 
-    // 波！
+    // 波のSRV
     D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPUWave = GetCPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 4);
-
     D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPUWave = GetGPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 4);
-
     deviceManager.GetDevice()->CreateShaderResourceView(textureResourceWave.Get(), &srvDescWave, textureSrvHandleCPUWave);
+    // 床SRVヒープのCPU/GPUハンドル（例：5番目のスロット）
+    D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPUFloor = GetCPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 5);
+    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPUFloor = GetGPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 5);
+    // SRVの作成
+    deviceManager.GetDevice()->CreateShaderResourceView(textureResourceFloor.Get(), &srvDescFloor, textureSrvHandleCPUFloor);
+    // ↑↑
 
     // SRVの生成03_00
     deviceManager.GetDevice()->CreateShaderResourceView(textureResource.Get(), &srvDesc, textureSrvHandleCPU);
@@ -548,6 +585,42 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------
 
     //--------------------------
+    // マルチマテリアル
+    //--------------------------
+    // モデル読み込み
+    ModelData MultiMeshModelData = LoadObjFile("resources", "multiMesh.obj");
+
+    // 頂点リソース作成
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceMultiMesh = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * MultiMeshModelData.vertices.size());
+
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferViewMultiMesh {};
+    vertexBufferViewMultiMesh.BufferLocation = vertexResourceMultiMesh->GetGPUVirtualAddress();
+    vertexBufferViewMultiMesh.SizeInBytes = UINT(sizeof(VertexData) * MultiMeshModelData.vertices.size());
+    vertexBufferViewMultiMesh.StrideInBytes = sizeof(VertexData);
+
+    VertexData* vertexDataMultiMesh = nullptr;
+    vertexResourceMultiMesh->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataMultiMesh));
+    std::memcpy(vertexDataMultiMesh, MultiMeshModelData.vertices.data(), sizeof(VertexData) * MultiMeshModelData.vertices.size());
+
+    // マテリアル
+    Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceMultiMesh = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
+
+    Material* materialDataMultiMesh = nullptr;
+    materialResourceMultiMesh->Map(0, nullptr, reinterpret_cast<void**>(&materialDataMultiMesh));
+    materialDataMultiMesh->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+    materialDataMultiMesh->uvTransform = MatrixMath::MakeIdentity4x4();
+    materialDataMultiMesh->enableLighting = true;
+
+    // WVP
+    Microsoft::WRL::ComPtr<ID3D12Resource> wvpResourceMultiMesh = CreateBufferResource(deviceManager.GetDevice(), sizeof(TransformationMatrix));
+
+    TransformationMatrix* wvpDataMultiMesh = nullptr;
+    wvpResourceMultiMesh->Map(0, nullptr, reinterpret_cast<void**>(&wvpDataMultiMesh));
+    //--------------------------
+    // マルチマテリアル↑↑↑↑
+    //--------------------------
+
+    //--------------------------
     // アクシス
     //--------------------------
 
@@ -611,7 +684,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceSuzanne = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
     Material* materialDataSuzanne = nullptr;
     materialResourceSuzanne->Map(0, nullptr, reinterpret_cast<void**>(&materialDataSuzanne));
-    materialDataSuzanne->color = Vector4(0.6f, 0.6f, 0.6f, 1.0f); // 灰色
+    materialDataSuzanne->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // 灰色
     materialDataSuzanne->uvTransform = MatrixMath::MakeIdentity4x4();
     materialDataSuzanne->enableLighting = true;
     materialDataSuzanne->lightingMode = 1;
@@ -705,7 +778,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //  床
     //--------------------------
     // --- 頂点リソース作成（床） ---
- 
 
     VertexData* vertexDataFloor = nullptr;
     Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceFloor = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * kWaveNumVertices);
@@ -726,7 +798,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     materialResourceFloor->Map(0, nullptr, reinterpret_cast<void**>(&materialDataFloor));
     materialDataFloor->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // 白（caustics などにも使える）
     materialDataFloor->uvTransform = MatrixMath::MakeIdentity4x4();
-    materialDataFloor->enableLighting = true; 
+    materialDataFloor->enableLighting = true;
     GenerateFlatGridVertices(vertexDataFloor, kFloorSubdivision, 1.0f);
     //--------------------------
     //  床↑↑
@@ -950,6 +1022,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         { 0.0f, 0.0f, 0.0f } // translate
     };
 
+    // MultiMesh用のTransform（スケール・回転・移動）
+    Transform transformMultiMesh = {
+        { 1.0f, 1.0f, 1.0f }, // scale
+        { 0.0f, 0.0f, 0.0f }, // rotate
+        { 0.0f, 0.0f, 0.0f } // translate
+    };
+
     // Textureの切り替え
     bool useMonstarBall = true;
 
@@ -999,7 +1078,33 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 #pragma region IMGUI
 
-            waveTime += 0.03f; // 好みに応じてスピード調整
+            waveTime += 0.03f;
+
+            if (drawWave) {
+                Transform camTransform = debugCamera.GetTransform();
+
+                // スイング量の調整
+                float swingAmplitudeY = 0.2f;
+                float swingAmplitudeZ = 0.3f;
+                float swingSpeed = 1.0f;
+
+                // 上下揺れ
+                camTransform.translate.y = 1.0f + swingAmplitudeY * std::sinf(waveTime * swingSpeed);
+
+                // 前後揺れ
+                camTransform.translate.z = -10.0f + swingAmplitudeZ * std::cosf(waveTime * swingSpeed);
+
+                debugCamera.SetTransform(camTransform);
+            }
+
+            if (drawSuzanne) {
+                ApplyWaveMotion(transformSuzanne, waveTime);
+            }
+
+            if (drawTeapot) {
+                ApplyWaveMotion(transformTeapot, waveTime);
+            }
+
             GenerateGridVertices(vertexDataWave, kWaveSubdivision, kWaveGridSize, waveTime);
 
             // ここがframeの先頭02_03
@@ -1015,6 +1120,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::Checkbox("Draw Sphere", &drawSphere);
             ImGui::Checkbox("Draw Plane", &drawPlane);
             ImGui::Checkbox("Draw Bunny", &drawBunny);
+            ImGui::Checkbox("Draw MultiMesh", &drawMultiMesh);
             ImGui::Checkbox("Draw Teapot", &drawTeapot);
             ImGui::Checkbox("Draw Sprite", &drawSprite);
             ImGui::Checkbox("Draw Wave", &drawWave);
@@ -1078,6 +1184,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 ImGui::SliderFloat3("Sphere Translate", &transformSphere.translate.x, -5.0f, 5.0f);
                 ImGui::ColorEdit3("Sphere Color", &materialDataSphere->color.x);
             }
+
             if (drawSuzanne) {
                 // モンキー
                 ImGui::Spacing();
@@ -1090,6 +1197,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 ImGui::SliderFloat3("Suzanne Translate", &transformSuzanne.translate.x, -5.0f, 5.0f);
                 ImGui::ColorEdit3("Sphere Color", &materialDataSuzanne->color.x);
             }
+            if (drawMultiMesh) {
+                ImGui::Spacing();
+                ImGui::Text("MultiMesh Transform");
+                ImGui::Separator();
+                ImGui::SliderFloat3("MultiMesh Scale", &transformMultiMesh.scale.x, 0.1f, 5.0f);
+                ImGui::SliderAngle("MultiMesh Rotate X", &transformMultiMesh.rotate.x, -180.0f, 180.0f);
+                ImGui::SliderAngle("MultiMesh Rotate Y", &transformMultiMesh.rotate.y, -180.0f, 180.0f);
+                ImGui::SliderAngle("MultiMesh Rotate Z", &transformMultiMesh.rotate.z, -180.0f, 180.0f);
+                ImGui::SliderFloat3("MultiMesh Translate", &transformMultiMesh.translate.x, -10.0f, 10.0f);
+                ImGui::ColorEdit3("MultiMesh Color", &materialDataMultiMesh->color.x);
+            }
+
             if (drawSprite) {
                 // ========= スプライト ========= //
                 ImGui::Spacing();
@@ -1116,14 +1235,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 ImGui::DragFloat2("UV Scale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
                 ImGui::SliderAngle("UV Rotate", &uvTransformSprite.rotate.z);
             }
-            ImGui::Spacing();
-            ImGui::Text("Floor Transform");
-            ImGui::Separator();
-            ImGui::SliderFloat3("Floor Scale", &transformFloor.scale.x, 0.1f, 5.0f);
-            ImGui::SliderAngle("Floor Rotate X", &transformFloor.rotate.x, -180.0f, 180.0f);
-            ImGui::SliderAngle("Floor Rotate Y", &transformFloor.rotate.y, -180.0f, 180.0f);
-            ImGui::SliderAngle("Floor Rotate Z", &transformFloor.rotate.z, -180.0f, 180.0f);
-            ImGui::SliderFloat3("Floor Translate", &transformFloor.translate.x, -10.0f, 10.0f);
+            if (drawFloor) {
+                ImGui::Spacing();
+                ImGui::Text("Floor Transform");
+                ImGui::Separator();
+                ImGui::SliderFloat3("Floor Scale", &transformFloor.scale.x, 0.1f, 5.0f);
+                ImGui::SliderAngle("Floor Rotate X", &transformFloor.rotate.x, -180.0f, 180.0f);
+                ImGui::SliderAngle("Floor Rotate Y", &transformFloor.rotate.y, -180.0f, 180.0f);
+                ImGui::SliderAngle("Floor Rotate Z", &transformFloor.rotate.z, -180.0f, 180.0f);
+                ImGui::SliderFloat3("Floor Translate", &transformFloor.translate.x, -10.0f, 10.0f);
+            }
             if (drawWave) {
 
                 ImGui::Spacing();
@@ -1152,6 +1273,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             materialDataSuzanne->lightingMode = lightingMode;
             materialDataAxis->lightingMode = lightingMode;
             materialDataFloor->lightingMode = lightingMode;
+            materialDataMultiMesh->lightingMode = lightingMode;
             ImGui::End();
 
             // ImGuiの内部コマンドを生成する02_03
@@ -1230,6 +1352,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             //==============
             // 評価課題
             //==============
+
+            Matrix4x4 worldMatrixMultiMesh = MatrixMath::MakeAffineMatrix(transformMultiMesh.scale, transformMultiMesh.rotate, transformMultiMesh.translate);
+            Matrix4x4 viewMatrixMultiMesh = debugCamera.GetViewMatrix();
+            Matrix4x4 projectionMatrixMultiMesh = MatrixMath::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
+            Matrix4x4 wvpMatrixMultiMesh = MatrixMath::Multiply(worldMatrixMultiMesh, MatrixMath::Multiply(viewMatrixMultiMesh, projectionMatrixMultiMesh));
+            // リソースへ書き込み
+            wvpDataMultiMesh->World = worldMatrixMultiMesh;
+            wvpDataMultiMesh->WVP = wvpMatrixMultiMesh;
+
             Matrix4x4 worldMatrixSphere = MatrixMath::MakeAffineMatrix(transformSphere.scale, transformSphere.rotate, transformSphere.translate);
             Matrix4x4 viewMatrixSphere = debugCamera.GetViewMatrix();
             Matrix4x4 projectionMatrixSpehre = MatrixMath::MakePerspectiveFovMatrix(
@@ -1379,6 +1510,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
                 deviceManager.GetCommandList()->DrawInstanced(UINT(teapotModelData.vertices.size()), 1, 0, 0);
             }
+            if (drawMultiMesh) {
+                // マテリアル定数バッファ（b0）
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceMultiMesh->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceMultiMesh->GetGPUVirtualAddress());
+
+                deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+                deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+                deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewMultiMesh);
+                deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                deviceManager.GetCommandList()->DrawInstanced(static_cast<UINT>(MultiMeshModelData.vertices.size()), 1, 0, 0);
+            }
             if (drawAxis) {
                 deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceAxis->GetGPUVirtualAddress());
                 deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceAxis->GetGPUVirtualAddress());
@@ -1390,10 +1532,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
             // 床
             if (drawFloor) {
-
-                
-
-                deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+                deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPUFloor);
                 deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceFloor->GetGPUVirtualAddress());
                 deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourceFloor->GetGPUVirtualAddress());
                 deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
@@ -1412,7 +1551,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // または LINELIST
                 deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
             }
- 
 
             if (drawWave) {
                 // 波

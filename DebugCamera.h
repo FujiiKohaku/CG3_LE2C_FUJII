@@ -1,7 +1,8 @@
 #pragma once
+#include "CommonStructs.h"
 #include "Input.h"
-#include <sstream>
 #include "MatrixMath.h"
+#include <sstream>
 class DebugCamera {
 public:
 #pragma region 行列関数
@@ -220,6 +221,22 @@ public:
     void Update();
 
     const Matrix4x4& GetViewMatrix() const { return viewMatrix; }
+
+    Transform GetTransform() const
+    {
+        return { { 1.0f, 1.0f, 1.0f }, rotation_, translation_ };
+    }
+
+    // 外部からTransform構造体で位置・回転をセットする
+    void SetTransform(const Transform& transform)
+    {
+        rotation_ = transform.rotate;
+        translation_ = transform.translate;
+
+        // ビュー行列も更新しておく（重要）
+        cameraMatrix = MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, rotation_, translation_);
+        viewMatrix = Inverse(cameraMatrix);
+    }
 
 private:
     // XYZ軸周りのローカル回転角

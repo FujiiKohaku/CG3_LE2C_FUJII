@@ -36,6 +36,9 @@ void DebugCamera::Update()
         rotation_.y += rotateSpeed;
     }
 
+
+
+
     // 回転を考慮してワールド空間で移動
     translation_.x += move.x * std::cos(rotation_.y) - move.z * std::sin(rotation_.y);
     translation_.y += move.y;
