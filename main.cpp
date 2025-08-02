@@ -4,6 +4,7 @@
 #include "BufferHelper.h"
 #include "DebugCamera.h"
 #include "DeviceManager.h"
+#include "Dxc.h"
 #include "Input.h"
 #include "MatrixMath.h"
 #include "ModelLoder.h"
@@ -108,7 +109,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     HRESULT hr; // 各種DirectX関数の戻り値用。ローカルスコープで十分だが、複数関数で使い回すためここで宣言
 
-    ShaderCompilerDXC dxc;
+    Dxc dxc;
 
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
@@ -201,17 +202,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     assert(fenceEvent != nullptr);
 
-    // dxcCompilerを初期化CG2_02_00
-    // IDxcUtils* dxcUtils = nullptr;
-    // IDxcCompiler3* dxcCompiler = nullptr;
-    // hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
-    // assert(SUCCEEDED(hr));
-    // hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
-    // assert(SUCCEEDED(hr));
+    ///*   dxcCompilerを初期化CG2_02_00*/
+    //IDxcUtils* dxcUtils = nullptr;
+    //IDxcCompiler3* dxcCompiler = nullptr;
+    //hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
+    //assert(SUCCEEDED(hr));
+    //hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
+    //assert(SUCCEEDED(hr));
     //// 現時点でincludeはしないがincludeに対応するための設定を行っておく
-    // IDxcIncludeHandler* includHandler = nullptr;
-    // hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
-    // assert(SUCCEEDED(hr));
+    //IDxcIncludeHandler* includHandler = nullptr;
+    //hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
+    //assert(SUCCEEDED(hr));
 
     dxc.Initialize();
 
