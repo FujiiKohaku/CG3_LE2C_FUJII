@@ -660,7 +660,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------
     // 評価課題monkey
     //--------------------------
-    ModelData suzanneModelData = LoadObjFileNoTexture("resources", "suzanne.obj");
+    ModelDataNoUV suzanneModelData = LoadObjFileNoTexture("resources", "suzanne.obj");
 
     // 頂点が空ならエラー表示
     if (suzanneModelData.vertices.empty()) {
@@ -669,16 +669,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     // 頂点バッファ作成
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceSuzanne = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * suzanneModelData.vertices.size());
+    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceSuzanne = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexDataNoUV) * suzanneModelData.vertices.size());
 
     D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSuzanne {};
     vertexBufferViewSuzanne.BufferLocation = vertexResourceSuzanne->GetGPUVirtualAddress();
-    vertexBufferViewSuzanne.SizeInBytes = UINT(sizeof(VertexData) * suzanneModelData.vertices.size());
-    vertexBufferViewSuzanne.StrideInBytes = sizeof(VertexData);
+    vertexBufferViewSuzanne.SizeInBytes = UINT(sizeof(VertexDataNoUV) * suzanneModelData.vertices.size());
+    vertexBufferViewSuzanne.StrideInBytes = sizeof(VertexDataNoUV);
 
-    VertexData* vertexDataSuzanne = nullptr;
+    VertexDataNoUV* vertexDataSuzanne = nullptr;
     vertexResourceSuzanne->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSuzanne));
-    std::memcpy(vertexDataSuzanne, suzanneModelData.vertices.data(), sizeof(VertexData) * suzanneModelData.vertices.size());
+    std::memcpy(vertexDataSuzanne, suzanneModelData.vertices.data(), sizeof(VertexDataNoUV) * suzanneModelData.vertices.size());
 
     // マテリアル作成（UVなし用）
     Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceSuzanne = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
@@ -1491,6 +1491,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
             if (drawPlane) {
                 // プレーン
+                deviceManager.GetCommandList()->SetPipelineState(graphicsPinelineState.Get()); // PSO
+
                 deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResourcePlane->GetGPUVirtualAddress());
                 deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourcePlane->GetGPUVirtualAddress());
                 deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());

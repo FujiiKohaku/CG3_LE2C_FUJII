@@ -92,14 +92,14 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
     return modelData;
 }
 
-ModelData LoadObjFileNoTexture(const std::filesystem::path& directoryPath, const std::string& filename)
+ModelDataNoUV LoadObjFileNoTexture(const std::filesystem::path& directoryPath, const std::string& filename)
 {
-    ModelData modelData;
+    ModelDataNoUV modelData;
     std::vector<Vector4> positions;
     std::vector<Vector3> normals;
     std::string line;
 
-    // Use std::filesystem::path for proper path concatenation
+    // ファイルを開く
     std::filesystem::path filePath = directoryPath / filename;
     std::ifstream file(filePath.string());
     assert(file.is_open());
@@ -110,18 +110,23 @@ ModelData LoadObjFileNoTexture(const std::filesystem::path& directoryPath, const
         s >> identifier;
 
         if (identifier == "v") {
-            Vector4 position;
+            // 頂点座標
+            Vector4 position {};
             s >> position.x >> position.y >> position.z;
             position.x *= -1.0f; // 右手系→左手系
             position.w = 1.0f;
             positions.push_back(position);
+
         } else if (identifier == "vn") {
-            Vector3 normal;
+            // 法線
+            Vector3 normal {};
             s >> normal.x >> normal.y >> normal.z;
-            normal.x *= -1.0f; // 右手系→左手系（法線）
+            normal.x *= -1.0f; // 右手系→左手系
             normals.push_back(normal);
+
         } else if (identifier == "f") {
-            VertexData triangle[3];
+            // 面（頂点インデックス）
+            VertexDataNoUV triangle[3];
             for (int i = 0; i < 3; ++i) {
                 std::string vertexDefinition;
                 s >> vertexDefinition;
@@ -137,19 +142,15 @@ ModelData LoadObjFileNoTexture(const std::filesystem::path& directoryPath, const
                 int normIndex = std::stoi(normIndexStr);
 
                 triangle[i].position = positions[posIndex - 1];
-                triangle[i].texcoord = { 0.0f, 0.0f }; // UVはダミー
                 triangle[i].normal = normals[normIndex - 1];
             }
 
-            // 左手系なので逆順
+            // 左手系なので逆順で追加
             modelData.vertices.push_back(triangle[2]);
             modelData.vertices.push_back(triangle[1]);
             modelData.vertices.push_back(triangle[0]);
         }
-
-        // ★ mtllibは完全に無視する
     }
 
-    modelData.material.textureFilePath = ""; // 念のため空にしておく
     return modelData;
 }

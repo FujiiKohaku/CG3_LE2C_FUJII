@@ -53,3 +53,11 @@ struct ModelData {
     std::vector<VertexData> vertices;
     MaterialData material;
 };
+// UVなし
+struct VertexDataNoUV {
+    Vector4 position;
+    Vector3 normal;
+};
+struct ModelDataNoUV {
+    std::vector<VertexDataNoUV> vertices;
+};

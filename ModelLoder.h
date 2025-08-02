@@ -7,4 +7,4 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
 
 // mtlファイルだけを読む関数
 MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename);
-ModelData LoadObjFileNoTexture(const std::filesystem::path& directoryPath, const std::string& filename);
+ModelDataNoUV LoadObjFileNoTexture(const std::filesystem::path& directoryPath, const std::string& filename);
