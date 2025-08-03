@@ -8,6 +8,7 @@
 #include "Input.h"
 #include "MatrixMath.h"
 #include "ModelLoder.h"
+#include "RootSignatureHelper.h"
 #include "ShaderCompiler.h"
 #include "ShaderCompilerDXC.h"
 #include "SoundManager.h"
@@ -202,85 +203,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     assert(fenceEvent != nullptr);
 
-    ///*   dxcCompilerを初期化CG2_02_00*/
-    //IDxcUtils* dxcUtils = nullptr;
-    //IDxcCompiler3* dxcCompiler = nullptr;
-    //hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
-    //assert(SUCCEEDED(hr));
-    //hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
-    //assert(SUCCEEDED(hr));
-    //// 現時点でincludeはしないがincludeに対応するための設定を行っておく
-    //IDxcIncludeHandler* includHandler = nullptr;
-    //hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
-    //assert(SUCCEEDED(hr));
-
+    // DXC初期化
     dxc.Initialize();
 
-    // ==== ルートシグネチャを作る準備 ====
-    // RootSignature作成02_00
-    // 頂点データの形式を使っていいよ！というフラグを立てる
-    // ルート何？03_00
-    D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature {};
-    descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-    D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
-    staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // バイリニアフィルタ
-    staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP; // 0〜1の範囲外をリピート
-    staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    staticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    staticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
-    staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX; // ありったけのMipMapを使う
-    staticSamplers[0].ShaderRegister = 0; // レジスタ番号0を使う
-    staticSamplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // PixelShaderで使う
+   // シェーダーで使うリソースの接続設定（ルートシグネチャ）を生成
+    auto rootSignature = RootSignatureHelper::CreateDefaultRootSignature(deviceManager.GetDevice(), logStream);
+    ///======
+    //並び替え
+    //=======
 
-    descriptionRootSignature.pStaticSamplers = staticSamplers;
-    descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
-    // RootParameter作成。複数設定できるので配列。今回は結果１つだけなので長さ１の配列
-    // PixelShaderのMaterialとVertexShaderのTransform
-    D3D12_ROOT_PARAMETER rootParameters[4] = {};
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // CBVを使う
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // PixelShaderで使う
-    rootParameters[0].Descriptor.ShaderRegister = 0; // レジスタ番号０とバインド
-    // ここから[2]
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // CBVを使う
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // Vertexshaderで使う
-    rootParameters[1].Descriptor.ShaderRegister = 0; // 得wジスタ番号０を使う
-    // ここまで[2]
-    // 新しいディスクリプタレンジ03_00
-    D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
-    descriptorRange[0].BaseShaderRegister = 0; // 0から始まる
-    descriptorRange[0].NumDescriptors = 1; // 数は1つ
-    descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // SRVを使う
-    descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // Offsetを自動計算
-    descriptionRootSignature.pParameters = rootParameters; // ルートパラメータ配列へのポインタ
-    descriptionRootSignature.NumParameters = _countof(rootParameters); // 配列の長さ
-
-    // 新しいディスクリプタレンジ03_00
-    // ここから[3]03_00
-    rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // DescriptorTableを使う
-    rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // PixelShaderで使う
-    rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange; // Tableの中身の配列を指定
-    rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange); // Tableで利用する数
-    // ここまで[3]//05_03追加しろー
-    rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // CBVを使う
-    rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // PxelShaderで使う
-    rootParameters[3].Descriptor.ShaderRegister = 1; // レジスタ番号１を使う
-    // ==== シリアライズしてバイナリにする（GPUが読める形に変換） ====
-    // バイナリになるデータを入れるための箱02_00
-    ID3DBlob* signatureBlob = nullptr; // ルートシグネチャ本体
-    ID3DBlob* errorBlob = nullptr; // エラー内容が入るかも
-    // GPUが読めるようにデータ変換！（バイナリ化）
-    hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
-
-    // もし失敗したら、エラーメッセージを出して止める
-    if (FAILED(hr)) {
-        Utility::Log(logStream, reinterpret_cast<char*>(errorBlob->GetBufferPointer())); // エラーをログに出す
-        assert(false); // 絶対成功してないと困るので、止める
-    }
-
-    // バイナリをもとに生成02_00
-    Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature = nullptr; // com
-    hr = deviceManager.GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
-    assert(SUCCEEDED(hr));
 
     // Textureを読んで転送する03_00
     DirectX::ScratchImage mipImages = LoadTexture("resources/uvChecker.png");
@@ -412,9 +343,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     graphicsPipelineStateDesc.SampleDesc.Count = 1;
     graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 
-    //////////////
-    // 実際に生成//
-    //////////////
+    // 実際に生成
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPinelineState = nullptr;
+    hr = deviceManager.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
+    assert(SUCCEEDED(hr));
+
+    //====================
+    // 獲物
+    //====================
+
     //--------------------------
     // 通常モデル用リソース
     //--------------------------
@@ -600,10 +537,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // Textureの切り替え
     bool useMonstarBall = true;
-
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPinelineState = nullptr;
-    hr = deviceManager.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
-    assert(SUCCEEDED(hr));
 
     // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
     // こういうもんである02_03
