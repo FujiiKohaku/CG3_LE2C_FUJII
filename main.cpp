@@ -17,7 +17,9 @@
 #include "SoundManager.h"
 #include "Unknwn.h"
 #include "Utility.h"
+#include "VertexBuffer.h"
 #include "WinApp.h"
+#include "pipelineBuilder.h"
 #include <cassert>
 #include <chrono>
 #include <cstdint>
@@ -118,6 +120,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     BlendStateHelper psoDesc;
 
     RasterizerStateHelper rasterizer;
+
+    PipelineBuilder builder;
+
+    VertexBuffer vertexBuffer;
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
@@ -283,57 +289,35 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // blendStateのせってい
     psoDesc.CreateWriteAll();
-
+    // rasterizerStateの設定
     rasterizer.CreateDefault();
-    //// RasiterzerStateの設定
-    // D3D12_RASTERIZER_DESC rasterizerDesc {};
-    //// 裏面(時計回り)を表示しない
-    // rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
-    //// 三角形の中を塗りつぶす
-    // rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-    // rasterizerDesc.FrontCounterClockwise = FALSE;
 
-    // Shaderをコンパイルする
+    // Shaderをコンパイルする//これまだクラス化しない
     Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), logStream);
     assert(vertexShaderBlob != nullptr);
 
     Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), logStream);
     assert(pixelShaderBlob != nullptr);
 
-    // PSOを生成する
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc {};
-    graphicsPipelineStateDesc.pRootSignature = rootSignature.Get(); // RootSignatrue
-    graphicsPipelineStateDesc.InputLayout = inputLayoutDesc; // InputLayout
-    graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() }; // VertexShader
-    graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() }; // PixelShader
-    graphicsPipelineStateDesc.BlendState = psoDesc.CreateWriteAll(); // BlensState
-    graphicsPipelineStateDesc.RasterizerState = rasterizer.CreateDefault(); // RasterizerState
+    // PSO生成
+    builder.SetRootSignature(rootSignature.Get());
+    builder.SetInputLayout(inputLayoutDesc);
+    builder.SetVertexShader(vertexShaderBlob.Get());
+    builder.SetPixelShader(pixelShaderBlob.Get());
+    builder.SetBlendState(psoDesc.CreateWriteAll());
+    builder.SetRasterizerState(rasterizer.CreateDefault());
 
-    // DepthStencillStateの設定
-    D3D12_DEPTH_STENCIL_DESC depthStencilDesc {};
-    // depthの機能を有効かする
-    depthStencilDesc.DepthEnable = true;
-    // 書き込みします
-    depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-    // 比較関数はLessEqual。つまり、近ければ描画される
-    depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-    // depthStenncillの設定
-    graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-    graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    D3D12_DEPTH_STENCIL_DESC dsDesc {};
+    dsDesc.DepthEnable = true;
+    dsDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+    dsDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    builder.SetDepthStencilState(dsDesc);
 
-    // 書き込むRTVの情報
-    graphicsPipelineStateDesc.NumRenderTargets = 1;
-    graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    // 利用するトポロジ(形状)のタイプ。三角形
-    graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    // どのように画面に色を打ち込むかの設定(気にしなくて良い)
-    graphicsPipelineStateDesc.SampleDesc.Count = 1;
-    graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+    builder.SetRTVFormat(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+    builder.SetDSVFormat(DXGI_FORMAT_D24_UNORM_S8_UINT);
+    builder.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 
-    // 実際に生成
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPinelineState = nullptr;
-    hr = deviceManager.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
-    assert(SUCCEEDED(hr));
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState = builder.Build(deviceManager.GetDevice());
 
     //====================
     // 獲物
@@ -347,18 +331,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // modelDataを使う
     //--------------------------------------------------
 
-    // 頂点リソースを作る
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * modelData.vertices.size());
-    // 頂点バッファービューを作成する
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView {};
-    vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress(); // リソース先頭のアドレスを使う
-    vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size()); // 使用するリソースの頂点のサイズ
-    vertexBufferView.StrideInBytes = sizeof(VertexData); // 1頂点あたりのサイズ
-    // 頂点リソースにデータを書き込む
-    VertexData* vertexData = nullptr;
-    vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-    std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size()); // 頂点データをリソースにコピー
 
+
+    vertexBuffer.Initialize(deviceManager.GetDevice(), modelData.vertices);
     //--------------------------
     //  マテリアル
     //--------------------------
@@ -664,7 +639,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             deviceManager.GetCommandList()->RSSetViewports(1, &viewport);
             deviceManager.GetCommandList()->RSSetScissorRects(1, &scissorRect);
             deviceManager.GetCommandList()->SetGraphicsRootSignature(rootSignature.Get());
-            deviceManager.GetCommandList()->SetPipelineState(graphicsPinelineState.Get());
+            deviceManager.GetCommandList()->SetPipelineState(pipelineState.Get());
 
             //--- 3Dモデル描画 ---
             // 3D用の変換行列をルートパラメータ1にセット
@@ -676,7 +651,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // SRV（テクスチャ）をセット（ルートパラメータ2）
             deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
             // 頂点バッファ・プリミティブトポロジを設定
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView);
+            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBuffer.GetView());
             deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             // 描画実行
             deviceManager.GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
