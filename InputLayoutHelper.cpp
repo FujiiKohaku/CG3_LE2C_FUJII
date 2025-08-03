@@ -1,0 +1,16 @@
+﻿#include "InputLayoutHelper.h"
+
+
+D3D12_INPUT_ELEMENT_DESC g_posTexNormElements[3] = {
+    { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+    { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+    { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+};
+
+D3D12_INPUT_LAYOUT_DESC InputLayoutHelper::CreatePosTexNormLayout()
+{
+    D3D12_INPUT_LAYOUT_DESC layoutDesc {};
+    layoutDesc.pInputElementDescs = g_posTexNormElements;
+    layoutDesc.NumElements = _countof(g_posTexNormElements);
+    return layoutDesc;
+}
