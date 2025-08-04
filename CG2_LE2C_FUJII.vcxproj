@@ -120,6 +120,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="VertexBuffer.cpp" />
     <ClCompile Include="ViewportManager.cpp" />
     <ClCompile Include="WinApp.cpp" />
+    <ClCompile Include="WVPBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Object3d.PS.hlsl">
@@ -168,6 +169,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="VertexBuffer.h" />
     <ClInclude Include="ViewportManager.h" />
     <ClInclude Include="WinApp.h" />
+    <ClInclude Include="WVPBuffer.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

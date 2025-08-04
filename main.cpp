@@ -1,6 +1,35 @@
-// ======================= ヘッダー・ライブラリ関連 ==========================
+// ======================= プリプロセッサ ==========================
 #define _USE_MATH_DEFINES
-// 標準ライブラリ//
+
+// ======================= 標準ライブラリ ==========================
+#include <cassert>
+#include <chrono>
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+// ======================= Windows / DirectX =======================
+#include <Windows.h>
+#include <d3d12.h>
+#include <dbghelp.h>
+#include <dxcapi.h>
+#include <dxgi1_6.h>
+#include <dxgidebug.h>
+#include <wrl.h>
+
+// ======================= DirectXTex ==============================
+#include "externals/DirectXTex/DirectXTex.h"
+#include "externals/DirectXTex/d3dx12.h"
+
+// ======================= ImGui関連 ===============================
+#include "externals/imgui/imgui.h"
+#include "externals/imgui/imgui_impl_dx12.h"
+#include "externals/imgui/imgui_impl_win32.h"
+
+// ======================= 自作ユーティリティ =======================
 #include "BlendStateHelper.h"
 #include "BufferHelper.h"
 #include "DebugCamera.h"
@@ -20,32 +49,11 @@
 #include "Unknwn.h"
 #include "Utility.h"
 #include "VertexBuffer.h"
+#include "WVPBuffer.h"
 #include "WinApp.h"
 #include "pipelineBuilder.h"
-#include <cassert>
-#include <chrono>
-#include <cstdint>
-#include <filesystem>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <vector>
-#include <wrl.h>
-// Windows・DirectX関連
-#include <Windows.h>
-#include <d3d12.h>
-#include <dbghelp.h>
-#include <dxcapi.h>
-#include <dxgi1_6.h>
-#include <dxgidebug.h>
-// 外部ライブラリ//
-#include "externals/DirectXTex/DirectXTex.h"
-#include "externals/DirectXTex/d3dx12.h"
-#include "externals/imgui/imgui.h"
-#include "externals/imgui/imgui_impl_dx12.h"
-#include "externals/imgui/imgui_impl_win32.h"
 
-// リンカオプション
+// ======================= リンカオプション =========================
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -130,6 +138,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     RenderHelper render(deviceManager);
 
     MaterialBuffer materialBuffer;
+
+    WVPBuffer wvpBuffer;
 
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
@@ -351,17 +361,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------
     // WVP行列
     //--------------------------
-    // WVPリソースを作る02_02
-    Microsoft::WRL::ComPtr<ID3D12Resource> wvpResource = CreateBufferResource(deviceManager.GetDevice(), sizeof(TransformationMatrix));
-    // データを書き込む02_02
-    TransformationMatrix* wvpData = nullptr;
-    // 書き込むためのアドレスを取得02_02
-    wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
-    // 単位行列を書き込んでおく02_02
-    Matrix4x4 identity = MatrixMath::MakeIdentity4x4();
-    // 05_03
-    memcpy(&wvpData->WVP, &identity, sizeof(Matrix4x4));
-    memcpy(&wvpData->World, &identity, sizeof(Matrix4x4));
+
+    wvpBuffer.Create(deviceManager.GetDevice());
     //--------------------------
     // Sprite用リソース
     //--------------------------
@@ -585,7 +586,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             Matrix4x4 viewMatrix = debugCamera.GetViewMatrix();
             Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
             Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
-            memcpy(&wvpData->WVP, &worldViewProjectionMatrix, sizeof(Matrix4x4));
+            wvpBuffer.Update(worldViewProjectionMatrix, worldMatrix); // ここでWVPとWORLDに入れる
+
 
             Matrix4x4 worldMatrixSprite = MatrixMath::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
             Matrix4x4 viewMatrixSprite = MatrixMath::MakeIdentity4x4();
@@ -607,7 +609,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             render.PreDraw(clearColor, dsvDescriptorHeap.Get(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), srvDescriptorHeap.Get());
 
             //=========================== モデル描画 ===========================//
-            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpResource->GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightResource->GetGPUVirtualAddress(), useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightResource->GetGPUVirtualAddress(), useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
             //=========================== スプライト描画 ===========================//
             render.DrawSprite(vertexBufferViewSprite, indexBufferViewSprite, transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), textureSrvHandleGPU);
