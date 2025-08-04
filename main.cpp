@@ -11,6 +11,7 @@
 #include "MatrixMath.h"
 #include "ModelLoder.h"
 #include "RasterizerStateHelper.h"
+#include "RenderHelper.h"
 #include "RootSignatureHelper.h"
 #include "ShaderCompiler.h"
 #include "ShaderCompilerDXC.h"
@@ -124,6 +125,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     PipelineBuilder builder;
 
     VertexBuffer vertexBuffer;
+
+    RenderHelper render(deviceManager);
+
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
@@ -598,40 +602,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             //=========================== 描画準備 ===========================//
             float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
-            deviceManager.ClearBackBuffer(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), clearColor);
-            D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-            deviceManager.GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-            deviceManager.GetCommandList()->RSSetViewports(1, &viewport);
-            deviceManager.GetCommandList()->RSSetScissorRects(1, &scissorRect);
-            deviceManager.GetCommandList()->SetGraphicsRootSignature(rootSignature.Get());
-            deviceManager.GetCommandList()->SetPipelineState(pipelineState.Get());
-            deviceManager.GetCommandList()->SetDescriptorHeaps(1, srvDescriptorHeap.GetAddressOf());
+            render.PreDraw( clearColor, dsvDescriptorHeap.Get(),  viewport, scissorRect,  rootSignature.Get(),  pipelineState.Get(), srvDescriptorHeap.Get());
 
             //=========================== モデル描画 ===========================//
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBuffer.GetView());
-            deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            deviceManager.GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+            render.DrawModel( vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpResource->GetGPUVirtualAddress(), materialResource->GetGPUVirtualAddress(),directionalLightResource->GetGPUVirtualAddress(), useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
             //=========================== スプライト描画 ===========================//
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
-            deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-            deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
-            deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
-            deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
+            render.DrawSprite(vertexBufferViewSprite,indexBufferViewSprite, transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), textureSrvHandleGPU);
 
             //=========================== ImGui描画 ===========================//
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), deviceManager.GetCommandList());
 
             //=========================== リソースバリア & Present ===========================//
-            deviceManager.GetTempBarrier().Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-            deviceManager.GetTempBarrier().Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-            deviceManager.GetCommandList()->ResourceBarrier(1, &deviceManager.GetTempBarrier());
-            deviceManager.ExecuteCommandListAndPresent(fence.Get(), fenceEvent, fenceValue);
+            render.PostDraw(fence.Get(), fenceEvent, fenceValue);
         }
     }
 

@@ -109,6 +109,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="ModelLoder.cpp" />
     <ClCompile Include="pipelineBuilder.cpp" />
     <ClCompile Include="RasterizerStateHelper.cpp" />
+    <ClCompile Include="RenderHelper.cpp" />
     <ClCompile Include="RootSignatureHelper.cpp" />
     <ClCompile Include="ShaderCompiler.cpp" />
     <ClCompile Include="SoundManager.cpp" />
@@ -116,6 +117,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Utility.cpp" />
     <ClCompile Include="MatrixMath.cpp" />
     <ClCompile Include="VertexBuffer.cpp" />
+    <ClCompile Include="ViewportManager.cpp" />
     <ClCompile Include="WinApp.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -154,6 +156,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="ModelLoder.h" />
     <ClInclude Include="pipelineBuilder.h" />
     <ClInclude Include="RasterizerStateHelper.h" />
+    <ClInclude Include="RenderHelper.h" />
     <ClInclude Include="RootSignatureHelper.h" />
     <ClInclude Include="ShaderCompiler.h" />
     <ClInclude Include="SoundManager.h" />
@@ -161,6 +164,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Utility.h" />
     <ClInclude Include="MatrixMath.h" />
     <ClInclude Include="VertexBuffer.h" />
+    <ClInclude Include="ViewportManager.h" />
     <ClInclude Include="WinApp.h" />
   </ItemGroup>
   <ItemGroup>
