@@ -237,10 +237,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // --- モデル読み込み
     ModelData modelData = LoadObjFile("resources", "Plane.obj");
-    std::cout << "テクスチャファイルパス: " << modelData.material.textureFilePath << std::endl;
-    if (!std::filesystem::exists(modelData.material.textureFilePath)) {
-        std::cerr << "ファイルが存在しません！" << std::endl;
-    }
+
 
     // --- 2枚目のテクスチャ（モデルのマテリアルから取得）
     DirectX::ScratchImage mipImages2 = LoadTexture(modelData.material.textureFilePath);
