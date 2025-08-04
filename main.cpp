@@ -348,7 +348,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // マテリアル用の定数バッファをGPUに作成＆データを転送
     materialBuffer.Create(deviceManager.GetDevice(), materialData);
 
-
     //--------------------------
     // WVP行列
     //--------------------------
@@ -602,6 +601,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             //=========================== 描画準備 ===========================//
             float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
+            // ここでmaterialDataを更新する
+            materialBuffer.Update(materialData); // マイフレーム更新
 
             render.PreDraw(clearColor, dsvDescriptorHeap.Get(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), srvDescriptorHeap.Get());
 
