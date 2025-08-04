@@ -8,6 +8,7 @@
 #include "Dxc.h"
 #include "Input.h"
 #include "InputLayoutHelper.h"
+#include "MaterialBuffer.h"
 #include "MatrixMath.h"
 #include "ModelLoder.h"
 #include "RasterizerStateHelper.h"
@@ -128,6 +129,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     RenderHelper render(deviceManager);
 
+    MaterialBuffer materialBuffer;
+
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
@@ -238,7 +241,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // --- モデル読み込み
     ModelData modelData = LoadObjFile("resources", "Plane.obj");
 
-
     // --- 2枚目のテクスチャ（モデルのマテリアルから取得）
     DirectX::ScratchImage mipImages2 = LoadTexture(modelData.material.textureFilePath);
     const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
@@ -336,16 +338,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------
     //  マテリアル
     //--------------------------
-    //   マテリアル用のリソースを作る今回はcolor一つ分のサイズを用意する05_03
-    Microsoft::WRL::ComPtr<ID3D12Resource> materialResource = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
-    // マテリアルにデータを書き込む
-    Material* materialData = nullptr;
-    // 書き込むためのアドレスを取得
-    materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
-    // 今回は赤を書き込んでみる
-    materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-    materialData->uvTransform = MatrixMath::MakeIdentity4x4(); // 06_01_UuvTransform行列を単位行列で初期化
-    materialData->enableLighting = true;
+    // マテリアルデータの初期化（CPU側）
+    // 今回は赤色・単位UV変換・ライティング有効を設定
+    Material materialData = {};
+    materialData.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // 白色（R=1, G=1, B=1, A=1）
+    materialData.uvTransform = MatrixMath::MakeIdentity4x4(); // UV変換行列は単位行列
+    materialData.enableLighting = true; // ライティングON
+
+    // マテリアル用の定数バッファをGPUに作成＆データを転送
+    materialBuffer.Create(deviceManager.GetDevice(), materialData);
+
+
     //--------------------------
     // WVP行列
     //--------------------------
@@ -599,13 +602,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             //=========================== 描画準備 ===========================//
             float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
-            render.PreDraw( clearColor, dsvDescriptorHeap.Get(),  viewport, scissorRect,  rootSignature.Get(),  pipelineState.Get(), srvDescriptorHeap.Get());
+
+            render.PreDraw(clearColor, dsvDescriptorHeap.Get(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), srvDescriptorHeap.Get());
 
             //=========================== モデル描画 ===========================//
-            render.DrawModel( vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpResource->GetGPUVirtualAddress(), materialResource->GetGPUVirtualAddress(),directionalLightResource->GetGPUVirtualAddress(), useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpResource->GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightResource->GetGPUVirtualAddress(), useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
             //=========================== スプライト描画 ===========================//
-            render.DrawSprite(vertexBufferViewSprite,indexBufferViewSprite, transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), textureSrvHandleGPU);
+            render.DrawSprite(vertexBufferViewSprite, indexBufferViewSprite, transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), textureSrvHandleGPU);
 
             //=========================== ImGui描画 ===========================//
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), deviceManager.GetCommandList());
