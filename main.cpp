@@ -331,8 +331,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // modelDataを使う
     //--------------------------------------------------
 
-
-
     vertexBuffer.Initialize(deviceManager.GetDevice(), modelData.vertices);
     //--------------------------
     //  マテリアル
@@ -544,14 +542,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         } else {
-
-            // ここがframeの先頭02_03
+            //=========================== フレーム開始（ImGuiセットアップ） ===========================//
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
             ImGui::NewFrame();
 
-            // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
-            ImGui::ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
+            //=========================== ImGui ウィンドウ（デバッグUI） ===========================//
+            ImGui::ShowDemoWindow();
             ImGui::Begin("Materialcolor");
             ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 5.0f);
             ImGui::SliderAngle("RotateX", &transform.rotate.x, -180.0f, 180.0f);
@@ -560,7 +557,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
             ImGui::Text("useMonstarBall");
             ImGui::Checkbox("useMonstarBall", &useMonstarBall);
-            ImGui::Text("LIgthng");
+            ImGui::Text("Lighting");
             ImGui::SliderFloat("x", &directionalLightData->direction.x, -10.0f, 10.0f);
             ImGui::SliderFloat("y", &directionalLightData->direction.y, -10.0f, 10.0f);
             ImGui::SliderFloat("z", &directionalLightData->direction.z, -10.0f, 10.0f);
@@ -568,118 +565,73 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
             ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
             ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
-
             ImGui::End();
+            ImGui::Render(); // ImGui内部コマンドを生成
 
-            // ImGuiの内部コマンドを生成する02_03
-            ImGui::Render(); // ImGui終わりの場所。描画の前02_03--------------------------
-
-            // 描画用のDescrriptorHeapの設定02_03
-            Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeaps[] = {
-                srvDescriptorHeap
-            };
-            deviceManager.GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps->GetAddressOf());
-            //===================================
-            //  ゲームの処理02_02
-            //===================================
-            //  02_02
+            //=========================== ゲーム処理 ===========================//
             waveTime += 0.05f;
-            // インプットの更新
             input.Update();
-            // デバッグカメラの更新
             debugCamera.Update();
-
-            // 数字の０キーが押されていたら
             if (input.IsKeyPressed(DIK_0)) {
                 OutputDebugStringA("Hit 0");
                 soundmanager.SoundPlayWave(bgm);
             }
 
-            //  メイクアフィンマトリックス02_02
+            //=========================== 行列計算（モデル・スプライト・UV） ===========================//
             Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
-            // カメラのメイクアフィンマトリックス02_02
-            Matrix4x4 cameraMatrix = MatrixMath::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
-            // 逆行列カメラ02_02
             Matrix4x4 viewMatrix = debugCamera.GetViewMatrix();
-            // 透視投影行列02_02
             Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
-            // ワールドビュープロジェクション行列02_02
             Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
-            // CBVのバッファに書き込む02_02
-            // CBVに正しい行列を書き込む
             memcpy(&wvpData->WVP, &worldViewProjectionMatrix, sizeof(Matrix4x4));
 
-            // Sprite用のworldviewProjectionMatrixを作る04_00
             Matrix4x4 worldMatrixSprite = MatrixMath::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
             Matrix4x4 viewMatrixSprite = MatrixMath::MakeIdentity4x4();
             Matrix4x4 projectionMatrixSprite = MatrixMath::MakeOrthographicMatrix(0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
             Matrix4x4 worldViewProjectionMatrixSprite = MatrixMath::Multiply(worldMatrixSprite, MatrixMath::Multiply(viewMatrixSprite, projectionMatrixSprite));
-            // 単位行列を書き込んでおく04_00
             transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
             transformationMatrixDataSprite->World = worldMatrixSprite;
 
-            //-------------------------
-            // UVTransform用の行列生成
-            //-------------------------
             Matrix4x4 uvTransformMatrix = MatrixMath::Matrix4x4MakeScaleMatrix(uvTransformSprite.scale);
             uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeRotateZMatrix(uvTransformSprite.rotate.z));
             uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
             materialDataSprite->uvTransform = uvTransformMatrix;
 
-            //--- 画面クリア・描画準備 ---
+            //=========================== 描画準備 ===========================//
             float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
             deviceManager.ClearBackBuffer(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), clearColor);
-
-            D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(); //?
-
-            /* float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };*/
-            /* deviceManager.GetCommandList()->ClearRenderTargetView(deviceManager.GetRTVHandles()[backBufferIndex], clearColor, 0, nullptr);*/
-            /////
+            D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
             deviceManager.GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
             deviceManager.GetCommandList()->RSSetViewports(1, &viewport);
             deviceManager.GetCommandList()->RSSetScissorRects(1, &scissorRect);
             deviceManager.GetCommandList()->SetGraphicsRootSignature(rootSignature.Get());
             deviceManager.GetCommandList()->SetPipelineState(pipelineState.Get());
+            deviceManager.GetCommandList()->SetDescriptorHeaps(1, srvDescriptorHeap.GetAddressOf());
 
-            //--- 3Dモデル描画 ---
-            // 3D用の変換行列をルートパラメータ1にセット
+            //=========================== モデル描画 ===========================//
             deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
-            // マテリアル（CBV）をセット（ルートパラメータ0）
             deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
-            // ライト（CBV）をセット（ルートパラメータ3）
             deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
-            // SRV（テクスチャ）をセット（ルートパラメータ2）
             deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
-            // 頂点バッファ・プリミティブトポロジを設定
             deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBuffer.GetView());
             deviceManager.GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            // 描画実行
             deviceManager.GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
-            //--- スプライト描画 ---
-            // スプライト用の変換行列をルートパラメータ1にセット（3Dと別の行列）
+            //=========================== スプライト描画 ===========================//
             deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
-            // スプライト用マテリアル（CBV）をセット（ルートパラメータ0）
             deviceManager.GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
-            // スプライト用SRV（テクスチャ）をセット（ルートパラメータ2）
             deviceManager.GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-            // 頂点バッファ・インデックスバッファを設定
             deviceManager.GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
             deviceManager.GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
-            // 描画実行
             deviceManager.GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
-            //  描画の最後です//----------------------------------------------------
-            //   実際のcommandListのImGuiの描画コマンドを積む
+            //=========================== ImGui描画 ===========================//
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), deviceManager.GetCommandList());
 
-            //  画面に描く処理は全て終わり,画面に映すので、状態を遷移01_02
+            //=========================== リソースバリア & Present ===========================//
             deviceManager.GetTempBarrier().Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
             deviceManager.GetTempBarrier().Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-            // TransitionBarrierを張る
             deviceManager.GetCommandList()->ResourceBarrier(1, &deviceManager.GetTempBarrier());
-
-            deviceManager.ExecuteCommandListAndPresent(fence.Get(), fenceEvent, fenceValue); // 終わらせる関数
+            deviceManager.ExecuteCommandListAndPresent(fence.Get(), fenceEvent, fenceValue);
         }
     }
 
