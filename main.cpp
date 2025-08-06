@@ -36,6 +36,7 @@
 #include "DescriptorHeapWrapper.h"
 #include "DeviceManager.h"
 #include "Dxc.h"
+#include "IndexBuffer.h"
 #include "Input.h"
 #include "InputLayoutHelper.h"
 #include "MaterialBuffer.h"
@@ -47,6 +48,7 @@
 #include "ShaderCompiler.h"
 #include "ShaderCompilerDXC.h"
 #include "SoundManager.h"
+#include "UVTransformManager.h"
 #include "Unknwn.h"
 #include "Utility.h"
 #include "VertexBuffer.h"
@@ -69,6 +71,7 @@ int kNumVertices = kSubdivision * kSubdivision * 6; // 頂点数
 float waveTime = 0.0f;
 const int32_t kClientWidth = 1280;
 const int32_t kClientHeight = 720;
+
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
@@ -145,6 +148,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     DescriptorHeapWrapper dsvHeap;
     DescriptorHeapWrapper srvHeap;
     WVPManager wvpManager;
+
+    UVTransformManager uvManager;
+
+
 
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
@@ -366,13 +373,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------
     // Sprite用リソース
     //--------------------------
-    // sprite用の頂点リソースを作る04_00
+    // ======================= Sprite用 頂点バッファの準備 =======================
+
+    // 頂点リソース作成（4頂点分のバッファを確保）
     Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceSprite = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * 4);
-    // sprite用の頂点リソースにデータを書き込む04_00
+
+    // 書き込み用ポインタ取得
     VertexData* vertexDataSprite = nullptr;
-    //  書き込むためのアドレスを取得04_00
-    vertexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSprite)); // 04_00
-    // 6頂点を4頂点にする
+    vertexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSprite));
+
+    // 頂点データ設定（左下・左上・右下・右上 の順）
     vertexDataSprite[0].position = { 0.0f, 360.0f, 0.0f, 1.0f }; // 左下
     vertexDataSprite[0].texcoord = { 0.0f, 1.0f };
 
@@ -385,36 +395,31 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     vertexDataSprite[3].position = { 640.0f, 0.0f, 0.0f, 1.0f }; // 右上
     vertexDataSprite[3].texcoord = { 1.0f, 0.0f };
 
-    // sprite用の頂点バッファビューを作成する04_00
+    // マップ解除（不要であればこのままでOK。書き込み終了の場合はUnmapしてもよい）
+    // vertexResourceSprite->Unmap(0, nullptr); // 任意
+
+    // 頂点バッファビュー作成
     D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite {};
-    // sprite用のリソースの先頭のアドレスから使う04_00
-    vertexBufferViewSprite.BufferLocation = vertexResourceSprite->GetGPUVirtualAddress();
-    // sprite用の使用するリーソースのサイズは頂点6つ分のサイズ04_00//06_00ここ４にしました
-    vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 4;
-    // sprite用の１頂点当たりのサイズ04_00
-    vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
+    vertexBufferViewSprite.BufferLocation = vertexResourceSprite->GetGPUVirtualAddress(); // バッファの先頭
+    vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 4; // 4頂点分のサイズ
+    vertexBufferViewSprite.StrideInBytes = sizeof(VertexData); // 1頂点あたりのサイズ
 
-    // 06_00_page6
-    Microsoft::WRL::ComPtr<ID3D12Resource> indexResourceSprite = CreateBufferResource(deviceManager.GetDevice(), sizeof(uint32_t) * 6);
-    uint32_t* indexDataSprite = nullptr;
-    // インデックスリソースにデータを書き込む uint32_t *indexDataSprite =
-    // nullptr;
-    indexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&indexDataSprite));
-    indexDataSprite[0] = 0;
-    indexDataSprite[1] = 1;
-    indexDataSprite[2] = 2;
-    indexDataSprite[3] = 1;
-    indexDataSprite[4] = 3;
-    indexDataSprite[5] = 2;
+    // ======================= Sprite用 インデックスバッファの準備 =======================
 
-    // Viewを作成する06_00_page6
-    D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite {};
-    // リソースの先頭のアドレスから使う
-    indexBufferViewSprite.BufferLocation = indexResourceSprite->GetGPUVirtualAddress();
-    // 使用するリソースのサイズはインデックス６つ分のサイズ
-    indexBufferViewSprite.SizeInBytes = sizeof(uint32_t) * 6;
-    // インデックスはuint32_tとする
-    indexBufferViewSprite.Format = DXGI_FORMAT_R32_UINT;
+    // スプライト用のインデックス（2枚の三角形で四角形を描く）
+    std::vector<uint32_t> spriteIndices = {
+        0, 1, 2, // 1枚目の三角形（左下 → 左上 → 右下）
+        1, 3, 2 // 2枚目の三角形（左上 → 右上 → 右下）
+    };
+
+    // インデックスバッファの初期化（IndexBuffer クラスを使用）
+    IndexBuffer indexBufferSprite;
+    indexBufferSprite.Initialize(deviceManager.GetDevice(), spriteIndices);
+
+
+
+
+  
 
     // Sprite用のマテリアルリソースを作る05_03
     Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceSprite = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
@@ -586,10 +591,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
             transformationMatrixDataSprite->World = worldMatrixSprite;
 
-            Matrix4x4 uvTransformMatrix = MatrixMath::Matrix4x4MakeScaleMatrix(uvTransformSprite.scale);
-            uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeRotateZMatrix(uvTransformSprite.rotate.z));
-            uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
-            materialDataSprite->uvTransform = uvTransformMatrix;
+            uvManager.Update(uvTransformSprite);
+            materialDataSprite->uvTransform = uvManager.GetMatrix();
 
             //=========================== 描画準備 ===========================//
             float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
@@ -602,7 +605,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightResource->GetGPUVirtualAddress(), useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
             //=========================== スプライト描画 ===========================//
-            render.DrawSprite(vertexBufferViewSprite, indexBufferViewSprite, transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), textureSrvHandleGPU);
+            render.DrawSprite(vertexBufferViewSprite, indexBufferSprite.GetView(), transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), textureSrvHandleGPU);
 
             //=========================== ImGui描画 ===========================//
             win.ImGuiEndFrame(deviceManager.GetCommandList());
