@@ -2,9 +2,10 @@
 #include "externals/imgui/imgui.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
-// ======================= ImGui用ウィンドウプロシージャ =====================
+
+// ImGuiのWndProc用関数
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-// ======================= 基本構造体 =====================
+
 WinApp::WinApp() { }
 
 WinApp::~WinApp()
@@ -17,44 +18,29 @@ WinApp::~WinApp()
 
 void WinApp::Initialize(HINSTANCE hinstance, int nCmdShow, const std::wstring& title, int width, int height)
 {
+    hInstance_ = hinstance;
 
     // ウィンドウクラス登録
     WNDCLASS wc {};
-    // ウィンドウプロシージャ
     wc.lpfnWndProc = WindowProc;
-    // ウィンドウクラス名(何でもよい)
-    wc.lpszClassName = L"CG2WindowClass";
-    // インスタンスバンドル
-    wc.hInstance = GetModuleHandle(nullptr);
-    // カーソル
+    wc.lpszClassName = className_.c_str();
+    wc.hInstance = hInstance_;
     wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    // ウィンドウクラスを登録する
     RegisterClass(&wc);
-    // クライアント領域のサイズ
-    const int32_t kClientWidth = 1280;
-    const int32_t kClientHeight = 720;
 
-    // ウィンドウサイズを表す構造体体にクライアント領域を入れる
-    RECT wrc = { 0, 0, kClientWidth, kClientHeight };
-
-    // クライアント領域をもとに実際のサイズにwrcを変更してもらう
+    RECT wrc = { 0, 0, width, height };
     AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
 
-    // ウィンドウの生成
-    hwnd_ = CreateWindow(wc.lpszClassName, // 利用するクラス名
-        L"CG2", // タイトルバーの文字(何でもよい)
-        WS_OVERLAPPEDWINDOW, // よく見るウィンドウスタイル
-        CW_USEDEFAULT, // 表示X座標(Windowsに任せる)
-        CW_USEDEFAULT, // 表示Y座標(WindowsOSに任せる)
-        wrc.right - wrc.left, // ウィンドウ横幅
-        wrc.bottom - wrc.top, // ウィンドウ縦幅
-        nullptr, // 親ウィンドウハンドル
-        nullptr, // メニューハンドル
-        wc.hInstance, // インスタンスハンドル
-        nullptr); // オプション
+    hwnd_ = CreateWindow(
+        className_.c_str(),
+        title.c_str(),
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        wrc.right - wrc.left,
+        wrc.bottom - wrc.top,
+        nullptr, nullptr, hInstance_, nullptr);
 
-    // ウィンドウを表示する
-    ShowWindow(hwnd_, SW_SHOW);
+    ShowWindow(hwnd_, nCmdShow);
 }
 
 LRESULT CALLBACK WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -70,4 +56,43 @@ LRESULT CALLBACK WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM l
     default:
         return DefWindowProc(hwnd, msg, wparam, lparam);
     }
+}
+
+// ==================== ImGui 処理 ====================
+
+void WinApp::ImGuiInitialize(ID3D12Device* device, DXGI_FORMAT rtvFormat, ID3D12DescriptorHeap* srvHeap, int bufferCount)
+{
+    imguiSrvHeap_ = srvHeap;
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsClassic();
+    ImGui_ImplWin32_Init(hwnd_);
+    ImGui_ImplDX12_Init(
+        device,
+        bufferCount,
+        rtvFormat,
+        srvHeap,
+        srvHeap->GetCPUDescriptorHandleForHeapStart(),
+        srvHeap->GetGPUDescriptorHandleForHeapStart());
+}
+
+void WinApp::ImGuiBeginFrame()
+{
+    ImGui_ImplDX12_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+}
+
+void WinApp::ImGuiEndFrame(ID3D12GraphicsCommandList* commandList)
+{
+    ImGui::Render();
+    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
+}
+
+void WinApp::ImGuiShutdown()
+{
+    ImGui_ImplDX12_Shutdown();
+    ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext();
 }

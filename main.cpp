@@ -33,6 +33,7 @@
 #include "BlendStateHelper.h"
 #include "BufferHelper.h"
 #include "DebugCamera.h"
+#include "DescriptorHeapWrapper.h"
 #include "DeviceManager.h"
 #include "Dxc.h"
 #include "Input.h"
@@ -46,6 +47,7 @@
 #include "ShaderCompiler.h"
 #include "ShaderCompilerDXC.h"
 #include "SoundManager.h"
+#include "TransformMatrixCalculator.h"
 #include "Unknwn.h"
 #include "Utility.h"
 #include "VertexBuffer.h"
@@ -140,7 +142,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     MaterialBuffer materialBuffer;
 
     WVPBuffer wvpBuffer;
-
+    DescriptorHeapWrapper dsvHeap;
+    DescriptorHeapWrapper srvHeap;
+    TransformMatrixCalculator matrixCalculator(kClientWidth, kClientHeight);
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
@@ -163,7 +167,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     std::string logFilePath = std::string("logs/") + dateString + ".log";
     // ファイルを作って書き込み準備
     std::ofstream logStream(logFilePath);
-    std::wstring title = L"CG2 Engine"; // ← ここでウィンドウタイトルを定義
+    std::wstring title = L"CG2 EngineGOD"; // ← ここでウィンドウタイトルを定義
+
     // 出力
     win.Initialize(hInstance, nCmdShow, title, kClientWidth, kClientHeight);
 
@@ -214,12 +219,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //  DirectX12 初期化ここまで！
     //  ----------------------------
 
-    // DSV用のヒープでディスクリプタの数は１。DSVはshader内で触るものではないので,ShaderVisibleはfalse
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap = // com
-        CreateDescriptorHeap(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
-
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap = // com
-        CreateDescriptorHeap(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+    dsvHeap.Create(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
+    srvHeap.Create(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
     // 初期値でFenceを作る01_02
     Microsoft::WRL::ComPtr<ID3D12Fence> fence = nullptr; // com
@@ -249,7 +250,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = UploadTextureData(textureResource.Get(), mipImages, deviceManager.GetDevice(), deviceManager.GetCommandList());
 
     // --- モデル読み込み
-    ModelData modelData = LoadObjFile("resources", "Plane.obj");
+    ModelData modelData = LoadObjFile("resources", "Plane.obj"); // model読み込み01
 
     // --- 2枚目のテクスチャ（モデルのマテリアルから取得）
     DirectX::ScratchImage mipImages2 = LoadTexture(modelData.material.textureFilePath);
@@ -283,11 +284,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     srvDesc2.Texture2D.MipLevels = UINT(metadata2.mipLevels);
 
     // --- SRVハンドル取得
-    D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = GetCPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 1);
-    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = GetGPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 1);
+    D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = GetCPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 1);
+    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = GetGPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 1);
 
-    D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = GetCPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 2);
-    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = GetGPUDescriptorHandle(srvDescriptorHeap.Get(), descriptorSizeSRV, 2);
+    D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = GetCPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 2);
+    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = GetGPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 2);
 
     // --- SRV作成
     deviceManager.GetDevice()->CreateShaderResourceView(textureResource.Get(), &srvDesc, textureSrvHandleCPU);
@@ -344,7 +345,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // modelDataを使う
     //--------------------------------------------------
 
-    vertexBuffer.Initialize(deviceManager.GetDevice(), modelData.vertices);
+    vertexBuffer.Initialize(deviceManager.GetDevice(), modelData.vertices); // model読み込み02
     //--------------------------
     //  マテリアル
     //--------------------------
@@ -447,7 +448,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
     // DSVHeapの先端にDSVを作る
-    deviceManager.GetDevice()->CreateDepthStencilView(depthStencillResource.Get(), &dsvDesc, dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+    deviceManager.GetDevice()->CreateDepthStencilView(depthStencillResource.Get(), &dsvDesc, dsvHeap.GetCPUHandleStart());
 
     // 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
     Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource = CreateBufferResource(deviceManager.GetDevice(), sizeof(DirectionalLight));
@@ -501,17 +502,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // Textureの切り替え
     bool useMonstarBall = true;
-
-    // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
-    // こういうもんである02_03
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui::StyleColorsClassic();
-    ImGui_ImplWin32_Init(win.GetHwnd());
-    ImGui_ImplDX12_Init(deviceManager.GetDevice(), deviceManager.GetSwapChainDesc().BufferCount, deviceManager.GetRTVDesc().Format,
-        srvDescriptorHeap.Get(),
-        srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-        srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+    //
+    // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。
+    // ImGuiの初期化
+    win.ImGuiInitialize(deviceManager.GetDevice(), deviceManager.GetRTVDesc().Format, srvHeap.GetHeap(), deviceManager.GetSwapChainDesc().BufferCount);
+    // ImGuiの初期化
+    // ImGuiの初期化
 
     MSG msg {};
     //=================================
@@ -547,12 +543,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             DispatchMessage(&msg);
         } else {
             //=========================== フレーム開始（ImGuiセットアップ） ===========================//
-            ImGui_ImplDX12_NewFrame();
-            ImGui_ImplWin32_NewFrame();
-            ImGui::NewFrame();
+            win.ImGuiBeginFrame();
 
             //=========================== ImGui ウィンドウ（デバッグUI） ===========================//
-            ImGui::ShowDemoWindow();
+
             ImGui::Begin("Materialcolor");
             ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 5.0f);
             ImGui::SliderAngle("RotateX", &transform.rotate.x, -180.0f, 180.0f);
@@ -570,7 +564,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
             ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
             ImGui::End();
-            ImGui::Render(); // ImGui内部コマンドを生成
 
             //=========================== ゲーム処理 ===========================//
             waveTime += 0.05f;
@@ -587,7 +580,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
             Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
             wvpBuffer.Update(worldViewProjectionMatrix, worldMatrix); // ここでWVPとWORLDに入れる
-
 
             Matrix4x4 worldMatrixSprite = MatrixMath::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
             Matrix4x4 viewMatrixSprite = MatrixMath::MakeIdentity4x4();
@@ -606,7 +598,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // ここでmaterialDataを更新する
             materialBuffer.Update(materialData); // マイフレーム更新
 
-            render.PreDraw(clearColor, dsvDescriptorHeap.Get(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), srvDescriptorHeap.Get());
+            render.PreDraw(clearColor, dsvHeap.GetHeap(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), srvHeap.GetHeap());
 
             //=========================== モデル描画 ===========================//
             render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightResource->GetGPUVirtualAddress(), useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
@@ -615,7 +607,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             render.DrawSprite(vertexBufferViewSprite, indexBufferViewSprite, transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), textureSrvHandleGPU);
 
             //=========================== ImGui描画 ===========================//
-            ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), deviceManager.GetCommandList());
+            win.ImGuiEndFrame(deviceManager.GetCommandList());
 
             //=========================== リソースバリア & Present ===========================//
             render.PostDraw(fence.Get(), fenceEvent, fenceValue);
@@ -624,9 +616,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // ImGuiの終了処理。詳細はさして重要ではないので解説は省略する。
     // こういうもんである。初期化と逆順に行う/
-    ImGui_ImplDX12_Shutdown();
-    ImGui_ImplWin32_Shutdown();
-    ImGui::DestroyContext();
+    win.ImGuiShutdown();
 
     //  // 解放処理CG2_01_03
     CloseHandle(fenceEvent);

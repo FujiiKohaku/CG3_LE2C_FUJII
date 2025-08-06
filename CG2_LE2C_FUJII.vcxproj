@@ -92,6 +92,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="BufferHelper.cpp" />
     <ClCompile Include="CommonStructs.cpp" />
     <ClCompile Include="DebugCamera.cpp" />
+    <ClCompile Include="DescriptorHeapWrapper.cpp" />
     <ClCompile Include="DeviceManager.cpp" />
     <ClCompile Include="Dxc.cpp" />
     <ClCompile Include="externals\imgui\imgui.cpp" />
@@ -141,6 +142,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="BufferHelper.h" />
     <ClInclude Include="CommonStructs.h" />
     <ClInclude Include="DebugCamera.h" />
+    <ClInclude Include="DescriptorHeapWrapper.h" />
     <ClInclude Include="DeviceManager.h" />
     <ClInclude Include="Dxc.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
