@@ -47,11 +47,11 @@
 #include "ShaderCompiler.h"
 #include "ShaderCompilerDXC.h"
 #include "SoundManager.h"
-
 #include "Unknwn.h"
 #include "Utility.h"
 #include "VertexBuffer.h"
 #include "WVPBuffer.h"
+#include "WVPManager.h"
 #include "WinApp.h"
 #include "pipelineBuilder.h"
 
@@ -144,7 +144,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     WVPBuffer wvpBuffer;
     DescriptorHeapWrapper dsvHeap;
     DescriptorHeapWrapper srvHeap;
-    TransformMatrixCalculator matrixCalculator(kClientWidth, kClientHeight);
+    WVPManager wvpManager;
+
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
@@ -355,14 +356,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     materialData.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // 白色（R=1, G=1, B=1, A=1）
     materialData.uvTransform = MatrixMath::MakeIdentity4x4(); // UV変換行列は単位行列
     materialData.enableLighting = true; // ライティングON
-
     // マテリアル用の定数バッファをGPUに作成＆データを転送
     materialBuffer.Create(deviceManager.GetDevice(), materialData);
 
     //--------------------------
     // WVP行列
     //--------------------------
-
     wvpBuffer.Create(deviceManager.GetDevice());
     //--------------------------
     // Sprite用リソース
@@ -575,11 +574,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             }
 
             //=========================== 行列計算（モデル・スプライト・UV） ===========================//
-            Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
-            Matrix4x4 viewMatrix = debugCamera.GetViewMatrix();
-            Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
-            Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
-            wvpBuffer.Update(worldViewProjectionMatrix, worldMatrix); // ここでWVPとWORLDに入れる
+
+            // 描画と移動に必要なWVP行列を関数化(これmodelです)
+            wvpManager.Update(transform, debugCamera, kClientWidth, kClientHeight);
+            wvpBuffer.Update(wvpManager.GetWVPMatrix(), wvpManager.GetWorldMatrix()); // ここでWVPとWORLDに入れる
 
             Matrix4x4 worldMatrixSprite = MatrixMath::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
             Matrix4x4 viewMatrixSprite = MatrixMath::MakeIdentity4x4();
