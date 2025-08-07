@@ -118,6 +118,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="ShaderCompiler.cpp" />
     <ClCompile Include="SoundManager.cpp" />
     <ClCompile Include="Struct.cpp" />
+    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Utility.cpp" />
     <ClCompile Include="MatrixMath.cpp" />
     <ClCompile Include="UVTransformManager.cpp" />
@@ -172,6 +173,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="ShaderCompiler.h" />
     <ClInclude Include="SoundManager.h" />
     <ClInclude Include="Struct.h" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="Utility.h" />
     <ClInclude Include="MatrixMath.h" />
     <ClInclude Include="UVTransformManager.h" />

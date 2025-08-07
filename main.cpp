@@ -49,6 +49,7 @@
 #include "ShaderCompiler.h"
 #include "ShaderCompilerDXC.h"
 #include "SoundManager.h"
+#include "Texture.h"
 #include "UVTransformManager.h"
 #include "Unknwn.h"
 #include "Utility.h"
@@ -57,7 +58,6 @@
 #include "WVPManager.h"
 #include "WinApp.h"
 #include "pipelineBuilder.h"
-
 // ======================= リンカオプション =========================
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -251,12 +251,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ///==============================
     /// テクスチャ読み込み & 転送
     ///==============================
-
-    // --- 1枚目のテクスチャ（固定ファイル）
-    DirectX::ScratchImage mipImages = LoadTexture("resources/uvChecker.png");
-    const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
-    Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = CreateTextureResource(deviceManager.GetDevice(), metadata);
-    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = UploadTextureData(textureResource.Get(), mipImages, deviceManager.GetDevice(), deviceManager.GetCommandList());
+    Texture texture;
+    texture.LoadFromFile(deviceManager.GetDevice(), deviceManager.GetCommandList(), "resources/uvChecker.png");
 
     // --- モデル読み込み
     ModelData modelData = LoadObjFile("resources", "Plane.obj"); // model読み込み01
@@ -279,12 +275,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ///==============================
 
     // --- 1枚目
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc {};
-    srvDesc.Format = metadata.format;
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-    srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
+    // --- SRV作成（CreateSRV）
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = GetCPUDescriptorHandle( srvHeap.GetHeap(), descriptorSizeSRV, 1);
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = GetGPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 1);
+    texture.CreateSRV(deviceManager.GetDevice(), cpuHandle,gpuHandle);
 
+   
     // --- 2枚目
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2 {};
     srvDesc2.Format = metadata2.format;
@@ -292,17 +288,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
     srvDesc2.Texture2D.MipLevels = UINT(metadata2.mipLevels);
 
-    // --- SRVハンドル取得
-    D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = GetCPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 1);
-    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = GetGPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 1);
-
     D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = GetCPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 2);
     D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = GetGPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 2);
 
-    // --- SRV作成
-    deviceManager.GetDevice()->CreateShaderResourceView(textureResource.Get(), &srvDesc, textureSrvHandleCPU);
     deviceManager.GetDevice()->CreateShaderResourceView(textureResource2.Get(), &srvDesc2, textureSrvHandleCPU2);
-
     ///==============================
     /// InputLayout 設定
     ///==============================
@@ -450,14 +439,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // DSVHeapの先端にDSVを作る
     deviceManager.GetDevice()->CreateDepthStencilView(depthStencillResource.Get(), &dsvDesc, dsvHeap.GetCPUHandleStart());
 
-    //// 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
-    //Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource = CreateBufferResource(deviceManager.GetDevice(), sizeof(DirectionalLight));
-    //// 平行光源用のデータを書き込み
-    //DirectionalLight* directionalLightData = nullptr;
-    //directionalLightResource->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData));
-    //directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 白色光
-    //directionalLightData->direction = MatrixMath::Normalize({ 0.0f, -1.0f, 0.0f }); // 真上から下方向
-    //directionalLightData->intensity = 1.0f; // 標準の明るさ
+    // directionalLightBufferの初期化設定
     directionalLightBuffer.Initialize(deviceManager.GetDevice());
     //--------------------------
     // その他リソース
@@ -598,10 +580,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             render.PreDraw(clearColor, dsvHeap.GetHeap(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), srvHeap.GetHeap());
 
             //=========================== モデル描画 ===========================//
-            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), useMonstarBall ? textureSrvHandleGPU2 : texture.GetGpuHandle());
 
             //=========================== スプライト描画 ===========================//
-            render.DrawSprite(vertexBufferViewSprite, indexBufferSprite.GetView(), transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), textureSrvHandleGPU);
+            render.DrawSprite(vertexBufferViewSprite, indexBufferSprite.GetView(), transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), texture.GetGpuHandle());
 
             //=========================== ImGui描画 ===========================//
             win.ImGuiEndFrame(deviceManager.GetCommandList());
