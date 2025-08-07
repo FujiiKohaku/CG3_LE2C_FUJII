@@ -155,6 +155,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     DirectionalLightBuffer directionalLightBuffer;
     Logger log;
+
+    MaterialBuffer spriteMaterial;
+
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
@@ -328,8 +331,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------------------------------
     // modelDataを使う
     //--------------------------------------------------
-   
-    //頂点データ
+
+    // 頂点データ
     vertexBuffer.Initialize(deviceManager.GetDevice(), modelData.vertices); // model読み込み02
     //--------------------------
     //  マテリアル
@@ -386,16 +389,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     IndexBuffer indexBufferSprite;
     indexBufferSprite.Initialize(deviceManager.GetDevice(), spriteIndices);
 
-    // Sprite用のマテリアルリソースを作る05_03
-    Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceSprite = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
-    // Sprite用のマテリアルにデータを書き込む
-    Material* materialDataSprite = nullptr;
-    // 書き込むためのアドレスを取得
-    materialResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&materialDataSprite));
-    // 今回は白を設定
-    materialDataSprite->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-    materialDataSprite->uvTransform = MatrixMath::MakeIdentity4x4(); // 06_01//同じ
-    materialDataSprite->enableLighting = false; // kokomonstrball?
+
+
+    Material materialDataSprite = {};
+    materialDataSprite.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // 白色
+    materialDataSprite.uvTransform = MatrixMath::MakeIdentity4x4(); // UV変換行列は単位行列
+    materialDataSprite.enableLighting = false; // ライティングは無効
+    spriteMaterial.Create(deviceManager.GetDevice(), materialDataSprite);
+
 
     // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
     // 1つ分のサイズを用意する04_00
@@ -550,12 +551,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             transformationMatrixDataSprite->World = worldMatrixSprite;
 
             uvManager.Update(uvTransformSprite);
-            materialDataSprite->uvTransform = uvManager.GetMatrix();
+            materialDataSprite.uvTransform = uvManager.GetMatrix();
 
             //=========================== 描画準備 ===========================//
             float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
             // ここでmaterialDataを更新する
             materialBuffer.Update(materialData); // マイフレーム更新
+            spriteMaterial.Update(materialDataSprite); // スプライトのマテリアル更新
 
             render.PreDraw(clearColor, dsvHeap.GetHeap(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), srvHeap.GetHeap());
 
@@ -563,7 +565,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), texture2.GetGpuHandle());
 
             //=========================== スプライト描画 ===========================//
-            render.DrawSprite(spriteVertexBuffer.GetView(), indexBufferSprite.GetView(), transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), texture.GetGpuHandle());
+            render.DrawSprite(spriteVertexBuffer.GetView(), indexBufferSprite.GetView(), transformationMatrixResourceSprite->GetGPUVirtualAddress(), spriteMaterial.GetResource()->GetGPUVirtualAddress(), texture.GetGpuHandle());
 
             //=========================== ImGui描画 ===========================//
             win.ImGuiEndFrame(deviceManager.GetCommandList());
