@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 #include <d3d12.h>
 #include <dxcapi.h>
-#include <ostream>
 #include <string>
 #include <wrl.h>
 
+class Logger;
 
 Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     const std::wstring& filepath,
@@ -12,4 +12,4 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     Microsoft::WRL::ComPtr<IDxcUtils> dxcUtils,
     Microsoft::WRL::ComPtr<IDxcCompiler3> dxcCompiler,
     Microsoft::WRL::ComPtr<IDxcIncludeHandler> includeHandler,
-    std::ostream& os);
+    Logger& logger); // ← ostream → Logger に変更

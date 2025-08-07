@@ -40,6 +40,7 @@
 #include "IndexBuffer.h"
 #include "Input.h"
 #include "InputLayoutHelper.h"
+#include "Logger.h"
 #include "MaterialBuffer.h"
 #include "MatrixMath.h"
 #include "ModelLoder.h"
@@ -153,29 +154,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     UVTransformManager uvManager;
 
     DirectionalLightBuffer directionalLightBuffer;
-
+    Logger log;
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
     // main関数はじまってすぐに登録するとよい
     SetUnhandledExceptionFilter(Utility::ExportDump);
+
     // ログのディレクトリを用意
     std::filesystem::create_directory("logs");
     // main関数の先頭//
 
-    // 現在時刻を取得(UTC時刻)
-    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-    // ログファイルの名前にコンマ何秒はいらないので削って秒にする
-    std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
-        nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-    // 日本時間(PCの設定時間)に変換
-    std::chrono::zoned_time loacalTime { std::chrono::current_zone(), nowSeconds };
-    // formatを使って年月日_時分秒の文字列に変換
-    std::string dateString = std::format("{:%Y%m%d_%H%M%S}", loacalTime);
-    // 時刻を使ってファイル名を決定
-    std::string logFilePath = std::string("logs/") + dateString + ".log";
-    // ファイルを作って書き込み準備
-    std::ofstream logStream(logFilePath);
+    log.Initialize(); // ログファイルの初期化
+    log.Log("初期化成功！");
     std::wstring title = L"CG2 EngineGOD"; // ← ここでウィンドウタイトルを定義
 
     // 出力
@@ -192,7 +183,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 #endif // _DEBUG
 
-    deviceManager.Initialize(logStream, &win, kClientWidth, kClientHeight);
+    deviceManager.Initialize(log.GetStream(), &win, kClientWidth, kClientHeight);
 
 #ifdef _DEBUG
 
@@ -246,9 +237,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     dxc.Initialize();
 
     // シェーダーで使うリソースの接続設定（ルートシグネチャ）を生成
-    auto rootSignature = RootSignatureHelper::CreateDefaultRootSignature(deviceManager.GetDevice(), logStream);
+    auto rootSignature = RootSignatureHelper::CreateDefaultRootSignature(deviceManager.GetDevice(), log);
 
-  ///==============================
+    ///==============================
     /// ディスクリプタサイズ取得（最初にやると整理しやすい）
     ///==============================
     const uint32_t descriptorSizeSRV = deviceManager.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -299,10 +290,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     rasterizer.CreateDefault();
 
     // Shaderをコンパイルする//これまだクラス化しない
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), logStream);
+    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), log);
     assert(vertexShaderBlob != nullptr);
 
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), logStream);
+    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), log);
     assert(pixelShaderBlob != nullptr);
 
     // PSO生成
@@ -573,7 +564,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             render.PreDraw(clearColor, dsvHeap.GetHeap(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), srvHeap.GetHeap());
 
             //=========================== モデル描画 ===========================//
-            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(),texture2.GetGpuHandle());
+            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), texture2.GetGpuHandle());
 
             //=========================== スプライト描画 ===========================//
             render.DrawSprite(vertexBufferViewSprite, indexBufferSprite.GetView(), transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), texture.GetGpuHandle());

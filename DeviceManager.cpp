@@ -21,7 +21,7 @@ void DeviceManager::Initialize(std::ofstream& logStream, WinApp* winApp, uint32_
         // ソフトウェアアダプタでなければ採用!
         if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) { // get
             // 採用したアダプタの情報をログに出力wstringの方なので注意
-            Utility::Log(std::format(L"Use Adapater:{}\n", adapterDesc.Description)); // get
+            Logger::Log(std::format(L"Use Adapater:{}\n", adapterDesc.Description)); // get
             break;
         }
         useAdapter = nullptr; // ソフトウェアアダプタの場合は見なかったことにする
@@ -43,12 +43,12 @@ void DeviceManager::Initialize(std::ofstream& logStream, WinApp* winApp, uint32_
         // 指定した昨日レベルでデバイスは生成できたか確認
         if (SUCCEEDED(hr)) {
             // 生成できたのでログ出力を行ってループを抜ける
-            Utility::Log(std::format("FeatureLevel : {}\n", std::string(featureLevelStrings[i])));
+            Logger::Log(std::format("FeatureLevel : {}\n", std::string(featureLevelStrings[i])));
             break;
         }
     }
     assert(device_ != nullptr);
-    Utility::Log("Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
+    Logger::Log("Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
 
     // コマンドキューを生成する
 

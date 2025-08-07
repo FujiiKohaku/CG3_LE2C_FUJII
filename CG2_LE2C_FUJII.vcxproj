@@ -107,6 +107,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="IndexBuffer.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="InputLayoutHelper.cpp" />
+    <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MaterialBuffer.cpp" />
     <ClCompile Include="Matrix4x4.cpp" />
@@ -163,6 +164,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="IndexBuffer.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="InputLayoutHelper.h" />
+    <ClInclude Include="Logger.h" />
     <ClInclude Include="MaterialBuffer.h" />
     <ClInclude Include="Matrix4x4.h" />
     <ClInclude Include="ModelLoder.h" />

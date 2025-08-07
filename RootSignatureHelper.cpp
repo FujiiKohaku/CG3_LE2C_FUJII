@@ -1,9 +1,10 @@
-﻿// RootSignatureHelper.cpp
-#include "RootSignatureHelper.h"
-#include "Utility.h"
+﻿#include "RootSignatureHelper.h"
+#include "Logger.h"
 #include <cassert>
 
-Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignatureHelper::CreateDefaultRootSignature( ID3D12Device* device, std::ostream& logStream)
+Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignatureHelper::CreateDefaultRootSignature(
+    ID3D12Device* device,
+    Logger& logger)
 {
     HRESULT hr;
 
@@ -35,23 +36,19 @@ Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignatureHelper::CreateDefaultRo
     // ルートパラメータ
     D3D12_ROOT_PARAMETER rootParameters[4] = {};
 
-    // [0] PixelShader用 CBV (Material)
     rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
     rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
     rootParameters[0].Descriptor.ShaderRegister = 0;
 
-    // [1] VertexShader用 CBV (Transform)
     rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
     rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
     rootParameters[1].Descriptor.ShaderRegister = 0;
 
-    // [2] PixelShader用 DescriptorTable (SRV)
     rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
     rootParameters[2].DescriptorTable.pDescriptorRanges = descriptorRange;
     rootParameters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
 
-    // [3] PixelShader用 CBV (レジスタ1)
     rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
     rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
     rootParameters[3].Descriptor.ShaderRegister = 1;
@@ -70,12 +67,11 @@ Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignatureHelper::CreateDefaultRo
 
     if (FAILED(hr)) {
         if (errorBlob) {
-            Utility::Log(logStream, reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+            logger.Log(reinterpret_cast<const char*>(errorBlob->GetBufferPointer()));
         }
         assert(false);
     }
 
-    // 生成
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature;
     hr = device->CreateRootSignature(
         0,

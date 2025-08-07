@@ -3,6 +3,7 @@
 #include "Utility.h"
 #include "WinApp.h"
 #include <cassert>
+#include "Logger.h"
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <format>
