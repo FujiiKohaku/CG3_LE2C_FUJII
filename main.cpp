@@ -248,50 +248,44 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // シェーダーで使うリソースの接続設定（ルートシグネチャ）を生成
     auto rootSignature = RootSignatureHelper::CreateDefaultRootSignature(deviceManager.GetDevice(), logStream);
 
-    ///==============================
-    /// テクスチャ読み込み & 転送
-    ///==============================
-    Texture texture;
-    texture.LoadFromFile(deviceManager.GetDevice(), deviceManager.GetCommandList(), "resources/uvChecker.png");
-
-    // --- モデル読み込み
-    ModelData modelData = LoadObjFile("resources", "Plane.obj"); // model読み込み01
-
-    // --- 2枚目のテクスチャ（モデルのマテリアルから取得）
-    DirectX::ScratchImage mipImages2 = LoadTexture(modelData.material.textureFilePath);
-    const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
-    Microsoft::WRL::ComPtr<ID3D12Resource> textureResource2 = CreateTextureResource(deviceManager.GetDevice(), metadata2);
-    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource2 = UploadTextureData(textureResource2.Get(), mipImages2, deviceManager.GetDevice(), deviceManager.GetCommandList());
-
-    ///==============================
-    /// ディスクリプタサイズ取得
+  ///==============================
+    /// ディスクリプタサイズ取得（最初にやると整理しやすい）
     ///==============================
     const uint32_t descriptorSizeSRV = deviceManager.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     const uint32_t descriptorSizeRTV = deviceManager.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     const uint32_t descriptorSizeDSV = deviceManager.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
     ///==============================
-    /// SRV 設定
+    /// モデル読み込み
+    ///==============================
+    ModelData modelData = LoadObjFile("resources", "Plane.obj");
+
+    ///==============================
+    /// テクスチャ読み込み & 転送
     ///==============================
 
-    // --- 1枚目
-    // --- SRV作成（CreateSRV）
-    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = GetCPUDescriptorHandle( srvHeap.GetHeap(), descriptorSizeSRV, 1);
+    // --- 1枚目：uvChecker
+    Texture texture;
+    texture.LoadFromFile(deviceManager.GetDevice(), deviceManager.GetCommandList(), "resources/uvChecker.png");
+
+    // --- 2枚目：モデルのマテリアルテクスチャ
+    Texture texture2;
+    texture2.LoadFromFile(deviceManager.GetDevice(), deviceManager.GetCommandList(), modelData.material.textureFilePath.c_str());
+
+    ///==============================
+    /// SRV 作成
+    ///==============================
+
+    // --- 1枚目のSRV
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = GetCPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 1);
     D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = GetGPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 1);
-    texture.CreateSRV(deviceManager.GetDevice(), cpuHandle,gpuHandle);
+    texture.CreateSRV(deviceManager.GetDevice(), cpuHandle, gpuHandle);
 
-   
-    // --- 2枚目
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2 {};
-    srvDesc2.Format = metadata2.format;
-    srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-    srvDesc2.Texture2D.MipLevels = UINT(metadata2.mipLevels);
+    // --- 2枚目のSRV
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle2 = GetCPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 2);
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle2 = GetGPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 2);
+    texture2.CreateSRV(deviceManager.GetDevice(), cpuHandle2, gpuHandle2);
 
-    D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = GetCPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 2);
-    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = GetGPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 2);
-
-    deviceManager.GetDevice()->CreateShaderResourceView(textureResource2.Get(), &srvDesc2, textureSrvHandleCPU2);
     ///==============================
     /// InputLayout 設定
     ///==============================
@@ -363,7 +357,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------
     // Sprite用リソース
     //--------------------------
-    // ======================= Sprite用 頂点バッファの準備 =======================
 
     // 頂点リソース作成（4頂点分のバッファを確保）
     Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceSprite = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * 4);
@@ -580,7 +573,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             render.PreDraw(clearColor, dsvHeap.GetHeap(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), srvHeap.GetHeap());
 
             //=========================== モデル描画 ===========================//
-            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), useMonstarBall ? textureSrvHandleGPU2 : texture.GetGpuHandle());
+            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(),texture2.GetGpuHandle());
 
             //=========================== スプライト描画 ===========================//
             render.DrawSprite(vertexBufferViewSprite, indexBufferSprite.GetView(), transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), texture.GetGpuHandle());
