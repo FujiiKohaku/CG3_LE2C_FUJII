@@ -35,6 +35,7 @@
 #include "DebugCamera.h"
 #include "DescriptorHeapWrapper.h"
 #include "DeviceManager.h"
+#include "DirectionalLightBuffer.h"
 #include "Dxc.h"
 #include "IndexBuffer.h"
 #include "Input.h"
@@ -151,7 +152,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     UVTransformManager uvManager;
 
-
+    DirectionalLightBuffer directionalLightBuffer;
 
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
@@ -416,11 +417,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     IndexBuffer indexBufferSprite;
     indexBufferSprite.Initialize(deviceManager.GetDevice(), spriteIndices);
 
-
-
-
-  
-
     // Sprite用のマテリアルリソースを作る05_03
     Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceSprite = CreateBufferResource(deviceManager.GetDevice(), sizeof(Material));
     // Sprite用のマテリアルにデータを書き込む
@@ -454,15 +450,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // DSVHeapの先端にDSVを作る
     deviceManager.GetDevice()->CreateDepthStencilView(depthStencillResource.Get(), &dsvDesc, dsvHeap.GetCPUHandleStart());
 
-    // 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
-    Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource = CreateBufferResource(deviceManager.GetDevice(), sizeof(DirectionalLight));
-    // 平行光源用のデータを書き込み
-    DirectionalLight* directionalLightData = nullptr;
-    directionalLightResource->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData));
-    directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 白色光
-    directionalLightData->direction = MatrixMath::Normalize({ 0.0f, -1.0f, 0.0f }); // 真上から下方向
-    directionalLightData->intensity = 1.0f; // 標準の明るさ
-
+    //// 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
+    //Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource = CreateBufferResource(deviceManager.GetDevice(), sizeof(DirectionalLight));
+    //// 平行光源用のデータを書き込み
+    //DirectionalLight* directionalLightData = nullptr;
+    //directionalLightResource->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData));
+    //directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 白色光
+    //directionalLightData->direction = MatrixMath::Normalize({ 0.0f, -1.0f, 0.0f }); // 真上から下方向
+    //directionalLightData->intensity = 1.0f; // 標準の明るさ
+    directionalLightBuffer.Initialize(deviceManager.GetDevice());
     //--------------------------
     // その他リソース
     //--------------------------
@@ -560,9 +556,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::Text("useMonstarBall");
             ImGui::Checkbox("useMonstarBall", &useMonstarBall);
             ImGui::Text("Lighting");
-            ImGui::SliderFloat("x", &directionalLightData->direction.x, -10.0f, 10.0f);
-            ImGui::SliderFloat("y", &directionalLightData->direction.y, -10.0f, 10.0f);
-            ImGui::SliderFloat("z", &directionalLightData->direction.z, -10.0f, 10.0f);
+            ImGui::SliderFloat("x", &directionalLightBuffer.GetData()->direction.x, -10.0f, 10.0f);
+            ImGui::SliderFloat("y", &directionalLightBuffer.GetData()->direction.y, -10.0f, 10.0f);
+            ImGui::SliderFloat("z", &directionalLightBuffer.GetData()->direction.z, -10.0f, 10.0f);
             ImGui::Text("UVTransform");
             ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
             ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
@@ -602,7 +598,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             render.PreDraw(clearColor, dsvHeap.GetHeap(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), srvHeap.GetHeap());
 
             //=========================== モデル描画 ===========================//
-            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightResource->GetGPUVirtualAddress(), useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
             //=========================== スプライト描画 ===========================//
             render.DrawSprite(vertexBufferViewSprite, indexBufferSprite.GetView(), transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), textureSrvHandleGPU);
