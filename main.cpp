@@ -167,6 +167,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     log.Initialize(); // ログファイルの初期化
     log.Log("初期化成功！");
+
     std::wstring title = L"CG2 EngineGOD"; // ← ここでウィンドウタイトルを定義
 
     // 出力
@@ -327,7 +328,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------------------------------
     // modelDataを使う
     //--------------------------------------------------
-
+   
+    //頂点データ
     vertexBuffer.Initialize(deviceManager.GetDevice(), modelData.vertices); // model読み込み02
     //--------------------------
     //  マテリアル
@@ -349,34 +351,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // Sprite用リソース
     //--------------------------
 
-    // 頂点リソース作成（4頂点分のバッファを確保）
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResourceSprite = CreateBufferResource(deviceManager.GetDevice(), sizeof(VertexData) * 4);
+    // 頂点データ
+    std::vector<VertexData> spriteVertices(4);
 
-    // 書き込み用ポインタ取得
-    VertexData* vertexDataSprite = nullptr;
-    vertexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSprite));
+    // 左下
+    spriteVertices[0].position = { 0.0f, 360.0f, 0.0f, 1.0f };
+    spriteVertices[0].texcoord = { 0.0f, 1.0f };
 
-    // 頂点データ設定（左下・左上・右下・右上 の順）
-    vertexDataSprite[0].position = { 0.0f, 360.0f, 0.0f, 1.0f }; // 左下
-    vertexDataSprite[0].texcoord = { 0.0f, 1.0f };
+    // 左上
+    spriteVertices[1].position = { 0.0f, 0.0f, 0.0f, 1.0f };
+    spriteVertices[1].texcoord = { 0.0f, 0.0f };
 
-    vertexDataSprite[1].position = { 0.0f, 0.0f, 0.0f, 1.0f }; // 左上
-    vertexDataSprite[1].texcoord = { 0.0f, 0.0f };
+    // 右下
+    spriteVertices[2].position = { 640.0f, 360.0f, 0.0f, 1.0f };
+    spriteVertices[2].texcoord = { 1.0f, 1.0f };
 
-    vertexDataSprite[2].position = { 640.0f, 360.0f, 0.0f, 1.0f }; // 右下
-    vertexDataSprite[2].texcoord = { 1.0f, 1.0f };
+    // 右上
+    spriteVertices[3].position = { 640.0f, 0.0f, 0.0f, 1.0f };
+    spriteVertices[3].texcoord = { 1.0f, 0.0f };
 
-    vertexDataSprite[3].position = { 640.0f, 0.0f, 0.0f, 1.0f }; // 右上
-    vertexDataSprite[3].texcoord = { 1.0f, 0.0f };
-
-    // マップ解除（不要であればこのままでOK。書き込み終了の場合はUnmapしてもよい）
-    // vertexResourceSprite->Unmap(0, nullptr); // 任意
-
-    // 頂点バッファビュー作成
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSprite {};
-    vertexBufferViewSprite.BufferLocation = vertexResourceSprite->GetGPUVirtualAddress(); // バッファの先頭
-    vertexBufferViewSprite.SizeInBytes = sizeof(VertexData) * 4; // 4頂点分のサイズ
-    vertexBufferViewSprite.StrideInBytes = sizeof(VertexData); // 1頂点あたりのサイズ
+    // 初期化
+    VertexBuffer spriteVertexBuffer;
+    spriteVertexBuffer.Initialize(deviceManager.GetDevice(), spriteVertices);
 
     // ======================= Sprite用 インデックスバッファの準備 =======================
 
@@ -567,7 +563,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), texture2.GetGpuHandle());
 
             //=========================== スプライト描画 ===========================//
-            render.DrawSprite(vertexBufferViewSprite, indexBufferSprite.GetView(), transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), texture.GetGpuHandle());
+            render.DrawSprite(spriteVertexBuffer.GetView(), indexBufferSprite.GetView(), transformationMatrixResourceSprite->GetGPUVirtualAddress(), materialResourceSprite->GetGPUVirtualAddress(), texture.GetGpuHandle());
 
             //=========================== ImGui描画 ===========================//
             win.ImGuiEndFrame(deviceManager.GetCommandList());
