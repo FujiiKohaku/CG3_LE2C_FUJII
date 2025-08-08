@@ -146,10 +146,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     MaterialBuffer materialBuffer;
 
-    WVPBuffer wvpBuffer;
+    // 3Dオブジェクト用
+    WVPBuffer wvpBufferObject;
+    WVPManager wvpManagerObject;
+
+    // 2Dスプライト用
+    WVPBuffer wvpBufferSprite;
+    WVPManager wvpManagerSprite;
+
     DescriptorHeapWrapper dsvHeap;
     DescriptorHeapWrapper srvHeap;
-    WVPManager wvpManager;
 
     UVTransformManager uvManager;
 
@@ -349,7 +355,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------
     // WVP行列
     //--------------------------
-    wvpBuffer.Create(deviceManager.GetDevice());
+    wvpBufferObject.Create(deviceManager.GetDevice());
+    wvpBufferSprite.Create(deviceManager.GetDevice());
     //--------------------------
     // Sprite用リソース
     //--------------------------
@@ -389,14 +396,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     IndexBuffer indexBufferSprite;
     indexBufferSprite.Initialize(deviceManager.GetDevice(), spriteIndices);
 
-
-
+    // スプライトのマテリアル
     Material materialDataSprite = {};
     materialDataSprite.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // 白色
     materialDataSprite.uvTransform = MatrixMath::MakeIdentity4x4(); // UV変換行列は単位行列
     materialDataSprite.enableLighting = false; // ライティングは無効
     spriteMaterial.Create(deviceManager.GetDevice(), materialDataSprite);
-
 
     // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
     // 1つ分のサイズを用意する04_00
@@ -539,17 +544,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             //=========================== 行列計算（モデル・スプライト・UV） ===========================//
 
-            // 描画と移動に必要なWVP行列を関数化(これmodelです)
-            wvpManager.Update(transform, debugCamera, kClientWidth, kClientHeight);
-            wvpBuffer.Update(wvpManager.GetWVPMatrix(), wvpManager.GetWorldMatrix()); // ここでWVPとWORLDに入れる
+            // 3D
+            wvpManagerObject.Update(transform, debugCamera, (float)kClientWidth, (float)kClientHeight);
+            wvpBufferObject.Update(wvpManagerObject.GetWVPMatrix(), wvpManagerObject.GetWorldMatrix());
 
-            Matrix4x4 worldMatrixSprite = MatrixMath::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
-            Matrix4x4 viewMatrixSprite = MatrixMath::MakeIdentity4x4();
-            Matrix4x4 projectionMatrixSprite = MatrixMath::MakeOrthographicMatrix(0.0f, 0.0f, float(kClientWidth), float(kClientHeight), 0.0f, 100.0f);
-            Matrix4x4 worldViewProjectionMatrixSprite = MatrixMath::Multiply(worldMatrixSprite, MatrixMath::Multiply(viewMatrixSprite, projectionMatrixSprite));
-            transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
-            transformationMatrixDataSprite->World = worldMatrixSprite;
+            // 2D（スプライト）
+            wvpManagerSprite.Update(transformSprite, (float)kClientWidth, (float)kClientHeight);
+            wvpBufferSprite.Update(wvpManagerSprite.GetWVPMatrix(), wvpManagerSprite.GetWorldMatrix());
 
+            // UV → マテリアル
             uvManager.Update(uvTransformSprite);
             materialDataSprite.uvTransform = uvManager.GetMatrix();
 
@@ -562,10 +565,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             render.PreDraw(clearColor, dsvHeap.GetHeap(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), srvHeap.GetHeap());
 
             //=========================== モデル描画 ===========================//
-            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBuffer.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), texture2.GetGpuHandle());
+            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBufferObject.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), texture2.GetGpuHandle());
 
             //=========================== スプライト描画 ===========================//
-            render.DrawSprite(spriteVertexBuffer.GetView(), indexBufferSprite.GetView(), transformationMatrixResourceSprite->GetGPUVirtualAddress(), spriteMaterial.GetResource()->GetGPUVirtualAddress(), texture.GetGpuHandle());
+            render.DrawSprite(spriteVertexBuffer.GetView(), indexBufferSprite.GetView(), wvpBufferSprite.GetGPUVirtualAddress(), spriteMaterial.GetResource()->GetGPUVirtualAddress(), texture.GetGpuHandle());
 
             //=========================== ImGui描画 ===========================//
             win.ImGuiEndFrame(deviceManager.GetCommandList());
