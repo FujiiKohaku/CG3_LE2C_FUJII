@@ -103,6 +103,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="externals\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="externals\imgui\imgui_tables.cpp" />
     <ClCompile Include="externals\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="GameSceneManager.cpp" />
     <ClCompile Include="Geometryhelper.cpp" />
     <ClCompile Include="IndexBuffer.cpp" />
     <ClCompile Include="Input.cpp" />
@@ -160,6 +161,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
+    <ClInclude Include="GameSceneManager.h" />
     <ClInclude Include="Geometryhelper.h" />
     <ClInclude Include="IndexBuffer.h" />
     <ClInclude Include="Input.h" />

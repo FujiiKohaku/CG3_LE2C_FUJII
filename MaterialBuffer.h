@@ -19,6 +19,10 @@ public:
     // データの更新
     void Update(const Material& material);
 
+    D3D12_GPU_VIRTUAL_ADDRESS GetGPUVirtualAddress() const
+    {
+        return materialResource_->GetGPUVirtualAddress();
+    }
     // GPUリソースの取得
     ID3D12Resource* GetResource() const { return materialResource_.Get(); }
 
