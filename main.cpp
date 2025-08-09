@@ -135,13 +135,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     HRESULT hr; // 各種DirectX関数の戻り値用。ローカルスコープで十分だが、複数関数で使い回すためここで宣言
 
-    Dxc dxc;
+    /*   Dxc dxc;*/
 
-    BlendStateHelper psoDesc;
+    /*  BlendStateHelper psoDesc;*/
 
-    RasterizerStateHelper rasterizer;
+    /* RasterizerStateHelper rasterizer;*/
 
-    PipelineBuilder builder;
+    /*   PipelineBuilder builder;*/
 
     VertexBuffer vertexBuffer;
 
@@ -167,18 +167,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
- 
-
     //  ----------------------------
     //  DirectX12 初期化ここまで！
     //  ----------------------------
 
-
     // DXC初期化
-    dxc.Initialize();
+    /*    dxc.Initialize()*/;
 
     // シェーダーで使うリソースの接続設定（ルートシグネチャ）を生成
-    auto rootSignature = RootSignatureHelper::CreateDefaultRootSignature(deviceManager.GetDevice(), log);
+    // auto rootSignature = RootSignatureHelper::CreateDefaultRootSignature(deviceManager.GetDevice(), log);
 
     ///==============================
     /// ディスクリプタサイズ取得（最初にやると整理しやすい）
@@ -222,40 +219,40 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     /// InputLayout 設定
     ///==============================
 
-    // InputLayout を取得
-    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = InputLayoutHelper::CreatePosTexNormLayout();
+    //// InputLayout を取得
+    // D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = InputLayoutHelper::CreatePosTexNormLayout();
 
-    // blendStateのせってい
-    psoDesc.CreateWriteAll();
-    // rasterizerStateの設定
-    rasterizer.CreateDefault();
+    //// blendStateのせってい
+    // psoDesc.CreateWriteAll();
+    //// rasterizerStateの設定
+    // rasterizer.CreateDefault();
 
-    // Shaderをコンパイルする//これまだクラス化しない
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), log);
-    assert(vertexShaderBlob != nullptr);
+    //// Shaderをコンパイルする//これまだクラス化しない
+    // Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), log);
+    // assert(vertexShaderBlob != nullptr);
 
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), log);
-    assert(pixelShaderBlob != nullptr);
+    // Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), log);
+    // assert(pixelShaderBlob != nullptr);
 
-    // PSO生成
-    builder.SetRootSignature(rootSignature.Get());
-    builder.SetInputLayout(inputLayoutDesc);
-    builder.SetVertexShader(vertexShaderBlob.Get());
-    builder.SetPixelShader(pixelShaderBlob.Get());
-    builder.SetBlendState(psoDesc.CreateWriteAll());
-    builder.SetRasterizerState(rasterizer.CreateDefault());
+    //// PSO生成
+    // builder.SetRootSignature(rootSignature.Get());
+    // builder.SetInputLayout(inputLayoutDesc);
+    // builder.SetVertexShader(vertexShaderBlob.Get());
+    // builder.SetPixelShader(pixelShaderBlob.Get());
+    // builder.SetBlendState(psoDesc.CreateWriteAll());
+    // builder.SetRasterizerState(rasterizer.CreateDefault());
 
-    D3D12_DEPTH_STENCIL_DESC dsDesc {};
-    dsDesc.DepthEnable = true;
-    dsDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-    dsDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-    builder.SetDepthStencilState(dsDesc);
+    // D3D12_DEPTH_STENCIL_DESC dsDesc {};
+    // dsDesc.DepthEnable = true;
+    // dsDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+    // dsDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    // builder.SetDepthStencilState(dsDesc);
 
-    builder.SetRTVFormat(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
-    builder.SetDSVFormat(DXGI_FORMAT_D24_UNORM_S8_UINT);
-    builder.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+    // builder.SetRTVFormat(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+    // builder.SetDSVFormat(DXGI_FORMAT_D24_UNORM_S8_UINT);
+    // builder.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState = builder.Build(deviceManager.GetDevice());
+    // Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState = builder.Build(deviceManager.GetDevice());
 
     //====================
     // 獲物
@@ -394,7 +391,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // Textureの切り替え
     bool useMonstarBall = true;
 
-
     //=================================
     // キーボードインスタンス作成
     //=================================
@@ -419,7 +415,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // サウンドファイルを読み込み（パスはプロジェクトに合わせて調整）
     SoundData bgm = soundmanager.SoundLoadWave("Resources/BGM.wav");
 
-   
     MSG msg {};
     // ウィンドウの×ボタンが押されるまでループ
     while (msg.message != WM_QUIT) {
@@ -481,7 +476,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             materialBuffer.Update(materialData); // マイフレーム更新
             spriteMaterial.Update(materialDataSprite); // スプライトのマテリアル更新
 
-            render.PreDraw(clearColor, gameSceneManager.GetDSVHeap().GetHeap(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), gameSceneManager.GetSRVHeap().GetHeap());
+            render.PreDraw(clearColor, gameSceneManager.GetDSVHeap().GetHeap(), viewport, scissorRect, gameSceneManager.GetRootSignature(), gameSceneManager.GetPipelineState(), gameSceneManager.GetSRVHeap().GetHeap());
 
             //=========================== モデル描画 ===========================//
             render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBufferObject.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), texture2.GetGpuHandle());

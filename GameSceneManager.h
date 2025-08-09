@@ -5,6 +5,7 @@
 #include "Dxc.h"
 #include "Logger.h"
 #include "WinApp.h"
+#include "CommonStructs.h"
 #include <Windows.h>
 #include <d3d12.h>
 #include <wrl.h>
@@ -24,6 +25,10 @@ public:
     HANDLE GetFenceEvent() { return fenceEvent_; }
     uint64_t& GetFenceValue() { return fenceValue_; }
 
+    // 追加：描画で使うやつ
+    ID3D12RootSignature* GetRootSignature() { return rootSignature_.Get(); }
+    ID3D12PipelineState* GetPipelineState() { return pipelineState_.Get(); }
+
 private:
     Logger log_;
     WinApp win_;
@@ -35,4 +40,9 @@ private:
     Microsoft::WRL::ComPtr<ID3D12Fence> fence_;
     uint64_t fenceValue_ = 0;
     HANDLE fenceEvent_ = nullptr;
+
+    // 追加：DXC / ルートシグネチャ / PSO
+    Dxc dxc_;
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
 };
