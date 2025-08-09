@@ -37,6 +37,7 @@
 #include "DeviceManager.h"
 #include "DirectionalLightBuffer.h"
 #include "Dxc.h"
+#include "GameSceneManager.h"
 #include "IndexBuffer.h"
 #include "Input.h"
 #include "InputLayoutHelper.h"
@@ -126,9 +127,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
     D3DResourceLeakChecker leakChecker; // リソースリークチェック用。スコープ終了時に自動でチェックされる
 
-    WinApp win; // ウィンドウ管理クラスのインスタンス（WinMainで必要）
+    GameSceneManager gameSceneManager;
 
-    DeviceManager deviceManager; // DirectXデバイス管理クラスのインスタンス（初期化や解放などを行う）
+    auto& deviceManager = gameSceneManager.GetDeviceManager();
+    auto& win = gameSceneManager.GetWinApp(); // ← 以後はこれを使う
+    auto& log = gameSceneManager.GetLogger(); // ← 以後はこれを使う
 
     HRESULT hr; // 各種DirectX関数の戻り値用。ローカルスコープで十分だが、複数関数で使い回すためここで宣言
 
@@ -154,94 +157,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     WVPBuffer wvpBufferSprite;
     WVPManager wvpManagerSprite;
 
-    DescriptorHeapWrapper dsvHeap;
-    DescriptorHeapWrapper srvHeap;
-
     UVTransformManager uvManager;
 
     DirectionalLightBuffer directionalLightBuffer;
-    Logger log;
 
     MaterialBuffer spriteMaterial;
 
+    gameSceneManager.Initialize(GetModuleHandle(nullptr), SW_SHOWDEFAULT, L"CG2 EngineGOD", kClientWidth, kClientHeight);
+
     CoInitializeEx(0, COINIT_MULTITHREADED);
 
-    // 誰も補足しなかった場合(Unhandled),補足する関数を登録
-    // main関数はじまってすぐに登録するとよい
-    SetUnhandledExceptionFilter(Utility::ExportDump);
-
-    // ログのディレクトリを用意
-    std::filesystem::create_directory("logs");
-    // main関数の先頭//
-
-    log.Initialize(); // ログファイルの初期化
-    log.Log("初期化成功！");
-
-    std::wstring title = L"CG2 EngineGOD"; // ← ここでウィンドウタイトルを定義
-
-    // 出力
-    win.Initialize(hInstance, nCmdShow, title, kClientWidth, kClientHeight);
-
-#ifdef _DEBUG
-
-    Microsoft::WRL::ComPtr<ID3D12Debug1> debugController = nullptr; // COM
-    if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
-        // デバックレイヤーを有効化する
-        debugController->EnableDebugLayer();
-        // さらに6PU側でもチェックリストを行うようにする
-        debugController->SetEnableGPUBasedValidation(TRUE);
-    }
-#endif // _DEBUG
-
-    deviceManager.Initialize(log.GetStream(), &win, kClientWidth, kClientHeight);
-
-#ifdef _DEBUG
-
-    Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue = nullptr;
-    if (SUCCEEDED(deviceManager.GetDevice()->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
-        // やばいエラー時に止まる
-        infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
-        // エラー時に止まる
-        infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-        // 警告時に止まる
-        infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
-        // 抑制するメッセージのＩＤ
-        D3D12_MESSAGE_ID denyIds[] = {
-            // windows11でのDXGIデバックレイヤーとDX12デバックレイヤーの相互作用バグによるエラーメッセージ
-            // https://stackoverflow.com/questions/69805245/directx-12-application-is-crashing-in-windows-11
-            D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE
-        };
-        // 抑制するレベル
-        D3D12_MESSAGE_SEVERITY severities[] = { D3D12_MESSAGE_SEVERITY_INFO };
-        D3D12_INFO_QUEUE_FILTER filter {};
-        filter.DenyList.NumIDs = _countof(denyIds);
-        filter.DenyList.pIDList = denyIds;
-        filter.DenyList.NumSeverities = _countof(severities);
-        filter.DenyList.pSeverityList = severities;
-        // 指定したメッセージの表示wp抑制する
-        infoQueue->PushStorageFilter(&filter);
-        // 解放
-    }
-
-#endif // DEBUG
+ 
 
     //  ----------------------------
     //  DirectX12 初期化ここまで！
     //  ----------------------------
 
-    dsvHeap.Create(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
-    srvHeap.Create(deviceManager.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
-
-    // 初期値でFenceを作る01_02
-    Microsoft::WRL::ComPtr<ID3D12Fence> fence = nullptr; // com
-    uint64_t fenceValue = 0;
-    hr = deviceManager.GetDevice()->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE,
-        IID_PPV_ARGS(&fence));
-    assert(SUCCEEDED(hr));
-
-    // FenceのSignalを待つためのイベントを作成する01_02
-    HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-    assert(fenceEvent != nullptr);
 
     // DXC初期化
     dxc.Initialize();
@@ -278,13 +209,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ///==============================
 
     // --- 1枚目のSRV
-    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = GetCPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 1);
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = GetGPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 1);
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = GetCPUDescriptorHandle(gameSceneManager.GetSRVHeap().GetHeap(), descriptorSizeSRV, 1);
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = GetGPUDescriptorHandle(gameSceneManager.GetSRVHeap().GetHeap(), descriptorSizeSRV, 1);
     texture.CreateSRV(deviceManager.GetDevice(), cpuHandle, gpuHandle);
 
     // --- 2枚目のSRV
-    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle2 = GetCPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 2);
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle2 = GetGPUDescriptorHandle(srvHeap.GetHeap(), descriptorSizeSRV, 2);
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle2 = GetCPUDescriptorHandle(gameSceneManager.GetSRVHeap().GetHeap(), descriptorSizeSRV, 2);
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle2 = GetGPUDescriptorHandle(gameSceneManager.GetSRVHeap().GetHeap(), descriptorSizeSRV, 2);
     texture2.CreateSRV(deviceManager.GetDevice(), cpuHandle2, gpuHandle2);
 
     ///==============================
@@ -416,14 +347,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------
     // 共通リソース
     //--------------------------
-    // 03_01_Other
-    Microsoft::WRL::ComPtr<ID3D12Resource> depthStencillResource = CreateDepthStencilTextureResource(deviceManager.GetDevice(), kClientWidth, kClientHeight);
-    // DSVの設定
-    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc {};
-    dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-    // DSVHeapの先端にDSVを作る
-    deviceManager.GetDevice()->CreateDepthStencilView(depthStencillResource.Get(), &dsvDesc, dsvHeap.GetCPUHandleStart());
 
     // directionalLightBufferの初期化設定
     directionalLightBuffer.Initialize(deviceManager.GetDevice());
@@ -470,14 +393,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // Textureの切り替え
     bool useMonstarBall = true;
-    //
-    // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。
-    // ImGuiの初期化
-    win.ImGuiInitialize(deviceManager.GetDevice(), deviceManager.GetRTVDesc().Format, srvHeap.GetHeap(), deviceManager.GetSwapChainDesc().BufferCount);
-    // ImGuiの初期化
-    // ImGuiの初期化
 
-    MSG msg {};
+
     //=================================
     // キーボードインスタンス作成
     //=================================
@@ -502,6 +419,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // サウンドファイルを読み込み（パスはプロジェクトに合わせて調整）
     SoundData bgm = soundmanager.SoundLoadWave("Resources/BGM.wav");
 
+   
+    MSG msg {};
     // ウィンドウの×ボタンが押されるまでループ
     while (msg.message != WM_QUIT) {
 
@@ -562,7 +481,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             materialBuffer.Update(materialData); // マイフレーム更新
             spriteMaterial.Update(materialDataSprite); // スプライトのマテリアル更新
 
-            render.PreDraw(clearColor, dsvHeap.GetHeap(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), srvHeap.GetHeap());
+            render.PreDraw(clearColor, gameSceneManager.GetDSVHeap().GetHeap(), viewport, scissorRect, rootSignature.Get(), pipelineState.Get(), gameSceneManager.GetSRVHeap().GetHeap());
 
             //=========================== モデル描画 ===========================//
             render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBufferObject.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), texture2.GetGpuHandle());
@@ -574,7 +493,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             win.ImGuiEndFrame(deviceManager.GetCommandList());
 
             //=========================== リソースバリア & Present ===========================//
-            render.PostDraw(fence.Get(), fenceEvent, fenceValue);
+            render.PostDraw(gameSceneManager.GetFence(), gameSceneManager.GetFenceEvent(), gameSceneManager.GetFenceValue());
         }
     }
 
@@ -583,7 +502,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     win.ImGuiShutdown();
 
     //  // 解放処理CG2_01_03
-    CloseHandle(fenceEvent);
+    CloseHandle(gameSceneManager.GetFenceEvent());
 
     // リリースする場所
     // XAudio解放
