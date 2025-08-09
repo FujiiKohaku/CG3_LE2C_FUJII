@@ -1,14 +1,15 @@
 ﻿#include "GameSceneManager.h"
 #include "Utility.h"
 
-// 追加インクルード（第3陣：シェーダ／PSO）
+// 第3陣：シェーダ／PSO周り
 #include "BlendStateHelper.h"
 #include "InputLayoutHelper.h"
 #include "PipelineBuilder.h"
 #include "RasterizerStateHelper.h"
 #include "RootSignatureHelper.h"
-#include "ShaderCompilerDXC.h"
 #include "ShaderCompiler.h"
+#include "ShaderCompilerDXC.h"
+
 #include <cassert>
 #include <filesystem>
 
@@ -34,9 +35,9 @@ static void SetupInfoQueueIfDebug(ID3D12Device* device)
         infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
         infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
 
+        // ノイズ抑制（環境依存の警告を隠す）
         D3D12_MESSAGE_ID denyIds[] = {
-            // Windows11 の相互作用バグ由来のノイズ抑制
-            D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE
+            D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE,
         };
         D3D12_MESSAGE_SEVERITY severities[] = { D3D12_MESSAGE_SEVERITY_INFO };
 
@@ -74,11 +75,11 @@ void GameSceneManager::Initialize(HINSTANCE hInst, int nCmdShow,
     // InfoQueue
     SetupInfoQueueIfDebug(deviceManager_.GetDevice());
 
-    // DSV・SRVヒープ
+    // ===== ディスクリプタヒープ =====
     dsvHeap_.Create(deviceManager_.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
     srvHeap_.Create(deviceManager_.GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
-    // 深度ステンシルバッファ
+    // ===== 深度ステンシル =====
     depthStencillResource_ = CreateDepthStencilTextureResource(deviceManager_.GetDevice(), width, height);
     {
         D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc {};
@@ -88,7 +89,7 @@ void GameSceneManager::Initialize(HINSTANCE hInst, int nCmdShow,
             depthStencillResource_.Get(), &dsvDesc, dsvHeap_.GetCPUHandleStart());
     }
 
-    // フェンス
+    // ===== フェンス =====
     {
         HRESULT hr = deviceManager_.GetDevice()->CreateFence(
             fenceValue_, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence_));
@@ -97,12 +98,17 @@ void GameSceneManager::Initialize(HINSTANCE hInst, int nCmdShow,
         assert(fenceEvent_ != nullptr);
     }
 
-    // ImGui 初期化
+    // ===== ImGui =====
     win_.ImGuiInitialize(
         deviceManager_.GetDevice(),
         deviceManager_.GetRTVDesc().Format,
         srvHeap_.GetHeap(),
         deviceManager_.GetSwapChainDesc().BufferCount);
+
+    // ===== ディスクリプタサイズ（ここで一度だけ取得） =====
+    descriptorSizeSRV_ = deviceManager_.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    descriptorSizeRTV_ = deviceManager_.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    descriptorSizeDSV_ = deviceManager_.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
     // ===== 第3陣：DXC / ルートシグネチャ / PSO =====
     dxc_.Initialize();
@@ -111,16 +117,16 @@ void GameSceneManager::Initialize(HINSTANCE hInst, int nCmdShow,
     rootSignature_ = RootSignatureHelper::CreateDefaultRootSignature(deviceManager_.GetDevice(), log_);
     assert(rootSignature_ != nullptr);
 
-    // シェーダーコンパイル
-    Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(
+    // シェーダコンパイル
+    Microsoft::WRL::ComPtr<IDxcBlob> vsBlob = CompileShader(
         L"Object3d.VS.hlsl", L"vs_6_0",
         dxc_.GetUtils(), dxc_.GetCompiler(), dxc_.GetIncludeHandler(), log_);
-    assert(vertexShaderBlob != nullptr);
+    assert(vsBlob != nullptr);
 
-    Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(
+    Microsoft::WRL::ComPtr<IDxcBlob> psBlob = CompileShader(
         L"Object3d.PS.hlsl", L"ps_6_0",
         dxc_.GetUtils(), dxc_.GetCompiler(), dxc_.GetIncludeHandler(), log_);
-    assert(pixelShaderBlob != nullptr);
+    assert(psBlob != nullptr);
 
     // PSO 構築
     {
@@ -137,8 +143,8 @@ void GameSceneManager::Initialize(HINSTANCE hInst, int nCmdShow,
 
         builder.SetRootSignature(rootSignature_.Get());
         builder.SetInputLayout(InputLayoutHelper::CreatePosTexNormLayout());
-        builder.SetVertexShader(vertexShaderBlob.Get());
-        builder.SetPixelShader(pixelShaderBlob.Get());
+        builder.SetVertexShader(vsBlob.Get());
+        builder.SetPixelShader(psBlob.Get());
         builder.SetBlendState(blend.CreateWriteAll());
         builder.SetRasterizerState(rast.CreateDefault());
         builder.SetDepthStencilState(dsDesc);
@@ -151,4 +157,27 @@ void GameSceneManager::Initialize(HINSTANCE hInst, int nCmdShow,
     }
 
     log_.Log("初期化完了");
+}
+
+// ===================== 便利ハンドル関数 =====================
+
+D3D12_CPU_DESCRIPTOR_HANDLE GameSceneManager::GetSRVCPUHandle(uint32_t index) const
+{
+    D3D12_CPU_DESCRIPTOR_HANDLE h = srvHeap_.GetHeap()->GetCPUDescriptorHandleForHeapStart();
+    h.ptr += static_cast<SIZE_T>(descriptorSizeSRV_) * index;
+    return h;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE GameSceneManager::GetSRVGPUHandle(uint32_t index) const
+{
+    D3D12_GPU_DESCRIPTOR_HANDLE h = srvHeap_.GetHeap()->GetGPUDescriptorHandleForHeapStart();
+    h.ptr += static_cast<UINT64>(descriptorSizeSRV_) * index;
+    return h;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE GameSceneManager::GetDSVCPUHandle(uint32_t index) const
+{
+    D3D12_CPU_DESCRIPTOR_HANDLE h = dsvHeap_.GetHeap()->GetCPUDescriptorHandleForHeapStart();
+    h.ptr += static_cast<SIZE_T>(descriptorSizeDSV_) * index;
+    return h;
 }

@@ -98,24 +98,6 @@ struct D3DResourceLeakChecker {
     }
 };
 
-// CG2_05_01_page_5
-D3D12_CPU_DESCRIPTOR_HANDLE
-GetCPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap,
-    uint32_t descriptorSize, uint32_t index)
-{
-    D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    handleCPU.ptr += (descriptorSize * index);
-    return handleCPU;
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE
-GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap,
-    uint32_t descriptorSize, uint32_t index)
-{
-    D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
-    handleGPU.ptr += (descriptorSize * index);
-    return handleGPU;
-}
 
 ////////////////
 // main関数/////
@@ -135,13 +117,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     HRESULT hr; // 各種DirectX関数の戻り値用。ローカルスコープで十分だが、複数関数で使い回すためここで宣言
 
-    /*   Dxc dxc;*/
-
-    /*  BlendStateHelper psoDesc;*/
-
-    /* RasterizerStateHelper rasterizer;*/
-
-    /*   PipelineBuilder builder;*/
 
     VertexBuffer vertexBuffer;
 
@@ -171,19 +146,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //  DirectX12 初期化ここまで！
     //  ----------------------------
 
-    // DXC初期化
-    /*    dxc.Initialize()*/;
-
-    // シェーダーで使うリソースの接続設定（ルートシグネチャ）を生成
-    // auto rootSignature = RootSignatureHelper::CreateDefaultRootSignature(deviceManager.GetDevice(), log);
+  
 
     ///==============================
     /// ディスクリプタサイズ取得（最初にやると整理しやすい）
     ///==============================
-    const uint32_t descriptorSizeSRV = deviceManager.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    const uint32_t descriptorSizeRTV = deviceManager.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    const uint32_t descriptorSizeDSV = deviceManager.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-
+    const uint32_t descriptorSizeSRV = gameSceneManager.GetDescriptorSizeSRV();
+    const uint32_t descriptorSizeRTV = gameSceneManager.GetDescriptorSizeRTV();
+    const uint32_t descriptorSizeDSV = gameSceneManager.GetDescriptorSizeDSV();
     ///==============================
     /// モデル読み込み
     ///==============================
@@ -206,53 +176,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ///==============================
 
     // --- 1枚目のSRV
-    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = GetCPUDescriptorHandle(gameSceneManager.GetSRVHeap().GetHeap(), descriptorSizeSRV, 1);
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = GetGPUDescriptorHandle(gameSceneManager.GetSRVHeap().GetHeap(), descriptorSizeSRV, 1);
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = gameSceneManager.GetSRVCPUHandle(1);
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = gameSceneManager.GetSRVGPUHandle(1);
     texture.CreateSRV(deviceManager.GetDevice(), cpuHandle, gpuHandle);
 
     // --- 2枚目のSRV
-    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle2 = GetCPUDescriptorHandle(gameSceneManager.GetSRVHeap().GetHeap(), descriptorSizeSRV, 2);
-    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle2 = GetGPUDescriptorHandle(gameSceneManager.GetSRVHeap().GetHeap(), descriptorSizeSRV, 2);
+    D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle2 = gameSceneManager.GetSRVCPUHandle(2);
+    D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle2 = gameSceneManager.GetSRVGPUHandle(2);
     texture2.CreateSRV(deviceManager.GetDevice(), cpuHandle2, gpuHandle2);
 
     ///==============================
     /// InputLayout 設定
     ///==============================
 
-    //// InputLayout を取得
-    // D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = InputLayoutHelper::CreatePosTexNormLayout();
-
-    //// blendStateのせってい
-    // psoDesc.CreateWriteAll();
-    //// rasterizerStateの設定
-    // rasterizer.CreateDefault();
-
-    //// Shaderをコンパイルする//これまだクラス化しない
-    // Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = CompileShader(L"Object3d.VS.hlsl", L"vs_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), log);
-    // assert(vertexShaderBlob != nullptr);
-
-    // Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = CompileShader(L"Object3d.PS.hlsl", L"ps_6_0", dxc.GetUtils(), dxc.GetCompiler(), dxc.GetIncludeHandler(), log);
-    // assert(pixelShaderBlob != nullptr);
-
-    //// PSO生成
-    // builder.SetRootSignature(rootSignature.Get());
-    // builder.SetInputLayout(inputLayoutDesc);
-    // builder.SetVertexShader(vertexShaderBlob.Get());
-    // builder.SetPixelShader(pixelShaderBlob.Get());
-    // builder.SetBlendState(psoDesc.CreateWriteAll());
-    // builder.SetRasterizerState(rasterizer.CreateDefault());
-
-    // D3D12_DEPTH_STENCIL_DESC dsDesc {};
-    // dsDesc.DepthEnable = true;
-    // dsDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-    // dsDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-    // builder.SetDepthStencilState(dsDesc);
-
-    // builder.SetRTVFormat(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
-    // builder.SetDSVFormat(DXGI_FORMAT_D24_UNORM_S8_UINT);
-    // builder.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
-
-    // Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState = builder.Build(deviceManager.GetDevice());
+  
 
     //====================
     // 獲物

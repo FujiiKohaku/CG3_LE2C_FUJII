@@ -1,11 +1,11 @@
 ﻿#pragma once
+#include "CommonStructs.h"
 #include "DescriptorHeapWrapper.h"
 #include "DeviceManager.h"
 #include "DirectionalLightBuffer.h"
 #include "Dxc.h"
 #include "Logger.h"
 #include "WinApp.h"
-#include "CommonStructs.h"
 #include <Windows.h>
 #include <d3d12.h>
 #include <wrl.h>
@@ -28,6 +28,19 @@ public:
     // 追加：描画で使うやつ
     ID3D12RootSignature* GetRootSignature() { return rootSignature_.Get(); }
     ID3D12PipelineState* GetPipelineState() { return pipelineState_.Get(); }
+    // 追加第3陣
+    uint32_t GetDescriptorSizeSRV() const { return descriptorSizeSRV_; }
+    uint32_t GetDescriptorSizeRTV() const { return descriptorSizeRTV_; }
+    uint32_t GetDescriptorSizeDSV() const { return descriptorSizeDSV_; }
+
+    // SRV/DSV のハンドルを index 指定で取得（便利版）
+    D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUHandle(uint32_t index) const;
+    D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUHandle(uint32_t index) const;
+    D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCPUHandle(uint32_t index) const;
+
+    // ルートシグネチャ/PSO を外から使えるように
+    ID3D12RootSignature* GetRootSignature() const { return rootSignature_.Get(); }
+    ID3D12PipelineState* GetPipelineState() const { return pipelineState_.Get(); }
 
 private:
     Logger log_;
@@ -45,4 +58,10 @@ private:
     Dxc dxc_;
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
+
+    // 追加第3陣
+
+    uint32_t descriptorSizeSRV_ = 0;
+    uint32_t descriptorSizeRTV_ = 0;
+    uint32_t descriptorSizeDSV_ = 0;
 };
