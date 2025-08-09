@@ -98,7 +98,6 @@ struct D3DResourceLeakChecker {
     }
 };
 
-
 ////////////////
 // main関数/////
 ///////////////
@@ -117,10 +116,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     HRESULT hr; // 各種DirectX関数の戻り値用。ローカルスコープで十分だが、複数関数で使い回すためここで宣言
 
-
     VertexBuffer vertexBuffer;
-
-    RenderHelper render(deviceManager);
 
     MaterialBuffer materialBuffer;
 
@@ -145,8 +141,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //  ----------------------------
     //  DirectX12 初期化ここまで！
     //  ----------------------------
-
-  
 
     ///==============================
     /// ディスクリプタサイズ取得（最初にやると整理しやすい）
@@ -188,8 +182,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ///==============================
     /// InputLayout 設定
     ///==============================
-
-  
 
     //====================
     // 獲物
@@ -413,19 +405,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             materialBuffer.Update(materialData); // マイフレーム更新
             spriteMaterial.Update(materialDataSprite); // スプライトのマテリアル更新
 
-            render.PreDraw(clearColor, gameSceneManager.GetDSVHeap().GetHeap(), viewport, scissorRect, gameSceneManager.GetRootSignature(), gameSceneManager.GetPipelineState(), gameSceneManager.GetSRVHeap().GetHeap());
+            gameSceneManager.PreDraw(clearColor, viewport, scissorRect);
 
             //=========================== モデル描画 ===========================//
-            render.DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBufferObject.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), texture2.GetGpuHandle());
+            gameSceneManager.GetRender()->DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()),wvpBufferObject.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(),  directionalLightBuffer.GetGPUVirtualAddress(),texture2.GetGpuHandle());
 
             //=========================== スプライト描画 ===========================//
-            render.DrawSprite(spriteVertexBuffer.GetView(), indexBufferSprite.GetView(), wvpBufferSprite.GetGPUVirtualAddress(), spriteMaterial.GetResource()->GetGPUVirtualAddress(), texture.GetGpuHandle());
+            gameSceneManager.GetRender()->DrawSprite(spriteVertexBuffer.GetView(), indexBufferSprite.GetView(), wvpBufferSprite.GetGPUVirtualAddress(), spriteMaterial.GetResource()->GetGPUVirtualAddress(), texture.GetGpuHandle());
 
             //=========================== ImGui描画 ===========================//
-            win.ImGuiEndFrame(deviceManager.GetCommandList());
+            gameSceneManager.EndFrame();
 
             //=========================== リソースバリア & Present ===========================//
-            render.PostDraw(gameSceneManager.GetFence(), gameSceneManager.GetFenceEvent(), gameSceneManager.GetFenceValue());
+            gameSceneManager.PostDraw();
         }
     }
 

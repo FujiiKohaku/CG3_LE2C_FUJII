@@ -6,6 +6,7 @@
 #include "Dxc.h"
 #include "Logger.h"
 #include "WinApp.h"
+#include "RenderHelper.h"
 #include <Windows.h>
 #include <d3d12.h>
 #include <wrl.h>
@@ -42,6 +43,17 @@ public:
     ID3D12RootSignature* GetRootSignature() const { return rootSignature_.Get(); }
     ID3D12PipelineState* GetPipelineState() const { return pipelineState_.Get(); }
 
+    // 描画関連
+    //   フレームの頭と尻（ImGui含む）
+    void BeginFrame();
+    void EndFrame();
+
+    // 描画セットアップと終了（RenderHelper 呼び出しを内包）
+    void PreDraw(const float clearColor[4], const D3D12_VIEWPORT& viewport, const D3D12_RECT& scissor);
+    void PostDraw();
+    // RenderHelper へのアクセス
+    RenderHelper* GetRender() const { return render_.get(); }
+
 private:
     Logger log_;
     WinApp win_;
@@ -64,4 +76,6 @@ private:
     uint32_t descriptorSizeSRV_ = 0;
     uint32_t descriptorSizeRTV_ = 0;
     uint32_t descriptorSizeDSV_ = 0;
+
+    std::unique_ptr<RenderHelper> render_; 
 };

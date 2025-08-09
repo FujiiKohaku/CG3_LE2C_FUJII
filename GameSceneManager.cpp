@@ -155,7 +155,8 @@ void GameSceneManager::Initialize(HINSTANCE hInst, int nCmdShow,
         pipelineState_ = builder.Build(deviceManager_.GetDevice());
         assert(pipelineState_ != nullptr);
     }
-
+ 
+    render_ = std::make_unique<RenderHelper>(deviceManager_);
     log_.Log("初期化完了");
 }
 
@@ -180,4 +181,33 @@ D3D12_CPU_DESCRIPTOR_HANDLE GameSceneManager::GetDSVCPUHandle(uint32_t index) co
     D3D12_CPU_DESCRIPTOR_HANDLE h = dsvHeap_.GetHeap()->GetCPUDescriptorHandleForHeapStart();
     h.ptr += static_cast<SIZE_T>(descriptorSizeDSV_) * index;
     return h;
+}
+
+
+
+
+void GameSceneManager::BeginFrame()
+{
+    win_.ImGuiBeginFrame();
+}
+
+void GameSceneManager::EndFrame()
+{
+    win_.ImGuiEndFrame(deviceManager_.GetCommandList());
+}
+
+void GameSceneManager::PreDraw(const float clearColor[4], const D3D12_VIEWPORT& viewport, const D3D12_RECT& scissor)
+{
+    render_->PreDraw(clearColor,
+        dsvHeap_.GetHeap(),
+        viewport,
+        scissor,
+        rootSignature_.Get(),
+        pipelineState_.Get(),
+        srvHeap_.GetHeap());
+}
+
+void GameSceneManager::PostDraw()
+{
+    render_->PostDraw(fence_.Get(), fenceEvent_, fenceValue_);
 }
