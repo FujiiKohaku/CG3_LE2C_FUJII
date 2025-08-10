@@ -1,12 +1,17 @@
 ﻿#pragma once
 #include "CommonStructs.h"
+#include "DebugCamera.h"
 #include "DescriptorHeapWrapper.h"
 #include "DeviceManager.h"
 #include "DirectionalLightBuffer.h"
 #include "Dxc.h"
+#include "Input.h"
 #include "Logger.h"
-#include "WinApp.h"
+#include "ModelLoder.h"
 #include "RenderHelper.h"
+#include "SoundManager.h"
+#include "Texture.h"
+#include "WinApp.h"
 #include <Windows.h>
 #include <d3d12.h>
 #include <wrl.h>
@@ -15,6 +20,9 @@ class GameSceneManager {
 public:
     void Initialize(HINSTANCE hInst, int nCmdShow,
         const wchar_t* title, uint32_t width, uint32_t height);
+
+    void LoadTextureAndMakeSRV(const char* texturePath, uint32_t srvIndex, Texture& outTex);
+    void LoadModelAndMaterialSRV(const char* dir, const char* filename, uint32_t srvIndex, ModelData& outModel, Texture& outTex);
 
     WinApp& GetWinApp() { return win_; }
     DeviceManager& GetDeviceManager() { return deviceManager_; }
@@ -43,6 +51,10 @@ public:
     ID3D12RootSignature* GetRootSignature() const { return rootSignature_.Get(); }
     ID3D12PipelineState* GetPipelineState() const { return pipelineState_.Get(); }
 
+    Input& GetInput() { return input_; }
+    DebugCamera& GetDebugCamera() { return debugCamera_; }
+    SoundManager& GetSoundManager() { return soundmanager_; }
+    SoundData& GetBGM() { return bgm_; }
     // 描画関連
     //   フレームの頭と尻（ImGui含む）
     void BeginFrame();
@@ -77,5 +89,11 @@ private:
     uint32_t descriptorSizeRTV_ = 0;
     uint32_t descriptorSizeDSV_ = 0;
 
-    std::unique_ptr<RenderHelper> render_; 
+    std::unique_ptr<RenderHelper> render_;
+
+    // 追加
+    Input input_;
+    DebugCamera debugCamera_;
+    SoundManager soundmanager_;
+    SoundData bgm_ {};
 };

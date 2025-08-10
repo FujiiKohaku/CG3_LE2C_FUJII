@@ -151,19 +151,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ///==============================
     /// モデル読み込み
     ///==============================
-    ModelData modelData = LoadObjFile("resources", "Plane.obj");
-
-    ///==============================
-    /// テクスチャ読み込み & 転送
-    ///==============================
-
-    // --- 1枚目：uvChecker
-    Texture texture;
-    texture.LoadFromFile(deviceManager.GetDevice(), deviceManager.GetCommandList(), "resources/uvChecker.png");
-
-    // --- 2枚目：モデルのマテリアルテクスチャ
+    ModelData modelData;
     Texture texture2;
-    texture2.LoadFromFile(deviceManager.GetDevice(), deviceManager.GetCommandList(), modelData.material.textureFilePath.c_str());
+    gameSceneManager.LoadModelAndMaterialSRV("resources", "Plane.obj", 2, modelData, texture2);
+
+    // スプライト用テクスチャ
+    Texture texture;
+    gameSceneManager.LoadTextureAndMakeSRV("resources/uvChecker.png", 1, texture);
+
+   
+
 
     ///==============================
     /// SRV 作成
@@ -320,29 +317,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // Textureの切り替え
     bool useMonstarBall = true;
 
-    //=================================
-    // キーボードインスタンス作成
-    //=================================
-    Input input;
-    //=================================
-    // キーボード情報の取得開始
-    //=================================
-    input.Initialize(hInstance, win.GetHwnd());
-
-    //=================================
-    // デバックカメラインスタンス作成
-    //=================================
-    DebugCamera debugCamera;
-    // debugcamera初期化一回だけ
-    debugCamera.Initialize(hInstance, win.GetHwnd());
-    //=================================
-    // サウンドマネージャーインスタンス作成
-    //=================================
-    SoundManager soundmanager;
-    // サウンドマネージャー初期化！
-    soundmanager.Initialize();
     // サウンドファイルを読み込み（パスはプロジェクトに合わせて調整）
-    SoundData bgm = soundmanager.SoundLoadWave("Resources/BGM.wav");
+    SoundData bgm = gameSceneManager.GetSoundManager().SoundLoadWave("Resources/BGM.wav");
+
+
+
+  
 
     MSG msg {};
     // ウィンドウの×ボタンが押されるまでループ
@@ -378,17 +358,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
             //=========================== ゲーム処理 ===========================//
             waveTime += 0.05f;
-            input.Update();
-            debugCamera.Update();
-            if (input.IsKeyPressed(DIK_0)) {
+            gameSceneManager.GetInput().Update();
+            gameSceneManager.GetDebugCamera().Update();
+            if (gameSceneManager.GetInput().IsKeyPressed(DIK_0)) {
                 OutputDebugStringA("Hit 0");
-                soundmanager.SoundPlayWave(bgm);
+                gameSceneManager.GetSoundManager().SoundPlayWave(bgm);
             }
 
             //=========================== 行列計算（モデル・スプライト・UV） ===========================//
 
             // 3D
-            wvpManagerObject.Update(transform, debugCamera, (float)kClientWidth, (float)kClientHeight);
+            wvpManagerObject.Update(transform, gameSceneManager.GetDebugCamera(), (float)kClientWidth, (float)kClientHeight);
             wvpBufferObject.Update(wvpManagerObject.GetWVPMatrix(), wvpManagerObject.GetWorldMatrix());
 
             // 2D（スプライト）
@@ -430,7 +410,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // リリースする場所
     // XAudio解放
-    soundmanager.Finalize(&bgm);
+    gameSceneManager.GetSoundManager().Finalize(&gameSceneManager.GetBGM());
+
 
     CoInitialize(nullptr);
     // #endif

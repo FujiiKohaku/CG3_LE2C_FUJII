@@ -155,9 +155,14 @@ void GameSceneManager::Initialize(HINSTANCE hInst, int nCmdShow,
         pipelineState_ = builder.Build(deviceManager_.GetDevice());
         assert(pipelineState_ != nullptr);
     }
- 
+
     render_ = std::make_unique<RenderHelper>(deviceManager_);
     log_.Log("初期化完了");
+
+    // ★ここで初期化
+    input_.Initialize(hInst, win_.GetHwnd());
+    debugCamera_.Initialize(hInst, win_.GetHwnd());
+    soundmanager_.Initialize();
 }
 
 // ===================== 便利ハンドル関数 =====================
@@ -183,9 +188,6 @@ D3D12_CPU_DESCRIPTOR_HANDLE GameSceneManager::GetDSVCPUHandle(uint32_t index) co
     return h;
 }
 
-
-
-
 void GameSceneManager::BeginFrame()
 {
     win_.ImGuiBeginFrame();
@@ -210,4 +212,30 @@ void GameSceneManager::PreDraw(const float clearColor[4], const D3D12_VIEWPORT& 
 void GameSceneManager::PostDraw()
 {
     render_->PostDraw(fence_.Get(), fenceEvent_, fenceValue_);
+}
+
+void GameSceneManager::LoadTextureAndMakeSRV(const char* texturePath, uint32_t srvIndex, Texture& outTex)
+{
+    // 読み込み（アップロード含む）
+    outTex.LoadFromFile(deviceManager_.GetDevice(), deviceManager_.GetCommandList(), texturePath);
+
+    // SRVを指定スロットへ
+    D3D12_CPU_DESCRIPTOR_HANDLE cpu = GetSRVCPUHandle(srvIndex);
+    D3D12_GPU_DESCRIPTOR_HANDLE gpu = GetSRVGPUHandle(srvIndex);
+    outTex.CreateSRV(deviceManager_.GetDevice(), cpu, gpu);
+}
+
+void GameSceneManager::LoadModelAndMaterialSRV(const char* dir, const char* filename, uint32_t srvIndex,
+    ModelData& outModel, Texture& outTex)
+{
+    // モデル読み込み（material.textureFilePath が埋まる前提）
+    outModel = LoadObjFile(dir, filename);
+
+    // マテリアルのテクスチャを読み込んでSRV作成
+    outTex.LoadFromFile(deviceManager_.GetDevice(), deviceManager_.GetCommandList(),
+        outModel.material.textureFilePath.c_str());
+
+    D3D12_CPU_DESCRIPTOR_HANDLE cpu = GetSRVCPUHandle(srvIndex);
+    D3D12_GPU_DESCRIPTOR_HANDLE gpu = GetSRVGPUHandle(srvIndex);
+    outTex.CreateSRV(deviceManager_.GetDevice(), cpu, gpu);
 }
