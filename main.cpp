@@ -159,9 +159,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Texture texture;
     gameSceneManager.LoadTextureAndMakeSRV("resources/uvChecker.png", 1, texture);
 
-   
-
-
     ///==============================
     /// SRV 作成
     ///==============================
@@ -276,24 +273,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //--------------------------
     // その他リソース
     //--------------------------
-    //   ビューポート
-    D3D12_VIEWPORT viewport {};
-    // クライアント領域のサイズと一緒にして画面全体に表示/
-    viewport.Width = kClientWidth;
-    viewport.Height = kClientHeight;
-    viewport.TopLeftX = 0;
-    viewport.TopLeftY = 0;
-    viewport.MinDepth = 0.0f;
-    viewport.MaxDepth = 1.0f;
-
-    // シザー矩形
-    D3D12_RECT scissorRect {};
-    // 基本的にビューポートと同じ矩形が構成されるようにする
-    scissorRect.left = 0;
-    scissorRect.right = kClientWidth;
-    scissorRect.top = 0;
-    scissorRect.bottom = kClientHeight;
-
     // 変数//
     // spriteトランスフォーム
     Transform transformSprite {
@@ -319,10 +298,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // サウンドファイルを読み込み（パスはプロジェクトに合わせて調整）
     SoundData bgm = gameSceneManager.GetSoundManager().SoundLoadWave("Resources/BGM.wav");
-
-
-
-  
 
     MSG msg {};
     // ウィンドウの×ボタンが押されるまでループ
@@ -385,10 +360,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             materialBuffer.Update(materialData); // マイフレーム更新
             spriteMaterial.Update(materialDataSprite); // スプライトのマテリアル更新
 
-            gameSceneManager.PreDraw(clearColor, viewport, scissorRect);
+            gameSceneManager.PreDraw(clearColor, gameSceneManager.GetViewportRef(), gameSceneManager.GetScissorRectRef());
 
             //=========================== モデル描画 ===========================//
-            gameSceneManager.GetRender()->DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()),wvpBufferObject.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(),  directionalLightBuffer.GetGPUVirtualAddress(),texture2.GetGpuHandle());
+            gameSceneManager.GetRender()->DrawModel(vertexBuffer.GetView(), static_cast<UINT>(modelData.vertices.size()), wvpBufferObject.GetGPUVirtualAddress(), materialBuffer.GetResource()->GetGPUVirtualAddress(), directionalLightBuffer.GetGPUVirtualAddress(), texture2.GetGpuHandle());
 
             //=========================== スプライト描画 ===========================//
             gameSceneManager.GetRender()->DrawSprite(spriteVertexBuffer.GetView(), indexBufferSprite.GetView(), wvpBufferSprite.GetGPUVirtualAddress(), spriteMaterial.GetResource()->GetGPUVirtualAddress(), texture.GetGpuHandle());
@@ -411,7 +386,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // リリースする場所
     // XAudio解放
     gameSceneManager.GetSoundManager().Finalize(&gameSceneManager.GetBGM());
-
 
     CoInitialize(nullptr);
     // #endif

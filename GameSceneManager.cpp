@@ -158,8 +158,8 @@ void GameSceneManager::Initialize(HINSTANCE hInst, int nCmdShow,
 
     render_ = std::make_unique<RenderHelper>(deviceManager_);
     log_.Log("初期化完了");
-
-    // ★ここで初期化
+    InitializeViewportAndScissor(width, height);
+    // ここで初期化
     input_.Initialize(hInst, win_.GetHwnd());
     debugCamera_.Initialize(hInst, win_.GetHwnd());
     soundmanager_.Initialize();

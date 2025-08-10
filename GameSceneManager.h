@@ -55,7 +55,28 @@ public:
     DebugCamera& GetDebugCamera() { return debugCamera_; }
     SoundManager& GetSoundManager() { return soundmanager_; }
     SoundData& GetBGM() { return bgm_; }
-    // 描画関連
+
+    // ビューポートとシザーレクトの初期化
+
+    void InitializeViewportAndScissor(uint32_t width, uint32_t height)
+    {
+        viewport.TopLeftX = 0.0f;
+        viewport.TopLeftY = 0.0f;
+        viewport.Width = static_cast<float>(width);
+        viewport.Height = static_cast<float>(height);
+        viewport.MinDepth = 0.0f;
+        viewport.MaxDepth = 1.0f;
+
+        scissorRect.left = 0;
+        scissorRect.top = 0;
+        scissorRect.right = static_cast<LONG>(width);
+        scissorRect.bottom = static_cast<LONG>(height);
+    }
+
+    const D3D12_VIEWPORT& GetViewportRef() const { return viewport; }
+    const D3D12_RECT& GetScissorRectRef() const { return scissorRect; }
+
+    // 描画関連関数
     //   フレームの頭と尻（ImGui含む）
     void BeginFrame();
     void EndFrame();
@@ -96,4 +117,7 @@ private:
     DebugCamera debugCamera_;
     SoundManager soundmanager_;
     SoundData bgm_ {};
+
+    D3D12_VIEWPORT viewport {}; // 今まで main にあった変数名をそのまま
+    D3D12_RECT scissorRect {}; // 同上
 };
