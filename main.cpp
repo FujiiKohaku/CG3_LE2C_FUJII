@@ -141,7 +141,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //  ----------------------------
     //  DirectX12 初期化ここまで！
     //  ----------------------------
-
+    // spriteトランスフォーム
+    Transform transformSprite {
+        { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }
+    };
+    // トランスフォーム
+    Transform transform {
+        { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }
+    };
+    // カメラトランスフォーム
+    Transform cameraTransform {
+        { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -5.0f }
+    };
+    // UVTransform用の変数を用意
+    Transform uvTransformSprite {
+        { 1.0f, 1.0f, 1.0f },
+        { 0.0f, 0.0f, 0.0f },
+        { 0.0f, 0.0f, 0.0f },
+    };
     ///==============================
     /// ディスクリプタサイズ取得（最初にやると整理しやすい）
     ///==============================
@@ -177,124 +194,77 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     /// InputLayout 設定
     ///==============================
 
-    //====================
-    // 獲物
-    //====================
+    ///==============================
+    /// 3D（通常モデル）リソース
+    ///==============================
 
-    //--------------------------
-    // 通常モデル用リソース
-    //--------------------------
-
-    //--------------------------------------------------
-    // modelDataを使う
-    //--------------------------------------------------
-
-    // 頂点データ
+    // 頂点データ（modelDataを使う）
     vertexBuffer.Initialize(deviceManager.GetDevice(), modelData.vertices); // model読み込み02
-    //--------------------------
-    //  マテリアル
-    //--------------------------
-    // マテリアルデータの初期化（CPU側）
-    // 今回は赤色・単位UV変換・ライティング有効を設定
+
+    // マテリアル（白・UV単位・ライティングON）
     Material materialData = {};
-    materialData.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // 白色（R=1, G=1, B=1, A=1）
-    materialData.uvTransform = MatrixMath::MakeIdentity4x4(); // UV変換行列は単位行列
-    materialData.enableLighting = true; // ライティングON
-    // マテリアル用の定数バッファをGPUに作成＆データを転送
+    materialData.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+    materialData.uvTransform = MatrixMath::MakeIdentity4x4();
+    materialData.enableLighting = true;
+    // マテリアル用定数バッファ作成＆初期データ転送
     materialBuffer.Create(deviceManager.GetDevice(), materialData);
 
-    //--------------------------
-    // WVP行列
-    //--------------------------
+    // WVP行列（3D用）
     wvpBufferObject.Create(deviceManager.GetDevice());
-    wvpBufferSprite.Create(deviceManager.GetDevice());
-    //--------------------------
-    // Sprite用リソース
-    //--------------------------
 
-    // 頂点データ
+    ///==============================
+    /// 2D（スプライト）リソース
+    ///==============================
+
+    // スプライト用頂点（矩形）
     std::vector<VertexData> spriteVertices(4);
-
     // 左下
     spriteVertices[0].position = { 0.0f, 360.0f, 0.0f, 1.0f };
     spriteVertices[0].texcoord = { 0.0f, 1.0f };
-
     // 左上
     spriteVertices[1].position = { 0.0f, 0.0f, 0.0f, 1.0f };
     spriteVertices[1].texcoord = { 0.0f, 0.0f };
-
     // 右下
     spriteVertices[2].position = { 640.0f, 360.0f, 0.0f, 1.0f };
     spriteVertices[2].texcoord = { 1.0f, 1.0f };
-
     // 右上
     spriteVertices[3].position = { 640.0f, 0.0f, 0.0f, 1.0f };
     spriteVertices[3].texcoord = { 1.0f, 0.0f };
 
-    // 初期化
+    // スプライト用VB
     VertexBuffer spriteVertexBuffer;
     spriteVertexBuffer.Initialize(deviceManager.GetDevice(), spriteVertices);
 
-    // ======================= Sprite用 インデックスバッファの準備 =======================
-
-    // スプライト用のインデックス（2枚の三角形で四角形を描く）
+    // スプライト用IB（2三角形）
     std::vector<uint32_t> spriteIndices = {
-        0, 1, 2, // 1枚目の三角形（左下 → 左上 → 右下）
-        1, 3, 2 // 2枚目の三角形（左上 → 右上 → 右下）
+        0, 1, 2, // 左下→左上→右下
+        1, 3, 2 // 左上→右上→右下
     };
-
-    // インデックスバッファの初期化（IndexBuffer クラスを使用）
     IndexBuffer indexBufferSprite;
     indexBufferSprite.Initialize(deviceManager.GetDevice(), spriteIndices);
 
-    // スプライトのマテリアル
+    // スプライト用マテリアル（白・UV単位・ライティングOFF）
     Material materialDataSprite = {};
-    materialDataSprite.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // 白色
-    materialDataSprite.uvTransform = MatrixMath::MakeIdentity4x4(); // UV変換行列は単位行列
-    materialDataSprite.enableLighting = false; // ライティングは無効
+    materialDataSprite.color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+    materialDataSprite.uvTransform = MatrixMath::MakeIdentity4x4();
+    materialDataSprite.enableLighting = false;
     spriteMaterial.Create(deviceManager.GetDevice(), materialDataSprite);
 
-    // sprite用のTransfomationMatrix用のリソースを作る。Matrix4x4
-    // 1つ分のサイズを用意する04_00
+    // スプライト用Transform定数バッファ（必要に応じて使用）
     Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixResourceSprite = CreateBufferResource(deviceManager.GetDevice(), sizeof(TransformationMatrix));
-    // sprite用のデータを書き込む04_00
     TransformationMatrix* transformationMatrixDataSprite = nullptr;
-    // sprite用の書き込むためのアドレスを取得04_00
-    transformationMatrixResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixDataSprite));
-    // 単位行列を書き込んでおく04_00//これいったん消しました05_03
-    // *transformationMatrixDataSprite = MakeIdentity4x4();
+    transformationMatrixResourceSprite->Map( 0, nullptr, reinterpret_cast<void**>(&transformationMatrixDataSprite));
 
-    //--------------------------
-    // 共通リソース
-    //--------------------------
+    // WVP行列（スプライト用）
+    wvpBufferSprite.Create(deviceManager.GetDevice());
 
-    // directionalLightBufferの初期化設定
+    ///==============================
+    /// 共通リソース
+    ///==============================
+
+    // 平行光源バッファ
     directionalLightBuffer.Initialize(deviceManager.GetDevice());
-    //--------------------------
-    // その他リソース
-    //--------------------------
-    // 変数//
-    // spriteトランスフォーム
-    Transform transformSprite {
-        { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }
-    };
-    // トランスフォーム
-    Transform transform {
-        { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }
-    };
-    // カメラトランスフォーム
-    Transform cameraTransform {
-        { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -5.0f }
-    };
-    // UVTransform用の変数を用意
-    Transform uvTransformSprite {
-        { 1.0f, 1.0f, 1.0f },
-        { 0.0f, 0.0f, 0.0f },
-        { 0.0f, 0.0f, 0.0f },
-    };
 
-    // Textureの切り替え
-    bool useMonstarBall = true;
 
     // サウンドファイルを読み込み（パスはプロジェクトに合わせて調整）
     SoundData bgm = gameSceneManager.GetSoundManager().SoundLoadWave("Resources/BGM.wav");
@@ -320,7 +290,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
             ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
             ImGui::Text("useMonstarBall");
-            ImGui::Checkbox("useMonstarBall", &useMonstarBall);
             ImGui::Text("Lighting");
             ImGui::SliderFloat("x", &directionalLightBuffer.GetData()->direction.x, -10.0f, 10.0f);
             ImGui::SliderFloat("y", &directionalLightBuffer.GetData()->direction.y, -10.0f, 10.0f);
