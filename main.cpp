@@ -180,11 +180,6 @@ CreateTextureResource(Microsoft::WRL::ComPtr<ID3D12Device> device,
     // 2.利用するHeapの設定。非常に特殊な運用。02_04exで一般的なケース版がある
     D3D12_HEAP_PROPERTIES heapProperties {};
     heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // 細かい設定を行う//03_00EX
-    // heapProperties.CPUPageProperty =
-    //     D3D12_CPU_PAGE_PROPERTY_WRITE_BACK; //
-    //     WriteBaackポリシーでCPUアクセス可能
-    // heapProperties.MemoryPoolPreference =
-    //     D3D12_MEMORY_POOL_L0; // プロセッサの近くに配置
 
     // 3.Resourceを生成する
     Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
@@ -784,32 +779,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // ----------------------------
     // DirectX12 初期化ここまで！
     // ----------------------------
-    //==XAudioエンジンのインスタンスを生成==//
-    // HRESULT result = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
-
-    //==マスターボイスを生成==//
-    // result = xAudio2->CreateMasteringVoice(&masterVoice);
-
-    //=======================
-    //  入力デバイスの初期化
-    //=======================
-    // DirectInput全体の初期化(後からゲームパッドなどを追加するとしてもこのオブジェクトはひとつでいい)(winmainを改造、hinstanceに名づけをしました)
-    // Microsoft::WRL::ComPtr<IDirectInput8> directInput = nullptr;
-    // result = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
-    // assert(SUCCEEDED(result));
-    // キーボードデバイスの生成（GUID_Joystickなど指定すればほかの種類のデバイスも扱える）
-    // Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard = nullptr; // com
-    // result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, nullptr);
-    // assert(SUCCEEDED(result));
-    // 入六データ形式のセット(キーボードの場合c_dfDIKeyboardだけど入力デバイスの種類によってあらかじめ何種類か用意されている)
-    // result = keyboard->SetDataFormat(&c_dfDIKeyboard); // 標準形式
-    // assert(SUCCEEDED(result));
-    // 排他制御レベルのセット
-    // result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-    // assert(SUCCEEDED(result));
-    //=======================
-    //  入力デバイスの初期化ここまで
-    //=======================
 
     // スワップチェーンを生成する
     Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr; // com
