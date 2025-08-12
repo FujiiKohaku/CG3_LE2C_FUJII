@@ -88,6 +88,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="App.cpp" />
     <ClCompile Include="BlendStateHelper.cpp" />
     <ClCompile Include="BufferHelper.cpp" />
     <ClCompile Include="CommonStructs.cpp" />
@@ -145,6 +146,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="App.h" />
     <ClInclude Include="BlendStateHelper.h" />
     <ClInclude Include="BufferHelper.h" />
     <ClInclude Include="CommonStructs.h" />
