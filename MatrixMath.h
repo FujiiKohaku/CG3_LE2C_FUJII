@@ -1,8 +1,8 @@
 // MatrixMath.h
 #pragma once
-#include "Struct.h"
-
-
+#include "Matrix4x4.h"
+#include "Vector3.h"
+#include "Vector4.h"
 
 class MatrixMath {
 

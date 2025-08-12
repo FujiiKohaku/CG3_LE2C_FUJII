@@ -3,10 +3,14 @@
 // 標準ライブラリ//
 #include "DebugCamera.h"
 #include "Input.h"
+#include "Matrix4x4.h"
 #include "MatrixMath.h"
 #include "SoundManager.h"
 #include "Unknwn.h"
 #include "Utility.h"
+#include "Vector2.h"
+#include "Vector3.h"
+#include "Vector4.h"
 #include <cassert>
 #include <chrono>
 #include <cstdint>
@@ -88,33 +92,6 @@ struct ModelData {
     std::vector<VertexData> vertices;
     MaterialData material;
 };
-//==音声構造体==//
-// チャンクヘッダ
-// struct ChunkHeader {
-//    char id[4]; // チャンクID
-//    uint32_t size; // チャンクサイズ
-//};
-//
-//// RIFFヘッダチャンク
-// struct RiffHeader {
-//     ChunkHeader chunk; // チャンクヘッダ(RIFF)
-//     char type[4]; // フォーマット（"WAVE"）
-// };
-//
-//// FMTチャンク
-// struct FormatChunk {
-//     ChunkHeader chunk; // チャンクヘッダ(FMT)
-//     WAVEFORMATEX fmt; // WAVEフォーマット
-// };
-//// 音声データ
-// struct SoundData {
-//     // 波形フォーマット
-//     WAVEFORMATEX wfex;
-//     // バッファの先頭アドレス
-//     BYTE* pBuffer;
-//     // バッファのサイズ
-//     unsigned int bufferSize;
-// };
 
 //------------------
 // グローバル定数
@@ -122,30 +99,7 @@ struct ModelData {
 const int kSubdivision = 16; // 16分割
 int kNumVertices = kSubdivision * kSubdivision * 6; // 頂点数
 // --- 列挙体 ---
-enum WaveType {
-    WAVE_SINE,
-    WAVE_CHAINSAW,
-    WAVE_SQUARE,
-};
 
-enum AnimationType {
-    ANIM_RESET,
-    ANIM_NONE,
-    ANIM_COLOR,
-    ANIM_SCALE,
-    ANIM_ROTATE,
-    ANIM_TRANSLATE,
-    ANIM_TORNADO,
-    ANIM_PULSE,
-    ANIM_AURORA,
-    ANIM_BOUNCE,
-    ANIM_TWIST,
-    ANIM_ALL
-
-};
-// グローバル変数
-WaveType waveType = WAVE_SINE;
-AnimationType animationType = ANIM_NONE;
 float waveTime = 0.0f;
 
 ;
@@ -1574,7 +1528,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // リリースする場所
     // XAudio解放
     soundmanager.Finalize(&bgm);
-
 
     CoInitialize(nullptr);
     // #endif
