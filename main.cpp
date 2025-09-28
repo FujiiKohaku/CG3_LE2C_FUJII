@@ -1082,7 +1082,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     D3D12_BLEND_DESC blendDesc {};
     // 全ての色要素を書き込む
     blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
     // RasiterzerStateの設定
     D3D12_RASTERIZER_DESC rasterizerDesc {};
     // 裏面(時計回り)を表示しない
