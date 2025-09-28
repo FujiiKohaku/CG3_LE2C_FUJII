@@ -931,6 +931,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     IDxcIncludeHandler* includHandler = nullptr;
     hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
     assert(SUCCEEDED(hr));
+
     // ==== ルートシグネチャを作る準備 ====
     // RootSignature作成02_00
     // 頂点データの形式を使っていいよ！というフラグを立てる
@@ -1082,6 +1083,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     D3D12_BLEND_DESC blendDesc {};
     // 全ての色要素を書き込む
     blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
     // RasiterzerStateの設定
     D3D12_RASTERIZER_DESC rasterizerDesc {};
     // 裏面(時計回り)を表示しない
@@ -1129,6 +1131,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //////////////
     // 実際に生成//
     //////////////
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPinelineState = nullptr;
+    hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
+    assert(SUCCEEDED(hr));
+
     ////--------------------------
     //// 通常モデル用リソース
     ////--------------------------
@@ -1314,10 +1320,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // Textureの切り替え
     bool useMonstarBall = true;
-
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPinelineState = nullptr;
-    hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
-    assert(SUCCEEDED(hr));
 
     // スフィア作成_05_00_OTHER
     // GenerateSphereVertices(vertexData, kSubdivision, 0.5f);
@@ -1573,7 +1575,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // リリースする場所
     // XAudio解放
     soundmanager.Finalize(&bgm);
-
 
     CoInitialize(nullptr);
     // #endif
