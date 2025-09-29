@@ -1,7 +1,7 @@
 #pragma once
+#include "MatrixMath.h"
 #include "Input.h"
 #include <sstream>
-#include "MatrixMath.h"
 class DebugCamera {
 public:
 #pragma region 行列関数
