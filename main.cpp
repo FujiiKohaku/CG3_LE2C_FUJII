@@ -14,7 +14,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <vector>
+#include <vector> 
 #include <wrl.h>
 // Windows・DirectX関連
 #include <Windows.h>
