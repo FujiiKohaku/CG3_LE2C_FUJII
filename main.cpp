@@ -148,7 +148,26 @@ WaveType waveType = WAVE_SINE;
 AnimationType animationType = ANIM_NONE;
 float waveTime = 0.0f;
 
-;
+enum BlendMode {
+    // ブレンドなし
+    kBlendModeNone,
+    // 通常アルファブレンド
+    kBlendModeNormal,
+    // 加算
+    kBlendModeAdd,
+    // 減算
+    kBlendModeSubtract,
+    // 乗算
+    kBlendModeMultily,
+    // スクリーン
+    kBlendModeScreen,
+    // 利用してはいけない
+    kCountOfBlendMode,
+};
+
+// 今のブレンドモード（最初は通常アルファにしておく）
+int currentBlendMode = kBlendModeNormal;
+
 //////////////---------------------------------------
 // 関数の作成///
 //////////////
@@ -640,6 +659,71 @@ ModelData LoadOjFile(const std::string& directoryPath,
     // 4.ModelDataを返す
     return modelData;
 }
+D3D12_BLEND_DESC CreateBlendDesc(BlendMode mode)
+{
+    D3D12_BLEND_DESC blendDesc {};
+    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+    blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+    blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+    blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+    switch (mode) {
+    case kBlendModeNone:
+        blendDesc.RenderTarget[0].BlendEnable = FALSE;
+        break;
+
+    case kBlendModeNormal: // 通常アルファ
+        blendDesc.RenderTarget[0].BlendEnable = TRUE;
+        blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+        blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+        blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+        blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+        blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+        blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+        break;
+
+    case kBlendModeAdd: // 加算
+        blendDesc.RenderTarget[0].BlendEnable = TRUE;
+        blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+        blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+        blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+        blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+        blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+        blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+        break;
+
+    case kBlendModeSubtract: // 減算
+        blendDesc.RenderTarget[0].BlendEnable = TRUE;
+        blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+        blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+        blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+        blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+        blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+        blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_REV_SUBTRACT;
+        break;
+
+    case kBlendModeMultily: // 乗算
+        blendDesc.RenderTarget[0].BlendEnable = TRUE;
+        blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+        blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+        blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+        blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_DEST_COLOR;
+        blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
+        blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+        break;
+
+    case kBlendModeScreen: // スクリーン
+        blendDesc.RenderTarget[0].BlendEnable = TRUE;
+        blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+        blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+        blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+        blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
+        blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+        blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+        break;
+    }
+
+    return blendDesc;
+}
 
 ////////////////
 // main関数/////-------------------------------------------------------------------------------------------------
@@ -1078,20 +1162,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     D3D12_INPUT_LAYOUT_DESC inputLayoutDesc {};
     inputLayoutDesc.pInputElementDescs = inputElementDescs;
     inputLayoutDesc.NumElements = _countof(inputElementDescs);
-
-    // BlendStateの設定
-    D3D12_BLEND_DESC blendDesc {};
-    // 全ての色要素を書き込む
-    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
-    // ---- ここからアルファブレンドの設定 ----
-    blendDesc.RenderTarget[0].BlendEnable = TRUE; // ブレンド有効化
-    blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA; 
-    blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA; 
-    blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD; 
-    blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE; 
-    blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO; 
-    blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+    // ここブレンドディスクのやつあった
 
     // RasiterzerStateの設定
     D3D12_RASTERIZER_DESC rasterizerDesc {};
@@ -1113,7 +1184,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     graphicsPipelineStateDesc.InputLayout = inputLayoutDesc; // InputLayout
     graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() }; // VertexShader
     graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() }; // PixelShader
-    graphicsPipelineStateDesc.BlendState = blendDesc; // BlensState
+
     graphicsPipelineStateDesc.RasterizerState = rasterizerDesc; // RasterizerState
 
     // DepthStencillStateの設定
@@ -1140,9 +1211,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //////////////
     // 実際に生成//
     //////////////
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPinelineState = nullptr;
-    hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
-    assert(SUCCEEDED(hr));
+    // Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPinelineState = nullptr;
+    // hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
+    // assert(SUCCEEDED(hr));
+
+    // PSOを保存する配列
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineStates[kCountOfBlendMode];
+
+    for (int i = 0; i < kCountOfBlendMode; i++) {
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = graphicsPipelineStateDesc; // 共通設定コピー
+        desc.BlendState = CreateBlendDesc((BlendMode)i); // ブレンドだけ切替
+        device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pipelineStates[i]));
+    }
 
     ////--------------------------
     //// 通常モデル用リソース
@@ -1405,6 +1485,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
             ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
             ImGui::SliderFloat("Alpha", &materialData->color.w, 0.0f, 1.0f);
+            const char* items[] = { "None", "Normal", "Add", "Subtract", "Multiply", "Screen" };
+            ImGui::Combo("Mode", &currentBlendMode, items, IM_ARRAYSIZE(items));
 
             ImGui::End();
 
@@ -1500,7 +1582,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             commandList->RSSetScissorRects(1, &scissorRect); // Scirssorを設定
             // RootSignatureを設定。PS0に設定しているけど別途設定が必要
             commandList->SetGraphicsRootSignature(rootSignature.Get());
-            commandList->SetPipelineState(graphicsPinelineState.Get()); // PS0を設定
+            commandList->SetPipelineState(pipelineStates[currentBlendMode].Get());
+
             commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // VBVを設定
             // 形状を設定。PS0に設定しているものとはまた別。同じものを設定すると考えていけばよい
             commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
