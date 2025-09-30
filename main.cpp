@@ -1017,7 +1017,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = CreateTextureResource(device.Get(), metadata); // get
     Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = UploadTextureData(textureResource.Get(), mipImages, device.Get(), commandList.Get()); //?
     // モデル読み込み
-    ModelData modelData = LoadOjFile("resources", "Plane.obj");
+    ModelData modelData = LoadOjFile("resources", "fence.obj");
 
     std::cout << "テクスチャファイルパス: " << modelData.material.textureFilePath
               << std::endl;
