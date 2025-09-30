@@ -88,65 +88,12 @@ struct ModelData {
     std::vector<VertexData> vertices;
     MaterialData material;
 };
-//==音声構造体==//
-// チャンクヘッダ
-// struct ChunkHeader {
-//    char id[4]; // チャンクID
-//    uint32_t size; // チャンクサイズ
-//};
-//
-//// RIFFヘッダチャンク
-// struct RiffHeader {
-//     ChunkHeader chunk; // チャンクヘッダ(RIFF)
-//     char type[4]; // フォーマット（"WAVE"）
-// };
-//
-//// FMTチャンク
-// struct FormatChunk {
-//     ChunkHeader chunk; // チャンクヘッダ(FMT)
-//     WAVEFORMATEX fmt; // WAVEフォーマット
-// };
-//// 音声データ
-// struct SoundData {
-//     // 波形フォーマット
-//     WAVEFORMATEX wfex;
-//     // バッファの先頭アドレス
-//     BYTE* pBuffer;
-//     // バッファのサイズ
-//     unsigned int bufferSize;
-// };
 
 //------------------
 // グローバル定数
 //------------------
 const int kSubdivision = 16; // 16分割
 int kNumVertices = kSubdivision * kSubdivision * 6; // 頂点数
-// --- 列挙体 ---
-enum WaveType {
-    WAVE_SINE,
-    WAVE_CHAINSAW,
-    WAVE_SQUARE,
-};
-
-enum AnimationType {
-    ANIM_RESET,
-    ANIM_NONE,
-    ANIM_COLOR,
-    ANIM_SCALE,
-    ANIM_ROTATE,
-    ANIM_TRANSLATE,
-    ANIM_TORNADO,
-    ANIM_PULSE,
-    ANIM_AURORA,
-    ANIM_BOUNCE,
-    ANIM_TWIST,
-    ANIM_ALL
-
-};
-// グローバル変数
-WaveType waveType = WAVE_SINE;
-AnimationType animationType = ANIM_NONE;
-float waveTime = 0.0f;
 
 enum BlendMode {
     // ブレンドなし
@@ -168,7 +115,7 @@ enum BlendMode {
 // 今のブレンドモード（最初は通常アルファにしておく）
 int currentBlendMode = kBlendModeNormal;
 
-//////////////---------------------------------------
+//////////////
 // 関数の作成///
 //////////////
 
@@ -176,31 +123,43 @@ int currentBlendMode = kBlendModeNormal;
 Microsoft::WRL::ComPtr<ID3D12Resource>
 CreateBufferResource(ID3D12Device* device, size_t sizeInBytes)
 {
-
-    // 頂点リソース用のヒープの設定02_03
+    //===============================
+    // ヒープの設定（メモリの種類を決める）
+    //===============================
     D3D12_HEAP_PROPERTIES uploadHeapProperties {};
-    uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD; // Uploadheapを使う
-    // 頂点リソースの設定02_03
+    uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+    //===============================
+    // リソース（バッファ）の設定
+    //===============================
     D3D12_RESOURCE_DESC vertexResourceDesc {};
-    // バッファリソース。テクスチャの場合はまた別の設定をする02_03
     vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    vertexResourceDesc.Width = sizeInBytes; // リソースのサイズ　02_03
-    // バッファの場合はこれらは１にする決まり02_03
+    vertexResourceDesc.Width = sizeInBytes;
+
+    // バッファの場合は以下は固定値
     vertexResourceDesc.Height = 1;
     vertexResourceDesc.DepthOrArraySize = 1;
     vertexResourceDesc.MipLevels = 1;
     vertexResourceDesc.SampleDesc.Count = 1;
-    // バッファの場合はこれにする決まり02_03
+
     vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-    // 実際に頂点リソースを作る02_03
+    //===============================
+    // リソースの生成（確保）
+    //===============================
     Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource = nullptr;
     HRESULT hr = device->CreateCommittedResource(
-        &uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &vertexResourceDesc,
-        D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
-        IID_PPV_ARGS(&vertexResource));
+        &uploadHeapProperties, // ヒープの種類（アップロード）
+        D3D12_HEAP_FLAG_NONE, // 特殊な指定なし
+        &vertexResourceDesc, // リソースの内容（バッファ）
+        D3D12_RESOURCE_STATE_GENERIC_READ, // 初期状態：CPU→GPU転送用
+        nullptr, // クリア値（バッファなので不要）
+        IID_PPV_ARGS(&vertexResource)); // 結果を受け取る
     assert(SUCCEEDED(hr));
 
+    //===============================
+    // 完成したリソースを返す
+    //===============================
     return vertexResource.Get();
 }
 
@@ -223,7 +182,7 @@ CreateDescriptorHeap(Microsoft::WRL::ComPtr<ID3D12Device> device,
     HRESULT hr = device->CreateDescriptorHeap(&DescriptorHeapDesc,
         IID_PPV_ARGS(&DescriptorHeap));
     // ディスクリプタヒープが作れなかったので起動できない
-    assert(SUCCEEDED(hr)); // 1
+    assert(SUCCEEDED(hr));
     return DescriptorHeap.Get();
 }
 
@@ -732,9 +691,7 @@ D3D12_BLEND_DESC CreateBlendDesc(BlendMode mode)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     D3DResourceLeakChecker leakChecker;
-
     CoInitializeEx(0, COINIT_MULTITHREADED);
-
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
     // main関数はじまってすぐに登録するとよい
     SetUnhandledExceptionFilter(Utility::ExportDump);
@@ -756,7 +713,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // ファイルを作って書き込み準備
     std::ofstream logStream(logFilePath);
     // 出力
-
     WNDCLASS wc {};
     // ウィンドウプロシージャ
     wc.lpfnWndProc = WindowProc;
@@ -893,11 +849,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #endif // DEBUG
 
     // コマンドキューを生成する
-    Microsoft::WRL::ComPtr<ID3D12CommandQueue>
-        commandQueue = nullptr; // com
+    Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue = nullptr; // com
     D3D12_COMMAND_QUEUE_DESC commandQueueDesc {};
-    hr = device->CreateCommandQueue(&commandQueueDesc,
-        IID_PPV_ARGS(&commandQueue));
+    hr = device->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&commandQueue));
     // コマンドキューの生成が上手くいかなかったので起動できない
     assert(SUCCEEDED(hr));
     // コマンドアロケーターを生成する
@@ -914,32 +868,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // ----------------------------
     // DirectX12 初期化ここまで！
     // ----------------------------
-    //==XAudioエンジンのインスタンスを生成==//
-    // HRESULT result = XAudio2Create(&xAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR);
-
-    //==マスターボイスを生成==//
-    // result = xAudio2->CreateMasteringVoice(&masterVoice);
-
-    //=======================
-    //  入力デバイスの初期化
-    //=======================
-    // DirectInput全体の初期化(後からゲームパッドなどを追加するとしてもこのオブジェクトはひとつでいい)(winmainを改造、hinstanceに名づけをしました)
-    // Microsoft::WRL::ComPtr<IDirectInput8> directInput = nullptr;
-    // result = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput, nullptr);
-    // assert(SUCCEEDED(result));
-    // キーボードデバイスの生成（GUID_Joystickなど指定すればほかの種類のデバイスも扱える）
-    // Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard = nullptr; // com
-    // result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, nullptr);
-    // assert(SUCCEEDED(result));
-    // 入六データ形式のセット(キーボードの場合c_dfDIKeyboardだけど入力デバイスの種類によってあらかじめ何種類か用意されている)
-    // result = keyboard->SetDataFormat(&c_dfDIKeyboard); // 標準形式
-    // assert(SUCCEEDED(result));
-    // 排他制御レベルのセット
-    // result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-    // assert(SUCCEEDED(result));
-    //=======================
-    //  入力デバイスの初期化ここまで
-    //=======================
+ 
 
     // スワップチェーンを生成する
     Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr; // com
@@ -1220,7 +1149,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     for (int i = 0; i < kCountOfBlendMode; i++) {
         D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = graphicsPipelineStateDesc; // 共通設定コピー
-        desc.BlendState = CreateBlendDesc((BlendMode)i); // ブレンドだけ切替
+        desc.BlendState = CreateBlendDesc(static_cast<BlendMode>(i)); // ブレンドだけ切替
         device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pipelineStates[i]));
     }
 
@@ -1502,7 +1431,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             //  ゲームの処理02_02
             //===================================
             //  02_02
-            waveTime += 0.05f;
+
             // インプットの更新
             input.Update();
             // デバッグカメラの更新
