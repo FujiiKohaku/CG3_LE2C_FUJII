@@ -1084,9 +1084,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // 全ての色要素を書き込む
     blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
+    // ---- ここからアルファブレンドの設定 ----
+    blendDesc.RenderTarget[0].BlendEnable = TRUE; // ブレンド有効化
+    blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA; 
+    blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA; 
+    blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD; 
 
-
-
+    blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE; 
+    blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO; 
+    blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
 
     // RasiterzerStateの設定
     D3D12_RASTERIZER_DESC rasterizerDesc {};
@@ -1399,6 +1405,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
             ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
             ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
+            ImGui::SliderFloat("Alpha", &materialData->color.w, 0.0f, 1.0f);
 
             ImGui::End();
 
