@@ -13,7 +13,7 @@ public:
     bool IsKeyPressed(BYTE keyCode) const;
 
 private:
-    Microsoft::WRL::ComPtr<IDirectInput8> directInput_;
+    Microsoft::WRL::ComPtr<IDirectInput8> directInput_ = nullptr;
     Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard_;
     BYTE keys_[256] {};
 };

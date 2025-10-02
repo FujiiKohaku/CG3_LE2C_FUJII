@@ -60,12 +60,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IntDir>$(SolutionDir)..\generated\obj\$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>..\generated</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
     <IntDir>$(SolutionDir)..\generated\obj\$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>..\generated</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IntDir>$(SolutionDir)..\generated\obj\$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>..\generated</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
