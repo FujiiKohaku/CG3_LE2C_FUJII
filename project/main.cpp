@@ -1338,11 +1338,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //=================================
     // キーボードインスタンス作成
     //=================================
-    Input input;
+    Input* input = nullptr;
+    input = new Input();
     //=================================
     // キーボード情報の取得開始
     //=================================
-    input.Initialize(hInstance, hwnd);
+    input->Initialize(hInstance, hwnd);
 
     //=================================
     // デバックカメラインスタンス作成
@@ -1411,12 +1412,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             //  02_02
             waveTime += 0.05f;
             // インプットの更新
-            input.Update();
+            input->Update();
             // デバッグカメラの更新
             debugCamera.Update();
 
             // 数字の０キーが押されていたら
-            if (input.IsKeyPressed(DIK_0)) {
+            if (input->IsKeyPressed(DIK_0)) {
                 OutputDebugStringA("Hit 0");
                 soundmanager.SoundPlayWave(bgm);
             }
@@ -1574,6 +1575,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // リリースする場所
     // XAudio解放
     soundmanager.Finalize(&bgm);
+
+    // デリート
+    delete input;
 
     CoInitialize(nullptr);
     // #endif
