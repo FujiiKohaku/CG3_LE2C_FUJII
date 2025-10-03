@@ -7,8 +7,7 @@ class WinApp {
 public:
     // 初期化
     void initialize();
-    // 更新
-    void Update();
+
     // 終了
     void Finalize();
 

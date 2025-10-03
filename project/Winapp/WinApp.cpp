@@ -65,9 +65,7 @@ void WinApp::initialize()
     ShowWindow(hwnd_, SW_SHOW);
 }
 
-void WinApp::Update()
-{
-}
+
 
 void WinApp::Finalize()
 {
