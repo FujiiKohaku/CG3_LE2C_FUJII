@@ -646,7 +646,8 @@ ModelData LoadOjFile(const std::string& directoryPath,
 // main関数/////-------------------------------------------------------------------------------------------------
 //  Windwsアプリでの円とリポウント(main関数)
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+
 {
     D3DResourceLeakChecker leakChecker;
 
@@ -1309,14 +1310,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //=================================
     // キーボード情報の取得開始
     //=================================
-    input->Initialize(hInstance, winApp->GetHwnd());
+    input->Initialize(winApp);
 
     //=================================
     // デバックカメラインスタンス作成
     //=================================
     DebugCamera debugCamera;
     // debugcamera初期化一回だけ
-    debugCamera.Initialize(hInstance, winApp->GetHwnd());
+    debugCamera.Initialize(winApp);
     //=================================
     // サウンドマネージャーインスタンス作成
     //=================================
@@ -1542,14 +1543,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // XAudio解放
     soundmanager.Finalize(&bgm);
 
+    // WindowsAPIの終了処理
+    winApp->Finalize();
+
     // デリート
     delete input;
     delete winApp;
-
-    CoInitialize(nullptr);
-    // #endif
-    CloseWindow(winApp->GetHwnd());
-
     return 0;
 
 } // 最後のカギかっこ

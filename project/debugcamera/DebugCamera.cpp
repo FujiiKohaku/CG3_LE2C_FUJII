@@ -46,9 +46,11 @@ void DebugCamera::Update()
     viewMatrix = DebugCamera::Inverse(cameraMatrix);
 }
 
-void DebugCamera::Initialize(HINSTANCE hinstance, HWND hwnd)
+void DebugCamera::Initialize(WinApp* winApp)
 {
-    input_.Initialize(hinstance, hwnd);
+    winApp_ = winApp;
+
+    input_.Initialize(winApp);
     // ワールド変換行列を作成（スケール1、回転・移動はメンバ変数から）
     cameraMatrix = DebugCamera::MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, rotation_, translation_);
 

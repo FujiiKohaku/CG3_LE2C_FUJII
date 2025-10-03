@@ -1,12 +1,13 @@
 #include "Input.h"
 #include <cassert>
 
-bool Input::Initialize(HINSTANCE hInstance, HWND hwnd)
+bool Input::Initialize(WinApp* winApp)
 {
     HRESULT result;
 
+    winApp_ = winApp;
     // DirectInput全体の初期化(後からゲームパッドなどを追加するとしてもこのオブジェクトはひとつでいい)(winmainを改造、hinstanceに名づけをしました)
-    result = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
+    result = DirectInput8Create(winApp_->GetHinstance(), DIRECTINPUT_VERSION, IID_IDirectInput8,
         reinterpret_cast<void**>(directInput_.ReleaseAndGetAddressOf()), nullptr);
     assert(SUCCEEDED(result));
 
@@ -19,7 +20,7 @@ bool Input::Initialize(HINSTANCE hInstance, HWND hwnd)
     assert(SUCCEEDED(result));
 
     // 排他制御レベルのセット
-    result = keyboard_->SetCooperativeLevel(hwnd,DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+    result = keyboard_->SetCooperativeLevel(winApp_->GetHwnd(), DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
     assert(SUCCEEDED(result));
 
     return true;

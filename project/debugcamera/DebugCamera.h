@@ -1,6 +1,7 @@
 #pragma once
-#include "MatrixMath.h"
 #include "Input.h"
+#include "MatrixMath.h"
+#include "WinApp.h"
 #include <sstream>
 class DebugCamera {
 public:
@@ -215,7 +216,7 @@ public:
     }
 #pragma endregion
 
-    void Initialize(HINSTANCE hinstance, HWND hwnd);
+    void Initialize(WinApp* winApp);
 
     void Update();
 
@@ -233,4 +234,6 @@ private:
     Matrix4x4 orthoGraphicMatrix = MakeOrthographicMatrix(-160.0f, 160.0f, 200.0f, 300.0f, 0.0f, 1000.0f);
 
     Input input_; // 入力管理クラス
+
+    WinApp* winApp_ = nullptr;
 };

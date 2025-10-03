@@ -9,6 +9,9 @@ public:
     void initialize();
     // 更新
     void Update();
+    // 終了
+    void Finalize();
+
     // クライアント領域のサイズ
     static const int32_t kClientWidth = 1280;
     static const int32_t kClientHeight = 720;
@@ -16,8 +19,12 @@ public:
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
     // ウィンドウハンドルのgetter
     HWND GetHwnd() const { return hwnd_; }
+    // ウィンドウクラスのgetter
+    HINSTANCE GetHinstance() const { return wc_.hInstance; }
 
 private:
     // ウィンドウハンドル
     HWND hwnd_ = nullptr;
+    // ウィンドウクラスの設定
+    WNDCLASS wc_ {};
 };
