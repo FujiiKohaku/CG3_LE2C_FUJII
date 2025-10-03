@@ -26,6 +26,20 @@ LRESULT CALLBACK WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM l
     return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
+bool WinApp::ProcessMessage()
+{
+    MSG msg {};
+    if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    if (msg.message == WM_QUIT) {
+        return true;
+    }
+
+    return false;
+}
+
 void WinApp::initialize()
 {
 
@@ -64,8 +78,6 @@ void WinApp::initialize()
     // ウィンドウを表示する
     ShowWindow(hwnd_, SW_SHOW);
 }
-
-
 
 void WinApp::Finalize()
 {

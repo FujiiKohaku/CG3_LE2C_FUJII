@@ -1331,9 +1331,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     while (msg.message != WM_QUIT) {
 
         // Windowにメッセージが来てたら最優先で処理させる
-        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+        if (winApp->ProcessMessage()) {
+            break;
         } else {
 
             // ここがframeの先頭02_03
