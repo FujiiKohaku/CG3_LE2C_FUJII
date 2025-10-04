@@ -31,6 +31,15 @@
     <Filter Include="ソース ファイル\WinApp">
       <UniqueIdentifier>{9c9059a2-26ba-48c5-888f-4d7b4c25273f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DirectXCommon">
+      <UniqueIdentifier>{ffbdf257-b292-4192-a192-92dca806674a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Logger">
+      <UniqueIdentifier>{0153ab7e-ebf4-41f7-8149-372d423ba380}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="StringUtility">
+      <UniqueIdentifier>{f3d9afa2-224d-42fb-8e38-e5e0af6ec655}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -80,6 +89,15 @@
     </ClCompile>
     <ClCompile Include="Winapp\WinApp.cpp">
       <Filter>ソース ファイル\WinApp</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectXCommon\DirectXCommon.cpp">
+      <Filter>DirectXCommon</Filter>
+    </ClCompile>
+    <ClCompile Include="Logger\Logger.cpp">
+      <Filter>ソース ファイル\Logger</Filter>
+    </ClCompile>
+    <ClCompile Include="StringUtility\StringUtility.cpp">
+      <Filter>StringUtility</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -133,6 +151,18 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Winapp\WinApp.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectXCommon\DirectXCommon.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Logger\Logger.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="StringUtility\StringUtility.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Logger.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

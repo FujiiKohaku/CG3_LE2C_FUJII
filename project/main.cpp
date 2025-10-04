@@ -2,6 +2,7 @@
 #define _USE_MATH_DEFINES
 // 標準ライブラリ//
 #include "DebugCamera.h"
+#include "DirectXCommon/DirectXCommon.h"
 #include "Input.h"
 #include "MatrixMath.h"
 #include "SoundManager.h"
@@ -89,33 +90,7 @@ struct ModelData {
     std::vector<VertexData> vertices;
     MaterialData material;
 };
-//==音声構造体==//
-// チャンクヘッダ
-// struct ChunkHeader {
-//    char id[4]; // チャンクID
-//    uint32_t size; // チャンクサイズ
-//};
-//
-//// RIFFヘッダチャンク
-// struct RiffHeader {
-//     ChunkHeader chunk; // チャンクヘッダ(RIFF)
-//     char type[4]; // フォーマット（"WAVE"）
-// };
-//
-//// FMTチャンク
-// struct FormatChunk {
-//     ChunkHeader chunk; // チャンクヘッダ(FMT)
-//     WAVEFORMATEX fmt; // WAVEフォーマット
-// };
-//// 音声データ
-// struct SoundData {
-//     // 波形フォーマット
-//     WAVEFORMATEX wfex;
-//     // バッファの先頭アドレス
-//     BYTE* pBuffer;
-//     // バッファのサイズ
-//     unsigned int bufferSize;
-// };
+
 
 //------------------
 // グローバル定数
@@ -412,27 +387,7 @@ struct D3DResourceLeakChecker {
     }
 };
 
-//// ウィンドウプロシージャ
-// LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
-//{
-//
-//     //
-//     if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
-//         return true;
-//     }
-//
-//     // メッセージに応じて固有の処理を行う
-//     switch (msg) {
-//         // ウィンドウが破棄された
-//     case WM_DESTROY:
-//         // OSに対して、アプリの終了を伝える
-//         PostQuitMessage(0);
-//         return 0;
-//     }
-//     // 標準のメッセージ処理を行う
-//     return DefWindowProc(hwnd, msg, wparam, lparam);
-// }
-//  CompileShader関数02_00
+
 Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     // CompilerするSHaderファイルへのパス02_00
     const std::wstring& filepath,
@@ -677,72 +632,70 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // WinAppの初期化
     winApp = new WinApp();
     winApp->initialize();
-#ifdef _DEBUG
+//#ifdef _DEBUG
+//
+//    Microsoft::WRL::ComPtr<ID3D12Debug1> debugController = nullptr; // COM
+//    if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+//        // デバックレイヤーを有効化する
+//        debugController->EnableDebugLayer();
+//        // さらに6PU側でもチェックリストを行うようにする
+//        debugController->SetEnableGPUBasedValidation(TRUE);
+//    }
+//#endif // _DEBUG
 
-    Microsoft::WRL::ComPtr<ID3D12Debug1> debugController = nullptr; // COM
-    if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
-        // デバックレイヤーを有効化する
-        debugController->EnableDebugLayer();
-        // さらに6PU側でもチェックリストを行うようにする
-        debugController->SetEnableGPUBasedValidation(TRUE);
-    }
-#endif // _DEBUG
-
-    // DXGIファクトリーの生成
-    Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr; // com
+    //// DXGIファクトリーの生成
+    //Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr; // com
     // HRESULTはWindows系のエラー子どであり
     // 関数が成功したかをSUCCEEDEDマクロで判定できる
-    HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(dxgiFactory.GetAddressOf()));
-    // 初期化の根本的な部分でエラーが出た場合はプログラムが間違っているか、どうにもできない場合が多いのでassertにしておく
-    assert(SUCCEEDED(hr));
+   /* HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(dxgiFactory.GetAddressOf()));*/
+    //// 初期化の根本的な部分でエラーが出た場合はプログラムが間違っているか、どうにもできない場合が多いのでassertにしておく
+    //assert(SUCCEEDED(hr));
     // 使用するアダプタ用の変数,最初にnullptrを入れておく
-    IDXGIAdapter4* useAdapter = nullptr; // com
-    // よい順にアダプタを頼む
-    for (UINT i = 0; dxgiFactory->EnumAdapterByGpuPreference(
-                         i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
-                         IID_PPV_ARGS(&useAdapter))
-        != DXGI_ERROR_NOT_FOUND;
-        ++i) {
+    //IDXGIAdapter4* useAdapter = nullptr; // com
+    //// よい順にアダプタを頼む
+    //for (UINT i = 0; dxgiFactory->EnumAdapterByGpuPreference(
+    //                     i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
+    //                     IID_PPV_ARGS(&useAdapter))!= DXGI_ERROR_NOT_FOUND;++i) {
 
-        // アダプターの情報を取得する
-        DXGI_ADAPTER_DESC3 adapterDesc {}; // com
-        hr = useAdapter->GetDesc3(&adapterDesc); // comGet
-        assert(SUCCEEDED(hr)); // 取得できないのは一大事
-        // ソフトウェアアダプタでなければ採用!
-        if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) { // get
-            // 採用したアダプタの情報をログに出力wstringの方なので注意
-            Utility::Log(logStream,
-                Utility::ConvertString(std::format(L"Use Adapater:{}\n",
-                    adapterDesc.Description))); // get
-            break;
-        }
-        useAdapter = nullptr; // ソフトウェアアダプタの場合は見なかったことにする
-    }
+    //    // アダプターの情報を取得する
+    //    DXGI_ADAPTER_DESC3 adapterDesc {}; // com
+    //    hr = useAdapter->GetDesc3(&adapterDesc); // comGet
+    //    assert(SUCCEEDED(hr)); // 取得できないのは一大事
+    //    // ソフトウェアアダプタでなければ採用!
+    //    if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)) { // get
+    //        // 採用したアダプタの情報をログに出力wstringの方なので注意
+    //        Utility::Log(logStream,
+    //            Utility::ConvertString(std::format(L"Use Adapater:{}\n",
+    //                adapterDesc.Description))); // get
+    //        break;
+    //    }
+    //    useAdapter = nullptr; // ソフトウェアアダプタの場合は見なかったことにする
+    //}
 
-    // 適切なアダプタが見つからなかったので起動できない
-    assert(useAdapter != nullptr);
-    Microsoft::WRL::ComPtr<ID3D12Device> device = nullptr;
-    // 昨日レベルとログ出力用の文字列
-    D3D_FEATURE_LEVEL featureLevels[] = {
-        D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0
-    };
+    //// 適切なアダプタが見つからなかったので起動できない
+    //assert(useAdapter != nullptr);
+    //Microsoft::WRL::ComPtr<ID3D12Device> device = nullptr;
+    //// 昨日レベルとログ出力用の文字列
+    //D3D_FEATURE_LEVEL featureLevels[] = {
+    //    D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0
+    //};
 
-    const char* featureLevelStrings[] = { "12.2", "12.1", "12.0" };
-    // 高い順に生成できるか試していく
-    for (size_t i = 0; i < _countof(featureLevels); ++i) {
-        // 採用したアダプターでデバイスを生成
-        hr = D3D12CreateDevice(useAdapter, featureLevels[i], IID_PPV_ARGS(&device));
-        // 指定した昨日レベルでデバイスは生成できたか確認
-        if (SUCCEEDED(hr)) {
-            // 生成できたのでログ出力を行ってループを抜ける
-            Utility::Log(logStream,
-                std::format("FeatureLevel : {}\n", featureLevelStrings[i]));
-            break;
-        }
-    }
-    // デバイスの生成が上手くいかなかったので起動できない
-    assert(device != nullptr);
-    Utility::Log(logStream, "Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
+    //const char* featureLevelStrings[] = { "12.2", "12.1", "12.0" };
+    //// 高い順に生成できるか試していく
+    //for (size_t i = 0; i < _countof(featureLevels); ++i) {
+    //    // 採用したアダプターでデバイスを生成
+    //    hr = D3D12CreateDevice(useAdapter, featureLevels[i], IID_PPV_ARGS(&device));
+    //    // 指定した昨日レベルでデバイスは生成できたか確認
+    //    if (SUCCEEDED(hr)) {
+    //        // 生成できたのでログ出力を行ってループを抜ける
+    //        Utility::Log(logStream,
+    //            std::format("FeatureLevel : {}\n", featureLevelStrings[i]));
+    //        break;
+    //    }
+    //}
+    //// デバイスの生成が上手くいかなかったので起動できない
+    //assert(device != nullptr);
+    //Utility::Log(logStream, "Complete create D3D12Device!!!\n"); // 初期化完了のログを出す
 
 #ifdef _DEBUG
 
@@ -775,25 +728,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 #endif // DEBUG
 
-    // コマンドキューを生成する
-    Microsoft::WRL::ComPtr<ID3D12CommandQueue>
-        commandQueue = nullptr; // com
-    D3D12_COMMAND_QUEUE_DESC commandQueueDesc {};
-    hr = device->CreateCommandQueue(&commandQueueDesc,
-        IID_PPV_ARGS(&commandQueue));
-    // コマンドキューの生成が上手くいかなかったので起動できない
-    assert(SUCCEEDED(hr));
-    // コマンドアロケーターを生成する
-    Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator = nullptr; // com
-    hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
-    // コマンドキューアロケーターの生成があ上手くいかなかったので起動できない
-    assert(SUCCEEDED(hr));
+    //// コマンドキューを生成する
+    //D3D12_COMMAND_QUEUE_DESC commandQueueDesc {};
+    //hr = device->CreateCommandQueue(&commandQueueDesc,
+    //    IID_PPV_ARGS(&commandQueue));
+    //// コマンドキューの生成が上手くいかなかったので起動できない
+    //assert(SUCCEEDED(hr));
+    //// コマンドアロケーターを生成する
+   
+    //hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
+    //// コマンドキューアロケーターの生成があ上手くいかなかったので起動できない
+    //assert(SUCCEEDED(hr));
 
-    // コマンドリストを生成する
-    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList = nullptr; // com
-    hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
-    // コマンドリストの生成が上手くいかなかったので起動できない
-    assert(SUCCEEDED(hr));
+    //// コマンドリストを生成する
+  
+    //hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
+    //// コマンドリストの生成が上手くいかなかったので起動できない
+    //assert(SUCCEEDED(hr));
     // ----------------------------
     // DirectX12 初期化ここまで！
     // ----------------------------
@@ -824,19 +775,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     //  入力デバイスの初期化ここまで
     //=======================
 
-    // スワップチェーンを生成する
-    Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr; // com
-    DXGI_SWAP_CHAIN_DESC1 swapChainDesc {};
-    swapChainDesc.Width = WinApp::kClientWidth; // 画面の幅。ウィンドウのクライアント領域を同じものんにしておく
-    swapChainDesc.Height = WinApp::kClientHeight; // 画面の高さ。ウィンドウのクライアント領域を同じものにしておく
-    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式
-    swapChainDesc.SampleDesc.Count = 1; // マルチサンプルしない
-    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // 描画のターゲットとしてりようする
-    swapChainDesc.BufferCount = 2; // ダブルバッファ
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニターに移したら,中身を吐き
-    // コマンドキュー,ウィンドウバンドル、設定を渡して生成する
-    hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue.Get(), winApp->GetHwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf())); // com.Get,OF
-    assert(SUCCEEDED(hr));
+    //// スワップチェーンを生成する
+    //DXGI_SWAP_CHAIN_DESC1 swapChainDesc {};
+    //swapChainDesc.Width = WinApp::kClientWidth; // 画面の幅。ウィンドウのクライアント領域を同じものんにしておく
+    //swapChainDesc.Height = WinApp::kClientHeight; // 画面の高さ。ウィンドウのクライアント領域を同じものにしておく
+    //swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式
+    //swapChainDesc.SampleDesc.Count = 1; // マルチサンプルしない
+    //swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // 描画のターゲットとしてりようする
+    //swapChainDesc.BufferCount = 2; // ダブルバッファ
+    //swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニターに移したら,中身を吐き
+    //// コマンドキュー,ウィンドウバンドル、設定を渡して生成する
+    //hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue.Get(), winApp->GetHwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf())); // com.Get,OF
+    //assert(SUCCEEDED(hr));
 
     // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap = // com
