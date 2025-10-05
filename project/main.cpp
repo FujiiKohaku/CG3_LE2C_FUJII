@@ -658,15 +658,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     //device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
 
     // 初期値でFenceを作る01_02
-    Microsoft::WRL::ComPtr<ID3D12Fence> fence = nullptr; // com
-    uint64_t fenceValue = 0;
-    hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE,
-        IID_PPV_ARGS(&fence));
-    assert(SUCCEEDED(hr));
+    //Microsoft::WRL::ComPtr<ID3D12Fence> fence = nullptr; // com
+    //uint64_t fenceValue = 0;
+    //hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE,
+    //    IID_PPV_ARGS(&fence));
+    //assert(SUCCEEDED(hr));
 
-    // FenceのSignalを待つためのイベントを作成する01_02
-    HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-    assert(fenceEvent != nullptr);
+    //// FenceのSignalを待つためのイベントを作成する01_02
+    //HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+    //assert(fenceEvent != nullptr);
 
     // dxcCompilerを初期化CG2_02_00
     IDxcUtils* dxcUtils = nullptr;

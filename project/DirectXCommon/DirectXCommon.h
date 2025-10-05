@@ -49,10 +49,13 @@ private:
     uint32_t descriptorSizeRTV = 0;
     uint32_t descriptorSizeDSV = 0;
     // スワップチェーンから取得したバックバッファリソース（2枚分）
-    // Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = { nullptr };
-
     std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, 2> swapChainResources;
-
+    // フェンス
+    Microsoft::WRL::ComPtr<ID3D12Fence> fence = nullptr;
+    // フェンス値
+    uint64_t fenceValue = 0;
+    // フェンスのSignalを待つためのイベント
+    HANDLE fenceEvent = nullptr;
     //  WindowsAPI
     WinApp* winApp_ = nullptr;
     // デバイス初期化関数
@@ -69,7 +72,8 @@ private:
     void InitializeRenderTargetView();
     // DSVの初期化
     void InitializeDepthStencilView();
-
+    // フェンスの初期化
+    void InitializeFence();
     // ディスクリプタヒープ生成関数
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle);
 

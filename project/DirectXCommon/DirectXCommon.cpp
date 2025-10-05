@@ -274,3 +274,15 @@ void DirectXCommon::InitializeDepthStencilView()
     device->CreateDepthStencilView(depthStencilResource.Get(), &dsvDesc, dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 #pragma endregion
+
+void DirectXCommon::InitializeFence()
+{
+    HRESULT hr;
+    fenceValue = 0;
+    hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+    assert(SUCCEEDED(hr));
+
+    // FenceのSignalを待つためのイベントを作成する
+    fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+    assert(fenceEvent != nullptr);
+}
