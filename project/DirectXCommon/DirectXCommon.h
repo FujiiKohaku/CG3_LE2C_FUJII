@@ -2,6 +2,7 @@
 #include "Logger.h"
 #include "StringUtility.h"
 #include <WinApp.h>
+#include <array>
 #include <cassert>
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -12,6 +13,11 @@ class DirectXCommon {
 public:
     // 初期化
     void Initialize(WinApp* winApp);
+
+    // SRVの指定番号のCPUデスクリプタハンドルを取得する
+    D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUDescriptorHandle(uint32_t index);
+
+    D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUDescriptorHandle(uint32_t index);
 
 private:
     // DXGIファクトリーの生成
@@ -43,7 +49,9 @@ private:
     uint32_t descriptorSizeRTV = 0;
     uint32_t descriptorSizeDSV = 0;
     // スワップチェーンから取得したバックバッファリソース（2枚分）
-    Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = { nullptr };
+    // Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = { nullptr };
+
+    std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, 2> swapChainResources;
 
     //  WindowsAPI
     WinApp* winApp_ = nullptr;

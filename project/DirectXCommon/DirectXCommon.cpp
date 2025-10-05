@@ -12,6 +12,19 @@ void DirectXCommon::Initialize(WinApp* winApp)
     // ここに初期化処理を書いていく
 }
 
+#pragma region SRV特化関数
+// SRVの指定番号のCPUデスクリプタハンドルを取得する
+D3D12_CPU_DESCRIPTOR_HANDLE DirectXCommon::GetSRVCPUDescriptorHandle(uint32_t index)
+{
+    return GetCPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, index);
+}
+// SRVの指定番号のGPUデスクリプタハンドルを取得する
+D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::GetSRVGPUDescriptorHandle(uint32_t index)
+{
+    return GetGPUDescriptorHandle(srvDescriptorHeap, descriptorSizeSRV, index);
+}
+#pragma endregion
+
 #pragma region デバイス初期化
 
 // デバイス初期化関数
@@ -205,27 +218,28 @@ void DirectXCommon::InitializeDescriptorHeaps()
 
 void DirectXCommon::InitializeRenderTargetView()
 {
-    HRESULT hr;
+    HRESULT hr = S_OK;
 
-    // SwapChainからResourceを引っ張ってくる
-    hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
-    // 上手く取得できなければ起動できない
-    assert(SUCCEEDED(hr));
-    hr = swapChain->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
-    assert(SUCCEEDED(hr));
+    // スワップチェーンからリソースを取得（バックバッファ）
+    for (uint32_t i = 0; i < swapChainResources.size(); ++i) {
+        hr = swapChain->GetBuffer(i, IID_PPV_ARGS(&swapChainResources[i]));
+        assert(SUCCEEDED(hr));
+    }
+
     // RTVの設定
     D3D12_RENDER_TARGET_VIEW_DESC rtvDesc {};
     rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-    // ディスクリプタの先頭を取得する
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    // RTVを2つ作るのでディスクリプタを２つ用意
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2];
-    // まず１つ目をつくる。１つ目は最初のところに作る。作る場所をこちらで指定して上げる必要がある
-    rtvHandles[0] = rtvStartHandle;
-    device->CreateRenderTargetView(swapChainResources[0].Get(), &rtvDesc, rtvHandles[0]);
-    // 2つ目のディスクリプタハンドルを得る（自力で）
-    rtvHandles[1].ptr = rtvHandles[0].ptr + device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    // 2つ目を作る
-    device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
+
+    // RTVハンドルの先頭を取得
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+    // バックバッファ（2枚）分RTVを作成
+    for (uint32_t i = 0; i < swapChainResources.size(); ++i) {
+        // RenderTargetViewの生成
+        device->CreateRenderTargetView(swapChainResources[i].Get(), &rtvDesc, rtvHandle);
+
+        // 次のディスクリプタ位置に進める
+        rtvHandle.ptr += descriptorSizeRTV;
+    }
 }
