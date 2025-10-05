@@ -1003,12 +1003,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // 03_01_Other
     /*Microsoft::WRL::ComPtr<ID3D12Resource> depthStencillResource = CreateDepthStencilTextureResource(device.Get(), WinApp::kClientWidth, WinApp::kClientHeight);*/
 
-    // DSVの設定
-    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc {};
-    dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-    // DSVHeapの先端にDSVを作る
-    device->CreateDepthStencilView(depthStencillResource.Get(), &dsvDesc, dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+    //// DSVの設定
+    //D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc {};
+    //dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    //dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+    //// DSVHeapの先端にDSVを作る
+    //device->CreateDepthStencilView(depthStencillResource.Get(), &dsvDesc, dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
 
     // 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
     Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource = CreateBufferResource(device.Get(), sizeof(DirectionalLight));

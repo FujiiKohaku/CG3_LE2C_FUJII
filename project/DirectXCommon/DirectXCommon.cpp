@@ -114,6 +114,7 @@ void DirectXCommon::InitializeCommand()
 }
 #pragma endregion
 
+#pragma region スワップチェーン初期化
 void DirectXCommon::InitializeSwapChain()
 {
     HRESULT hr;
@@ -131,7 +132,9 @@ void DirectXCommon::InitializeSwapChain()
     hr = dxgiFactory->CreateSwapChainForHwnd(commandQueue.Get(), winApp_->GetHwnd(), &swapChainDesc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain.GetAddressOf())); // com.Get,OF
     assert(SUCCEEDED(hr));
 }
+#pragma endregion
 
+#pragma region 深度バッファ初期化
 void DirectXCommon::InitializeDepthBuffer()
 {
     HRESULT hr;
@@ -168,7 +171,9 @@ void DirectXCommon::InitializeDepthBuffer()
 
     assert(SUCCEEDED(hr));
 }
+#pragma endregion
 
+#pragma region ディスクリプタヒープ生成関数
 // ディスクリプタヒープ生成関数
 Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DirectXCommon::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle)
 {
@@ -185,6 +190,10 @@ Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DirectXCommon::CreateDescriptorHeap
     assert(SUCCEEDED(hr)); // 1
     return DescriptorHeap;
 }
+#pragma endregion
+
+#pragma region ディスクリプタハンドル取得関数
+
 // 指定番号のCPUディスクリプタハンドルを取得する関数
 D3D12_CPU_DESCRIPTOR_HANDLE DirectXCommon::GetCPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index)
 {
@@ -200,6 +209,9 @@ D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::GetGPUDescriptorHandle(const Microsof
     return handleGPU;
 }
 
+#pragma endregion
+
+#pragma region ディスクリプタヒープ初期化
 void DirectXCommon::InitializeDescriptorHeaps()
 {
 
@@ -216,9 +228,13 @@ void DirectXCommon::InitializeDescriptorHeaps()
     srvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 }
 
+#pragma endregion
+
+#pragma region RTV初期化
+// RTVの初期化
 void DirectXCommon::InitializeRenderTargetView()
 {
-    HRESULT hr = S_OK;
+    HRESULT hr;
 
     // スワップチェーンからリソースを取得（バックバッファ）
     for (uint32_t i = 0; i < swapChainResources.size(); ++i) {
@@ -243,3 +259,18 @@ void DirectXCommon::InitializeRenderTargetView()
         rtvHandle.ptr += descriptorSizeRTV;
     }
 }
+
+#pragma endregion
+
+#pragma region DSV初期化
+// DSVの初期化
+void DirectXCommon::InitializeDepthStencilView()
+{
+    // DSVの設定
+    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc {};
+    dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+    // DSVHeapの先端にDSVを作る
+    device->CreateDepthStencilView(depthStencilResource.Get(), &dsvDesc, dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+}
+#pragma endregion

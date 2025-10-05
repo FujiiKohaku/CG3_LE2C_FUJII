@@ -67,6 +67,8 @@ private:
     void InitializeDescriptorHeaps();
     // RTVの初期化
     void InitializeRenderTargetView();
+    // DSVの初期化
+    void InitializeDepthStencilView();
 
     // ディスクリプタヒープ生成関数
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle);
