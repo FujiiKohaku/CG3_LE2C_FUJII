@@ -1,37 +1,44 @@
 #pragma once
 #include "Logger.h"
 #include "StringUtility.h"
+#include <WinApp.h>
 #include <cassert>
 #include <d3d12.h>
 #include <dxgi1_6.h>
-
-#include <wrl.h> // ComPtr —p
+#include <wrl.h> // ComPtr ç”¨
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 class DirectXCommon {
 public:
-    // ‰Šú‰»
-    void Initialize();
+    // åˆæœŸåŒ–
+    void Initialize(WinApp* winApp);
 
 private:
-    // DXGIƒtƒ@ƒNƒgƒŠ[‚Ì¶¬
+    // DXGIãƒ•ã‚¡ã‚¯ãƒˆãƒªãƒ¼ã®ç”Ÿæˆ
     Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr;
-    // ƒfƒoƒCƒX
+    // ãƒ‡ãƒã‚¤ã‚¹
     Microsoft::WRL::ComPtr<ID3D12Device> device = nullptr;
 
-    // ƒRƒ}ƒ“ƒhƒLƒ…[
+    // ã‚³ãƒãƒ³ãƒ‰ã‚­ãƒ¥ãƒ¼
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue = nullptr;
-    // ƒRƒ}ƒ“ƒhƒAƒƒP[ƒ^
+    // ã‚³ãƒãƒ³ãƒ‰ã‚¢ãƒ­ã‚±ãƒ¼ã‚¿
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator = nullptr;
-    // ƒRƒ}ƒ“ƒhƒŠƒXƒg
+    // ã‚³ãƒãƒ³ãƒ‰ãƒªã‚¹ãƒˆ
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList = nullptr;
 
-    // ƒXƒƒbƒvƒ`ƒFƒCƒ“
+    // ã‚¹ãƒ¯ãƒƒãƒ—ãƒã‚§ã‚¤ãƒ³
     Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr;
-    // ƒfƒoƒCƒX‰Šú‰»ŠÖ”
-    void InitializeDevice();
-    // ƒRƒ}ƒ“ƒh‰Šú‰»
-    void InitializeCommand();
 
+    // æ·±åº¦ãƒãƒƒãƒ•ã‚¡ãƒªã‚½ãƒ¼ã‚¹
+    Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilResource;
+    //  WindowsAPI
+    WinApp* winApp_ = nullptr;
+    // ãƒ‡ãƒã‚¤ã‚¹åˆæœŸåŒ–é–¢æ•°
+    void InitializeDevice();
+    // ã‚³ãƒãƒ³ãƒ‰åˆæœŸåŒ–
+    void InitializeCommand();
+    // ã‚¹ãƒ¯ãƒƒãƒ—ãƒã‚§ã‚¤ãƒ³
     void InitializeSwapChain();
+    // æ·±åº¦ãƒãƒƒãƒ•ã‚¡
+    void InitializeDepthBuffer();
 };
