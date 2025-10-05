@@ -42,6 +42,8 @@ private:
     uint32_t descriptorSizeSRV = 0;
     uint32_t descriptorSizeRTV = 0;
     uint32_t descriptorSizeDSV = 0;
+    // スワップチェーンから取得したバックバッファリソース（2枚分）
+    Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = { nullptr };
 
     //  WindowsAPI
     WinApp* winApp_ = nullptr;
@@ -55,6 +57,14 @@ private:
     void InitializeDepthBuffer();
     // ディスクリプタヒープ
     void InitializeDescriptorHeaps();
+    // RTVの初期化
+    void InitializeRenderTargetView();
+
     // ディスクリプタヒープ生成関数
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle);
+
+    // 指定番号のCPUディスクリプタハンドルを取得する関数
+    static D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index);
+    // 指定番号のGPUディスクリプタハンドルを取得する関数
+    static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index);
 };

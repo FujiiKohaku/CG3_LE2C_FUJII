@@ -172,6 +172,20 @@ Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DirectXCommon::CreateDescriptorHeap
     assert(SUCCEEDED(hr)); // 1
     return DescriptorHeap;
 }
+// 指定番号のCPUディスクリプタハンドルを取得する関数
+D3D12_CPU_DESCRIPTOR_HANDLE DirectXCommon::GetCPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index)
+{
+    D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    handleCPU.ptr += (descriptorSize * index);
+    return handleCPU;
+}
+// 指定番号のGPUディスクリプタハンドルを取得する関数
+D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::GetGPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index)
+{
+    D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+    handleGPU.ptr += (descriptorSize * index);
+    return handleGPU;
+}
 
 void DirectXCommon::InitializeDescriptorHeaps()
 {
@@ -187,4 +201,31 @@ void DirectXCommon::InitializeDescriptorHeaps()
 
     // SRV用のヒープ（Shaderから使うのでtrue）
     srvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+}
+
+void DirectXCommon::InitializeRenderTargetView()
+{
+    HRESULT hr;
+
+    // SwapChainからResourceを引っ張ってくる
+    hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
+    // 上手く取得できなければ起動できない
+    assert(SUCCEEDED(hr));
+    hr = swapChain->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
+    assert(SUCCEEDED(hr));
+    // RTVの設定
+    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc {};
+    rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+    // ディスクリプタの先頭を取得する
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    // RTVを2つ作るのでディスクリプタを２つ用意
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2];
+    // まず１つ目をつくる。１つ目は最初のところに作る。作る場所をこちらで指定して上げる必要がある
+    rtvHandles[0] = rtvStartHandle;
+    device->CreateRenderTargetView(swapChainResources[0].Get(), &rtvDesc, rtvHandles[0]);
+    // 2つ目のディスクリプタハンドルを得る（自力で）
+    rtvHandles[1].ptr = rtvHandles[0].ptr + device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    // 2つ目を作る
+    device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
 }

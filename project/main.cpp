@@ -422,24 +422,24 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     return shaderBlob.Get(); // get
 }
 
-// CG2_05_01_page_5
-D3D12_CPU_DESCRIPTOR_HANDLE
-GetCPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap,
-    uint32_t descriptorSize, uint32_t index)
-{
-    D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    handleCPU.ptr += (descriptorSize * index);
-    return handleCPU;
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE
-GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap,
-    uint32_t descriptorSize, uint32_t index)
-{
-    D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
-    handleGPU.ptr += (descriptorSize * index);
-    return handleGPU;
-}
+//// CG2_05_01_page_5
+//D3D12_CPU_DESCRIPTOR_HANDLE
+//GetCPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap,
+//    uint32_t descriptorSize, uint32_t index)
+//{
+//    D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+//    handleCPU.ptr += (descriptorSize * index);
+//    return handleCPU;
+//}
+//
+//D3D12_GPU_DESCRIPTOR_HANDLE
+//GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap,
+//    uint32_t descriptorSize, uint32_t index)
+//{
+//    D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+//    handleGPU.ptr += (descriptorSize * index);
+//    return handleGPU;
+//}
 
 /// CG_02_06
 MaterialData LoadMaterialTemplateFile(const std::string& directoryPath,
@@ -633,31 +633,29 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap = // com
     //     CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
-    // SwapChainからResourceを引っ張ってくる
-    Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = {
-        nullptr
-    }; // com
-    hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
-    // 上手く取得できなければ起動できない
-    assert(SUCCEEDED(hr));
-    hr = swapChain->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
-    assert(SUCCEEDED(hr));
+    //// SwapChainからResourceを引っ張ってくる
+    //Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = {nullptr}; 
+    //hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
+    //// 上手く取得できなければ起動できない
+    //assert(SUCCEEDED(hr));
+    //hr = swapChain->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
+    //assert(SUCCEEDED(hr));
 
-    // RTVの設定
-    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc {};
-    rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-    // ディスクリプタの先頭を取得する
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    // RTVを2つ作るのでディスクリプタを２つ用意
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2];
-    // まず１つ目をつくる。１つ目は最初のところに作る。作る場所をこちらで指定して上げる必要がある
-    rtvHandles[0] = rtvStartHandle;
-    device->CreateRenderTargetView(swapChainResources[0].Get(), &rtvDesc, rtvHandles[0]);
-    // 2つ目のディスクリプタハンドルを得る（自力で）
-    rtvHandles[1].ptr = rtvHandles[0].ptr + device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    // 2つ目を作る
-    device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
+    //// RTVの設定
+    //D3D12_RENDER_TARGET_VIEW_DESC rtvDesc {};
+    //rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    //rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+    //// ディスクリプタの先頭を取得する
+    //D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    //// RTVを2つ作るのでディスクリプタを２つ用意
+    //D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2];
+    //// まず１つ目をつくる。１つ目は最初のところに作る。作る場所をこちらで指定して上げる必要がある
+    //rtvHandles[0] = rtvStartHandle;
+    //device->CreateRenderTargetView(swapChainResources[0].Get(), &rtvDesc, rtvHandles[0]);
+    //// 2つ目のディスクリプタハンドルを得る（自力で）
+    //rtvHandles[1].ptr = rtvHandles[0].ptr + device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    //// 2つ目を作る
+    //device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
 
     // 初期値でFenceを作る01_02
     Microsoft::WRL::ComPtr<ID3D12Fence> fence = nullptr; // com
