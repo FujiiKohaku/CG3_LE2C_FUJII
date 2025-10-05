@@ -275,6 +275,8 @@ void DirectXCommon::InitializeDepthStencilView()
 }
 #pragma endregion
 
+#pragma region フェンス初期化
+// フェンスの初期化
 void DirectXCommon::InitializeFence()
 {
     HRESULT hr;
@@ -286,3 +288,4 @@ void DirectXCommon::InitializeFence()
     fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     assert(fenceEvent != nullptr);
 }
+#pragma endregion
