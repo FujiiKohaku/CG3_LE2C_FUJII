@@ -144,7 +144,7 @@ void DirectXCommon::InitializeDepthBuffer()
     depthClearValue.DepthStencil.Stencil = 0;
     depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-    // === Resourceの生成 ===
+    // === Resourceの生成 ===　
     hr = device->CreateCommittedResource(
         &heapProperties,
         D3D12_HEAP_FLAG_NONE,
