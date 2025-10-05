@@ -91,7 +91,6 @@ struct ModelData {
     MaterialData material;
 };
 
-
 //------------------
 // グローバル定数
 //------------------
@@ -161,28 +160,22 @@ CreateBufferResource(ID3D12Device* device, size_t sizeInBytes)
     return vertexResource.Get();
 }
 
-//=== D3D12ディスクリプタヒープ作成 ===
-Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>
-CreateDescriptorHeap(Microsoft::WRL::ComPtr<ID3D12Device> device,
-    D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors,
-    bool shaderVisivle)
-{
-    // ディスクリプタヒープの生成02_02
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DescriptorHeap = nullptr;
-
-    D3D12_DESCRIPTOR_HEAP_DESC DescriptorHeapDesc {};
-    DescriptorHeapDesc.Type = heapType;
-    DescriptorHeapDesc.NumDescriptors = numDescriptors;
-    DescriptorHeapDesc.Flags = shaderVisivle
-        ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
-        : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-    HRESULT hr = device->CreateDescriptorHeap(&DescriptorHeapDesc,
-        IID_PPV_ARGS(&DescriptorHeap));
-    // ディスクリプタヒープが作れなかったので起動できない
-    assert(SUCCEEDED(hr)); // 1
-    return DescriptorHeap.Get();
-}
+////=== D3D12ディスクリプタヒープ作成 ===
+//Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(Microsoft::WRL::ComPtr<ID3D12Device> device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle)
+//{
+//    // ディスクリプタヒープの生成02_02
+//    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DescriptorHeap = nullptr;
+//
+//    D3D12_DESCRIPTOR_HEAP_DESC DescriptorHeapDesc {};
+//    DescriptorHeapDesc.Type = heapType;
+//    DescriptorHeapDesc.NumDescriptors = numDescriptors;
+//    DescriptorHeapDesc.Flags = shaderVisivle ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+//
+//    HRESULT hr = device->CreateDescriptorHeap(&DescriptorHeapDesc, IID_PPV_ARGS(&DescriptorHeap));
+//    // ディスクリプタヒープが作れなかったので起動できない
+//    assert(SUCCEEDED(hr)); // 1
+//    return DescriptorHeap.Get();
+//}
 
 //=== D3D12テクスチャリソース作成（DEFAULTヒープ） ===
 Microsoft::WRL::ComPtr<ID3D12Resource>
@@ -276,38 +269,6 @@ DirectX::ScratchImage LoadTexture(const std::string& filePath)
     return mipImages;
 }
 
-//Microsoft::WRL::ComPtr<ID3D12Resource>CreateDepthStencilTextureResource(Microsoft::WRL::ComPtr<ID3D12Device> device,int32_t width, int32_t height)
-//{
-//    // 生成するResourceの設定
-//    D3D12_RESOURCE_DESC resourceDesc {};
-//    resourceDesc.Width = width;
-//    resourceDesc.Height = height;
-//    resourceDesc.MipLevels = 1;
-//    resourceDesc.DepthOrArraySize = 1;
-//    resourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-//    resourceDesc.SampleDesc.Count = 1;
-//    resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-//    resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-//
-//    // 利用するheapの設定
-//    D3D12_HEAP_PROPERTIES heapProperties {};
-//    heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-//
-//    // 深度値のクリア設定
-//    D3D12_CLEAR_VALUE depthClearValue {};
-//    depthClearValue.DepthStencil.Depth = 1.0f;
-//    depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-//
-//    // Resourceの設定
-//    Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr; // com
-//    HRESULT hr = device->CreateCommittedResource(
-//        &heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
-//        D3D12_RESOURCE_STATE_DEPTH_WRITE, &depthClearValue,
-//        IID_PPV_ARGS(&resource));
-//    assert(SUCCEEDED(hr));
-//    return resource.Get();
-//}
-
 // 球の頂点生成関数_05_00_OTHER新しい書き方
 void GenerateSphereVertices(VertexData* vertices, int kSubdivision,
     float radius)
@@ -384,7 +345,6 @@ struct D3DResourceLeakChecker {
         }
     }
 };
-
 
 Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     // CompilerするSHaderファイルへのパス02_00
@@ -631,7 +591,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     winApp = new WinApp();
     winApp->initialize();
 
-
 #ifdef _DEBUG
 
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue = nullptr;
@@ -663,18 +622,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 #endif // DEBUG
 
-  
+    //// RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
+    // Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap = // com
+    //     CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
 
-    // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap = // com
-        CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
+    //// DSV用のヒープでディスクリプタの数は１。DSVはshader内で触るものではないので,ShaderVisibleはfalse
+    // Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap = // com
+    //     CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
 
-    // DSV用のヒープでディスクリプタの数は１。DSVはshader内で触るものではないので,ShaderVisibleはfalse
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap = // com
-        CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
-
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap = // com
-        CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+    // Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap = // com
+    //     CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
 
     // SwapChainからResourceを引っ張ってくる
     Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = {
@@ -819,10 +776,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 #pragma region ディスクリプタサイズを取得する（SRV/RTV/DSV）
     // DescriptorSizeを取得しておくCG2_05_01_page_6
-    const uint32_t descriptorSizeSRV = device->GetDescriptorHandleIncrementSize(
-        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    const uint32_t descriptorSizeRTV = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    const uint32_t descriptorSizeDSV = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
 #pragma endregion
 
     // metaDataを基にSRVの設定03_00
@@ -899,7 +853,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() }; // PixelShader
     graphicsPipelineStateDesc.BlendState = blendDesc; // BlensState
     graphicsPipelineStateDesc.RasterizerState = rasterizerDesc; // RasterizerState
-
 
     // DepthStencillStateの設定
     D3D12_DEPTH_STENCIL_DESC depthStencilDesc {};

@@ -155,3 +155,36 @@ void DirectXCommon::InitializeDepthBuffer()
 
     assert(SUCCEEDED(hr));
 }
+
+// ディスクリプタヒープ生成関数
+Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DirectXCommon::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle)
+{
+    // ディスクリプタヒープの生成02_02
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DescriptorHeap = nullptr;
+
+    D3D12_DESCRIPTOR_HEAP_DESC DescriptorHeapDesc {};
+    DescriptorHeapDesc.Type = heapType;
+    DescriptorHeapDesc.NumDescriptors = numDescriptors;
+    DescriptorHeapDesc.Flags = shaderVisivle ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+    HRESULT hr = device->CreateDescriptorHeap(&DescriptorHeapDesc, IID_PPV_ARGS(&DescriptorHeap));
+    // ディスクリプタヒープが作れなかったので起動できない
+    assert(SUCCEEDED(hr)); // 1
+    return DescriptorHeap;
+}
+
+void DirectXCommon::InitializeDescriptorHeaps()
+{
+
+    descriptorSizeSRV = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    descriptorSizeRTV = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    descriptorSizeDSV = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+    // RTV用のヒープ（Shaderからは使わないのでfalse）
+    rtvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
+
+    // DSV用のヒープ（Shaderからは使わないのでfalse）
+    dsvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
+
+    // SRV用のヒープ（Shaderから使うのでtrue）
+    srvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+}
