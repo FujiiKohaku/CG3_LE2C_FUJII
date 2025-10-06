@@ -1,4 +1,5 @@
 #include "DirectXCommon.h"
+#include <WinApp.cpp>
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <format>
@@ -10,6 +11,30 @@ void DirectXCommon::Initialize(WinApp* winApp)
     assert(winApp);
     winApp_ = winApp;
     // ここに初期化処理を書いていく
+    // デバイス初期化
+    InitializeDevice();
+    // コマンド初期化
+    InitializeCommand();
+    // スワップチェーン初期化
+    InitializeSwapChain();
+    // 深度バッファ初期化
+    InitializeDepthBuffer();
+    // ディスクリプタヒープ初期化
+    InitializeDescriptorHeaps();
+    // RTVの初期化
+    InitializeRenderTargetView();
+    // DSVの初期化
+    InitializeDepthStencilView();
+    // フェンスの初期化
+    InitializeFence();
+    // ビューポート矩形初期化
+    InitializeViewport();
+    // シザーの初期化
+    InitializeScissorRect();
+    // DXCコンパイラの生成
+    InitializeDxcCompiler();
+    // IMGUI初期化
+    InitializeImGui();
 }
 
 #pragma region SRV特化関数
@@ -120,7 +145,7 @@ void DirectXCommon::InitializeSwapChain()
     HRESULT hr;
 
     // スワップチェーンを生成する
-    DXGI_SWAP_CHAIN_DESC1 swapChainDesc {};
+
     swapChainDesc.Width = WinApp::kClientWidth; // 画面の幅。ウィンドウのクライアント領域を同じものんにしておく
     swapChainDesc.Height = WinApp::kClientHeight; // 画面の高さ。ウィンドウのクライアント領域を同じものにしておく
     swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式
@@ -243,7 +268,7 @@ void DirectXCommon::InitializeRenderTargetView()
     }
 
     // RTVの設定
-    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc {};
+
     rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
@@ -327,5 +352,24 @@ void DirectXCommon::InitializeDxcCompiler()
     // 現時点でincludeはしないがincludeに対応するための設定を行っておく
     hr = dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
     assert(SUCCEEDED(hr));
+}
+#pragma endregion
+
+#pragma region IMGUI初期化
+void DirectXCommon::InitializeImGui()
+{
+    // バージョンチェック
+    IMGUI_CHECKVERSION();
+    // ImGuiのコンテキスト生成
+    ImGui::CreateContext();
+    // ImGuiのスタイル設定（好みで変更してよい）
+    ImGui::StyleColorsClassic();
+    // Win32用の初期化
+    ImGui_ImplWin32_Init(winApp_->GetHwnd());
+    // Direct12用の初期化
+    ImGui_ImplDX12_Init(device.Get(), swapChainDesc.BufferCount, rtvDesc.Format,
+        srvDescriptorHeap.Get(),
+        srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+        srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 }
 #pragma endregion

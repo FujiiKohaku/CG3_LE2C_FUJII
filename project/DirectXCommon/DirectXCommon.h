@@ -11,6 +11,7 @@
 #pragma comment(lib, "dxcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
+
 class DirectXCommon {
 public:
     // 初期化
@@ -36,12 +37,13 @@ private:
 
     // スワップチェイン
     Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain = nullptr;
-
+    DXGI_SWAP_CHAIN_DESC1 swapChainDesc {};
     // 深度バッファリソース
     Microsoft::WRL::ComPtr<ID3D12Resource> depthStencilResource;
 
     // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap = nullptr;
+    D3D12_RENDER_TARGET_VIEW_DESC rtvDesc {};
     // DSV用のヒープでディスクリプタの数は１。DSVはshader内で触るものではないので,ShaderVisibleはfalse
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap = nullptr;
     // SRV用のヒープ
@@ -92,6 +94,8 @@ private:
     void InitializeScissorRect();
     // DXCコンパイラの生成
     void InitializeDxcCompiler();
+    // IMGUI初期化
+    void InitializeImGui();
     // ディスクリプタヒープ生成関数
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle);
 
