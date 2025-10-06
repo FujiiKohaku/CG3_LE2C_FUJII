@@ -272,22 +272,25 @@ void DirectXCommon::InitializeRenderTargetView()
     }
 
     // RTVの設定
-
     rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
     rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
     // RTVハンドルの先頭を取得
-    rtvHandles = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
     // バックバッファ（2枚）分RTVを作成
     for (uint32_t i = 0; i < swapChainResources.size(); ++i) {
+        // i番目のRTVハンドルを配列に保存
+        rtvHandles[i] = rtvStartHandle;
+
         // RenderTargetViewの生成
-        device->CreateRenderTargetView(swapChainResources[i].Get(), &rtvDesc, rtvHandles);
+        device->CreateRenderTargetView(swapChainResources[i].Get(), &rtvDesc, rtvHandles[i]);
 
         // 次のディスクリプタ位置に進める
-        rtvHandle.ptr += descriptorSizeRTV;
+        rtvStartHandle.ptr += descriptorSizeRTV;
     }
 }
+
 
 #pragma endregion
 
@@ -393,7 +396,8 @@ void DirectXCommon::PreDraw()
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET; // 遷移後のResourceState
     commandList->ResourceBarrier(1, &barrier); // TransitionBarrierを張る
     // 描画先のRTVとDSVを設定する
- 
+   
+     
     // 描画先のRTVとDSVを設定する
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
     commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);

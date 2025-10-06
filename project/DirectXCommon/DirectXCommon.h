@@ -44,7 +44,7 @@ private:
     // RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap = nullptr;
     D3D12_RENDER_TARGET_VIEW_DESC rtvDesc {};
-    std::array<D3D12_CPU_DESCRIPTOR_HANDLE, 2> rtvHandles {};
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2];
     // DSV用のヒープでディスクリプタの数は１。DSVはshader内で触るものではないので,ShaderVisibleはfalse
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap = nullptr;
     // SRV用のヒープ
