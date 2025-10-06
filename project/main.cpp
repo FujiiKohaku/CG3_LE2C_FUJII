@@ -335,7 +335,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     Sprite* sprite = nullptr;
     // スプライト個人の初期化
     sprite = new Sprite();
-    sprite->Initialize();
+    sprite->Initialize(spriteManager);
 
 #ifdef _DEBUG
 
