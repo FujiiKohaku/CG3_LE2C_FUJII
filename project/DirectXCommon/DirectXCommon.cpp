@@ -291,7 +291,6 @@ void DirectXCommon::InitializeRenderTargetView()
     }
 }
 
-
 #pragma endregion
 
 #pragma region DSV初期化
@@ -396,13 +395,68 @@ void DirectXCommon::PreDraw()
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET; // 遷移後のResourceState
     commandList->ResourceBarrier(1, &barrier); // TransitionBarrierを張る
     // 描画先のRTVとDSVを設定する
-   
-     
+
     // 描画先のRTVとDSVを設定する
     D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
     commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
+    //  指定した色で画面全体をクリアする
+    float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f }; /// 青っぽい色RGBAの順これ最初の文字1.0fにするとピンク画面になる
+    commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+    // 画面全体の深度をクリア
+    commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    // SRVのディスクリプタヒープをセットする
+
+    ID3D12DescriptorHeap* descriptorHeaps[] = { srvDescriptorHeap.Get() };
+    commandList->SetDescriptorHeaps(1, descriptorHeaps);
+    // ビューポート領域の設定
+    commandList->RSSetViewports(1, &viewport); // viewportを設定
+    // シザー矩形の設定
+    commandList->RSSetScissorRects(1, &scissorRect); // Scirssorを設定
 }
+
 // 描画後処理
 void DirectXCommon::PostDraw()
 {
+
+    // これから書き込むバックバッファの番号を取得
+    UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+
+    // リソースバリアでプレゼント可能に変更
+    D3D12_RESOURCE_BARRIER barrier {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+    commandList->ResourceBarrier(1, &barrier);
+
+    // グラフィックコマンドをクローズ
+    HRESULT hr = commandList->Close();
+    assert(SUCCEEDED(hr));
+
+    // GPUコマンドの実行
+    // GPUにコマンドリストの実行を行わせる;
+    Microsoft::WRL::ComPtr<ID3D12CommandList> commandLists[] = { commandList };
+    commandQueue->ExecuteCommandLists(1, commandLists->GetAddressOf());
+
+    // GPU画面の交換を通知
+    swapChain->Present(1, 0);
+    assert(SUCCEEDED(hr));
+    // フェンスの値を更新
+    fenceValue++;
+    // コマンドキューにシグナルを送る
+    commandQueue->Signal(fence.Get(), fenceValue);
+    // コマンド完了待ち
+    if (fence->GetCompletedValue() < fenceValue) {
+
+        fence->SetEventOnCompletion(fenceValue, fenceEvent);
+        WaitForSingleObject(fenceEvent, INFINITE);
+    }
+
+    //コマンドアロケータ―のリセット
+    hr = commandAllocator->Reset();
+    assert(SUCCEEDED(hr));
+    // コマンドリストのリセット
+    hr = commandList->Reset(commandAllocator.Get(), nullptr);
+    assert(SUCCEEDED(hr));
 }

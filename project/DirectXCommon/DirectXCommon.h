@@ -21,6 +21,10 @@ public:
     D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUDescriptorHandle(uint32_t index);
 
     D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUDescriptorHandle(uint32_t index);
+    // 描画前の処理
+    void PreDraw();
+    // 描画後の処理
+    void PostDraw();
 
 private:
     // DXGIファクトリーの生成
@@ -98,10 +102,7 @@ private:
     // IMGUI初期化
     void InitializeImGui();
 
-    // 描画前の処理
-    void PreDraw();
-    // 描画後の処理
-    void PostDraw();
+
 
     // ディスクリプタヒープ生成関数
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle);
