@@ -1,11 +1,14 @@
 // ======================= ヘッダー・ライブラリ関連 ==========================
 #define _USE_MATH_DEFINES
 // 標準ライブラリ//
+#include "D3DResourceLeakChecker.h"
 #include "DebugCamera.h"
-#include "DirectXCommon/DirectXCommon.h"
+#include "DirectXCommon.h"
 #include "Input.h"
 #include "MatrixMath.h"
 #include "SoundManager.h"
+#include "Sprite.h"
+#include "SpriteManager.h"
 #include "Unknwn.h"
 #include "Utility.h"
 #include "Winapp/WinApp.h"
@@ -163,21 +166,6 @@ void GenerateSphereVertices(VertexData* vertices, int kSubdivision,
         }
     }
 }
-// D3Dリソースリークチェック用のクラス
-struct D3DResourceLeakChecker {
-    ~D3DResourceLeakChecker()
-    {
-        Microsoft::WRL::ComPtr<IDXGIDebug1> debug;
-
-        // DXGIのデバッグインターフェースを取得
-        if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
-            // DXGI全体のリソースチェック（アプリが作ったリソースがまだ残ってるか確認）
-            debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
-            debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
-            debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
-        }
-    }
-};
 
 /// CG_02_06
 MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename)
@@ -336,6 +324,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // DirectXCommonの初期化
     dxCommon = new DirectXCommon();
     dxCommon->Initialize(winApp);
+
+    // SpriteManagerのポインタ
+    SpriteManager* spriteManager = nullptr;
+    // スプライト共通部の初期化
+    spriteManager = new SpriteManager();
+    spriteManager->Initialize(dxCommon);
+
+    // spriteのポインタ
+    Sprite* sprite = nullptr;
+    // スプライト個人の初期化
+    sprite = new Sprite();
+    sprite->Initialize();
 
 #ifdef _DEBUG
 
@@ -715,7 +715,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     // Textureの切り替え
     bool useMonstarBall = true;
-
+    // 実際に生成
     Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPinelineState = nullptr;
     hr = dxCommon->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
     assert(SUCCEEDED(hr));
@@ -790,52 +790,54 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             //  ゲームの処理02_02
             //===================================
             //  02_02
-             waveTime += 0.05f;
+            waveTime += 0.05f;
             // インプットの更新
-             input->Update();
+            input->Update();
             // デバッグカメラの更新
-             debugCamera.Update();
+            debugCamera.Update();
 
             // 数字の０キーが押されていたら
-             if (input->IsKeyPressed(DIK_0)) {
-                 OutputDebugStringA("Hit 0");
-                 soundmanager.SoundPlayWave(bgm);
-             }
+            if (input->IsKeyPressed(DIK_0)) {
+                OutputDebugStringA("Hit 0");
+                soundmanager.SoundPlayWave(bgm);
+            }
 
             //  メイクアフィンマトリックス02_02
-             Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
+            Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
             // カメラのメイクアフィンマトリックス02_02
-             Matrix4x4 cameraMatrix = MatrixMath::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
+            Matrix4x4 cameraMatrix = MatrixMath::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
             // 逆行列カメラ02_02
-             Matrix4x4 viewMatrix = debugCamera.GetViewMatrix();
+            Matrix4x4 viewMatrix = debugCamera.GetViewMatrix();
             // 透視投影行列02_02
-             Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, float(WinApp::kClientWidth) / float(WinApp::kClientHeight), 0.1f, 100.0f);
+            Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, float(WinApp::kClientWidth) / float(WinApp::kClientHeight), 0.1f, 100.0f);
             // ワールドビュープロジェクション行列02_02
-             Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
+            Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
             // CBVのバッファに書き込む02_02
             // CBVに正しい行列を書き込む
-             memcpy(&wvpData->WVP, &worldViewProjectionMatrix, sizeof(Matrix4x4));
+            memcpy(&wvpData->WVP, &worldViewProjectionMatrix, sizeof(Matrix4x4));
 
             // Sprite用のworldviewProjectionMatrixを作る04_00
-             Matrix4x4 worldMatrixSprite = MatrixMath::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
-             Matrix4x4 viewMatrixSprite = MatrixMath::MakeIdentity4x4();
-             Matrix4x4 projectionMatrixSprite = MatrixMath::MakeOrthographicMatrix(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f);
-             Matrix4x4 worldViewProjectionMatrixSprite = MatrixMath::Multiply(worldMatrixSprite,
-                 MatrixMath::Multiply(viewMatrixSprite, projectionMatrixSprite));
+            Matrix4x4 worldMatrixSprite = MatrixMath::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
+            Matrix4x4 viewMatrixSprite = MatrixMath::MakeIdentity4x4();
+            Matrix4x4 projectionMatrixSprite = MatrixMath::MakeOrthographicMatrix(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f);
+            Matrix4x4 worldViewProjectionMatrixSprite = MatrixMath::Multiply(worldMatrixSprite,
+                MatrixMath::Multiply(viewMatrixSprite, projectionMatrixSprite));
             // 単位行列を書き込んでおく04_00
-             transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
-             transformationMatrixDataSprite->World = worldMatrixSprite;
+            transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
+            transformationMatrixDataSprite->World = worldMatrixSprite;
 
             //-------------------------
             // UVTransform用の行列生成
             //-------------------------
-             Matrix4x4 uvTransformMatrix = MatrixMath::Matrix4x4MakeScaleMatrix(uvTransformSprite.scale);
-             uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeRotateZMatrix(uvTransformSprite.rotate.z));
-             uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
-             materialDataSprite->uvTransform = uvTransformMatrix;
+            Matrix4x4 uvTransformMatrix = MatrixMath::Matrix4x4MakeScaleMatrix(uvTransformSprite.scale);
+            uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeRotateZMatrix(uvTransformSprite.rotate.z));
+            uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
+            materialDataSprite->uvTransform = uvTransformMatrix;
 
             // 描画前の処理//----------------------------------------------------
             dxCommon->PreDraw();
+            // spriteの描画準備
+            spriteManager->PreDraw();
             // 画面のクリア処理
 
             // RootSignatureを設定。PS0に設定しているけど別途設定が必要
@@ -888,7 +890,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     ImGui::DestroyContext();
 
     // 解放処理CG2_01_03
-   // CloseHandle();
+    // CloseHandle();
 
     // リリースする場所
     // XAudio解放
@@ -901,6 +903,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     /*  delete input;*/
     delete winApp;
     delete dxCommon;
+    delete sprite;
+    delete spriteManager;
     return 0;
 
 } // 最後のカギかっこ
