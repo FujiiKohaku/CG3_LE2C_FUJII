@@ -1,9 +1,7 @@
 #pragma once
-#include <Windows.h> // OutputDebugStringA
-#include <iostream>
+#include <string>
 
-namespace Logger {
-
-void Log(const std::string& message);
-
+class Logger {
+public:
+    static void Log(const std::string& message);
 };

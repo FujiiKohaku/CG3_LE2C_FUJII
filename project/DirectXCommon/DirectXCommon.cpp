@@ -1,9 +1,13 @@
 #include "DirectXCommon.h"
-#include <WinApp.cpp>
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_dx12.h"
+#include "imgui/imgui_impl_win32.h"
+#include <WinApp.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <format>
 #include <wrl.h>
+
 void DirectXCommon::Initialize(WinApp* winApp)
 {
 
@@ -373,3 +377,15 @@ void DirectXCommon::InitializeImGui()
         srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 }
 #pragma endregion
+// DirectX12用の初期化
+
+// 描画前処理
+void DirectXCommon::PreDraw()
+{
+    //   これから書き込むバックバッファのインデックスを取得
+    UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+}
+// 描画後処理
+void DirectXCommon::PostDraw()
+{
+}

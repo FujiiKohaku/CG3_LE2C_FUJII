@@ -31,7 +31,6 @@
 #include "externals/imgui/imgui.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
-
 // リンカオプション
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -96,35 +95,10 @@ struct ModelData {
 //------------------
 const int kSubdivision = 16; // 16分割
 int kNumVertices = kSubdivision * kSubdivision * 6; // 頂点数
-// --- 列挙体 ---
-enum WaveType {
-    WAVE_SINE,
-    WAVE_CHAINSAW,
-    WAVE_SQUARE,
-};
-
-enum AnimationType {
-    ANIM_RESET,
-    ANIM_NONE,
-    ANIM_COLOR,
-    ANIM_SCALE,
-    ANIM_ROTATE,
-    ANIM_TRANSLATE,
-    ANIM_TORNADO,
-    ANIM_PULSE,
-    ANIM_AURORA,
-    ANIM_BOUNCE,
-    ANIM_TWIST,
-    ANIM_ALL
-
-};
-// グローバル変数
-WaveType waveType = WAVE_SINE;
-AnimationType animationType = ANIM_NONE;
 float waveTime = 0.0f;
 
 ;
-//////////////---------------------------------------
+//////////////
 // 関数の作成///
 //////////////
 
@@ -159,23 +133,6 @@ CreateBufferResource(ID3D12Device* device, size_t sizeInBytes)
 
     return vertexResource.Get();
 }
-
-////=== D3D12ディスクリプタヒープ作成 ===
-// Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(Microsoft::WRL::ComPtr<ID3D12Device> device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle)
-//{
-//     // ディスクリプタヒープの生成02_02
-//     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DescriptorHeap = nullptr;
-//
-//     D3D12_DESCRIPTOR_HEAP_DESC DescriptorHeapDesc {};
-//     DescriptorHeapDesc.Type = heapType;
-//     DescriptorHeapDesc.NumDescriptors = numDescriptors;
-//     DescriptorHeapDesc.Flags = shaderVisivle ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-//
-//     HRESULT hr = device->CreateDescriptorHeap(&DescriptorHeapDesc, IID_PPV_ARGS(&DescriptorHeap));
-//     // ディスクリプタヒープが作れなかったので起動できない
-//     assert(SUCCEEDED(hr)); // 1
-//     return DescriptorHeap.Get();
-// }
 
 //=== D3D12テクスチャリソース作成（DEFAULTヒープ） ===
 Microsoft::WRL::ComPtr<ID3D12Resource>
@@ -401,7 +358,7 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     IDxcBlobUtf8* shaderError = nullptr;
     shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
     if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
-        Utility::Log(os, shaderError->GetStringPointer());
+        Logger::Log(shaderError->GetStringPointer());
         // 警告、エラーダメ絶対02_00
         assert(false);
     }
@@ -414,31 +371,10 @@ Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
     // 成功したログを出す02_00
     Logger::Log(StringUtility::ConvertString(std::format(L"Compile Succeeded, path:{}, profike:{}\n ",
         filepath, profile)));
-    // もう使わないリソースを解放02_00
-    // shaderSource->Release();
-    // shaderResult->Release();
-    // 実行用のバイナリを返却02_00
-    return shaderBlob.Get(); // get
-}
 
-//// CG2_05_01_page_5
-// D3D12_CPU_DESCRIPTOR_HANDLE
-// GetCPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap,
-//     uint32_t descriptorSize, uint32_t index)
-//{
-//     D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
-//     handleCPU.ptr += (descriptorSize * index);
-//     return handleCPU;
-// }
-//
-// D3D12_GPU_DESCRIPTOR_HANDLE
-// GetGPUDescriptorHandle(ID3D12DescriptorHeap* descriptorHeap,
-//     uint32_t descriptorSize, uint32_t index)
-//{
-//     D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
-//     handleGPU.ptr += (descriptorSize * index);
-//     return handleGPU;
-// }
+    // 実行用のバイナリを返却02_00
+    return shaderBlob.Get();
+}
 
 /// CG_02_06
 MaterialData LoadMaterialTemplateFile(const std::string& directoryPath,
@@ -591,6 +527,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     winApp = new WinApp();
     winApp->initialize();
 
+    // DirectXCommonのポインタ
+    DirectXCommon* dxCommon = nullptr;
+    // DirectXCommonの初期化
+    dxCommon = new DirectXCommon();
+    dxCommon->Initialize(winApp);
+
 #ifdef _DEBUG
 
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue = nullptr;
@@ -622,67 +564,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 #endif // DEBUG
 
-    //// RTV用のヒープでディスクリプタの数は２。RTVはSHADER内で触るものではないので、shaderVisivleはfalse02_02
-    // Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvDescriptorHeap = // com
-    //     CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
-
-    //// DSV用のヒープでディスクリプタの数は１。DSVはshader内で触るものではないので,ShaderVisibleはfalse
-    // Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap = // com
-    //     CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
-
-    // Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvDescriptorHeap = // com
-    //     CreateDescriptorHeap(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
-
-    //// SwapChainからResourceを引っ張ってくる
-    // Microsoft::WRL::ComPtr<ID3D12Resource> swapChainResources[2] = {nullptr};
-    // hr = swapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainResources[0]));
-    //// 上手く取得できなければ起動できない
-    // assert(SUCCEEDED(hr));
-    // hr = swapChain->GetBuffer(1, IID_PPV_ARGS(&swapChainResources[1]));
-    // assert(SUCCEEDED(hr));
-
-    //// RTVの設定
-    // D3D12_RENDER_TARGET_VIEW_DESC rtvDesc {};
-    // rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    // rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-    //// ディスクリプタの先頭を取得する
-    // D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    //// RTVを2つ作るのでディスクリプタを２つ用意
-    // D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles[2];
-    //// まず１つ目をつくる。１つ目は最初のところに作る。作る場所をこちらで指定して上げる必要がある
-    // rtvHandles[0] = rtvStartHandle;
-    // device->CreateRenderTargetView(swapChainResources[0].Get(), &rtvDesc, rtvHandles[0]);
-    //// 2つ目のディスクリプタハンドルを得る（自力で）
-    // rtvHandles[1].ptr = rtvHandles[0].ptr + device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    //// 2つ目を作る
-    // device->CreateRenderTargetView(swapChainResources[1].Get(), &rtvDesc, rtvHandles[1]);
-
-    // 初期値でFenceを作る01_02
-    // Microsoft::WRL::ComPtr<ID3D12Fence> fence = nullptr; // com
-    // uint64_t fenceValue = 0;
-    // hr = device->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE,
-    //    IID_PPV_ARGS(&fence));
-    // assert(SUCCEEDED(hr));
-
-    //// FenceのSignalを待つためのイベントを作成する01_02
-    // HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-    // assert(fenceEvent != nullptr);
-
-    // dxcCompilerを初期化CG2_02_00
-    // IDxcUtils* dxcUtils = nullptr;
-    // IDxcCompiler3* dxcCompiler = nullptr;
-    // hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
-    // assert(SUCCEEDED(hr));
-    // hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
-    // assert(SUCCEEDED(hr));
-
-    //// 現時点でincludeはしないがincludeに対応するための設定を行っておく
-    // IDxcIncludeHandler* includHandler = nullptr;
-    // hr = dxcUtils->CreateDefaultIncludeHandler(&includHandler);
-    // assert(SUCCEEDED(hr));
-    //  ==== ルートシグネチャを作る準備 ====
-    //  RootSignature作成02_00
-    //  頂点データの形式を使っていいよ！というフラグを立てる
     //  ルート何？03_00
     D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature {};
     descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
@@ -876,9 +757,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     //////////////
     // 実際に生成//
     //////////////
-    ////--------------------------
-    //// 通常モデル用リソース
-    ////--------------------------
+    //--------------------------
+    // 通常モデル用リソース
+    //--------------------------
 
     //--------------------------------------------------
     // modelDataを使う
@@ -1000,15 +881,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     //--------------------------
     // 共通リソース
     //--------------------------
-    // 03_01_Other
-    /*Microsoft::WRL::ComPtr<ID3D12Resource> depthStencillResource = CreateDepthStencilTextureResource(device.Get(), WinApp::kClientWidth, WinApp::kClientHeight);*/
-
-    //// DSVの設定
-    // D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc {};
-    // dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    // dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-    //// DSVHeapの先端にDSVを作る
-    // device->CreateDepthStencilView(depthStencillResource.Get(), &dsvDesc, dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
     // 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
     Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource = CreateBufferResource(device.Get(), sizeof(DirectionalLight));
@@ -1018,27 +890,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 白色光
     directionalLightData->direction = MatrixMath::Normalize({ 0.0f, -1.0f, 0.0f }); // 真上から下方向
     directionalLightData->intensity = 1.0f; // 標準の明るさ
-
-    //--------------------------
-    // その他リソース
-    //--------------------------
-    //   ビューポート
-    /* D3D12_VIEWPORT viewport {};*/
-    // クライアント領域のサイズと一緒にして画面全体に表示/
-    // viewport.Width = WinApp::kClientWidth;
-    // viewport.Height = WinApp::kClientHeight;
-    // viewport.TopLeftX = 0;
-    // viewport.TopLeftY = 0;
-    // viewport.MinDepth = 0.0f;
-    // viewport.MaxDepth = 1.0f;
-
-    //// シザー矩形
-    // D3D12_RECT scissorRect {};
-    //// 基本的にビューポートと同じ矩形が構成されるようにする
-    // scissorRect.left = 0;
-    // scissorRect.right = WinApp::kClientWidth;
-    // scissorRect.top = 0;
-    // scissorRect.bottom = WinApp::kClientHeight;
 
     // 変数//
     // spriteトランスフォーム
@@ -1066,20 +917,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPinelineState = nullptr;
     hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPinelineState));
     assert(SUCCEEDED(hr));
-
-    // スフィア作成_05_00_OTHER
-    // GenerateSphereVertices(vertexData, kSubdivision, 0.5f);
-
-    // ImGuiの初期化。詳細はさして重要ではないので解説は省略する。02_03
-    // こういうもんである02_03
-    /* IMGUI_CHECKVERSION();*/
-    /*   ImGui::CreateContext();*/
-    /*ImGui::StyleColorsClassic();*/
-    /* ImGui_ImplWin32_Init(winApp->GetHwnd());*/
-    /* ImGui_ImplDX12_Init(device.Get(), swapChainDesc.BufferCount, rtvDesc.Format,
-         srvDescriptorHeap.Get(),
-         srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-         srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());*/
 
     MSG msg {};
     //=================================
@@ -1326,8 +1163,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     winApp->Finalize();
 
     // デリート
-    delete input;
+    /*  delete input;*/
     delete winApp;
+    delete dxCommon;
     return 0;
 
 } // 最後のカギかっこ

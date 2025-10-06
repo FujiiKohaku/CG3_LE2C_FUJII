@@ -96,6 +96,12 @@ private:
     void InitializeDxcCompiler();
     // IMGUI初期化
     void InitializeImGui();
+
+    // 描画前の処理
+    void PreDraw();
+    // 描画後の処理
+    void PostDraw();
+
     // ディスクリプタヒープ生成関数
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle);
 
