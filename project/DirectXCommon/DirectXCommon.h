@@ -5,8 +5,10 @@
 #include <array>
 #include <cassert>
 #include <d3d12.h>
+#include <dxcapi.h>
 #include <dxgi1_6.h>
 #include <wrl.h> // ComPtr 用
+#pragma comment(lib, "dxcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 class DirectXCommon {
@@ -58,6 +60,16 @@ private:
     HANDLE fenceEvent = nullptr;
     //  WindowsAPI
     WinApp* winApp_ = nullptr;
+    // ビューポート
+    D3D12_VIEWPORT viewport {};
+    // シザー矩形
+    D3D12_RECT scissorRect {};
+    // DXCユーティリティ
+    Microsoft::WRL::ComPtr<IDxcUtils> dxcUtils;
+    // DXCコンパイラ
+    Microsoft::WRL::ComPtr<IDxcCompiler3> dxcCompiler;
+    // DXCインクルードハンドラ
+    Microsoft::WRL::ComPtr<IDxcIncludeHandler> includeHandler;
     // デバイス初期化関数
     void InitializeDevice();
     // コマンド初期化
@@ -74,6 +86,12 @@ private:
     void InitializeDepthStencilView();
     // フェンスの初期化
     void InitializeFence();
+    // ビューポート矩形の初期化
+    void InitializeViewport();
+    // シザー矩形の初期化
+    void InitializeScissorRect();
+    // DXCコンパイラの生成
+    void InitializeDxcCompiler();
     // ディスクリプタヒープ生成関数
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle);
 

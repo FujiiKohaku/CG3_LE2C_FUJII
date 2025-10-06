@@ -289,3 +289,43 @@ void DirectXCommon::InitializeFence()
     assert(fenceEvent != nullptr);
 }
 #pragma endregion
+
+#pragma region ビューポート初期化
+void DirectXCommon::InitializeViewport()
+{
+    // クライアント領域のサイズと一緒にして画面全体に表示する
+    viewport.Width = WinApp::kClientWidth;
+    viewport.Height = WinApp::kClientHeight;
+    viewport.TopLeftX = 0;
+    viewport.TopLeftY = 0;
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+}
+#pragma endregion
+
+#pragma region シザー初期化
+void DirectXCommon::InitializeScissorRect()
+{
+    // 基本的にビューポートと同じ矩形が構成されるようにする
+    scissorRect.left = 0;
+    scissorRect.right = WinApp::kClientWidth;
+    scissorRect.top = 0;
+    scissorRect.bottom = WinApp::kClientHeight;
+}
+#pragma endregion
+
+#pragma region DXCコンパイラ初期化
+void DirectXCommon::InitializeDxcCompiler()
+{
+    HRESULT hr;
+
+    hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
+    assert(SUCCEEDED(hr));
+    hr = DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
+    assert(SUCCEEDED(hr));
+
+    // 現時点でincludeはしないがincludeに対応するための設定を行っておく
+    hr = dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
+    assert(SUCCEEDED(hr));
+}
+#pragma endregion
