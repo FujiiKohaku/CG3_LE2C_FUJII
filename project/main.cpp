@@ -1037,33 +1037,35 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
             materialDataSprite->uvTransform = uvTransformMatrix;
 
-            // 画面のクリア処理
-            //   これから書き込むバックバッファのインデックスを取得
-            UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+            //// 画面のクリア処理
+            ////   これから書き込むバックバッファのインデックスを取得
+            //UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
             // TransitionBarrieの設定01_02
-            D3D12_RESOURCE_BARRIER barrier {};
-            // 今回のバリアはTransion
-            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            // Noneにしておく
-            barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            // バリアをはる対象のリソース。現在のバックバッファに対して行う
-            barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
-            // 遷移前(現在)のResourceState
-            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-            // 遷移後のResourceState
-            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-            // TransitionBarrierを張る
-            commandList->ResourceBarrier(1, &barrier);
+            //D3D12_RESOURCE_BARRIER barrier {};
+            //// 今回のバリアはTransion
+            //barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            //// Noneにしておく
+            //barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            //// バリアをはる対象のリソース。現在のバックバッファに対して行う
+            //barrier.Transition.pResource = swapChainResources[backBufferIndex].Get();
+            //// 遷移前(現在)のResourceState
+            //barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+            //// 遷移後のResourceState
+            //barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+            //// TransitionBarrierを張る
+            //commandList->ResourceBarrier(1, &barrier);
 
-            //// 描画先のRTVうぃ設定する
-            /*     commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex],
-               false, nullptr);*/
+
+            // 描画先のRTVうぃ設定する
+           commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, nullptr);
+
             // 描画先のRTVとDSVを設定する
             D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
             commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
+
+
             // 指定した色で画面全体をクリアする
-            float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f }; /// 青っぽい色RGBAの順
-                                                              /// //これ最初の文字1.0fにするとピンク画面になる
+            float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f }; /// 青っぽい色RGBAの順これ最初の文字1.0fにするとピンク画面になる
             commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
             // 03_01
             commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH,

@@ -277,7 +277,7 @@ void DirectXCommon::InitializeRenderTargetView()
     rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
     // RTVハンドルの先頭を取得
-    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    rtvHandle = rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
     // バックバッファ（2枚）分RTVを作成
     for (uint32_t i = 0; i < swapChainResources.size(); ++i) {
@@ -382,8 +382,23 @@ void DirectXCommon::InitializeImGui()
 // 描画前処理
 void DirectXCommon::PreDraw()
 {
-    //   これから書き込むバックバッファのインデックスを取得
+    // これから書き込むバックバッファの番号を取得
     UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+    // リソースバリアで書き込み可能に変更
+    D3D12_RESOURCE_BARRIER barrier {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    barrier.Transition.pResource = swapChainResources[backBufferIndex].Get(); // バリアをはる対象のリソース。現在のバックバッファに対して行う
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT; // 遷移前(現在)のResourceState
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET; // 遷移後のResourceState
+    commandList->ResourceBarrier(1, &barrier); // TransitionBarrierを張る
+    // 描画先のRTVとDSVを設定する
+   
+           // 描画先のRTVうぃ設定する
+    commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, nullptr);
+    // 描画先のRTVとDSVを設定する
+    D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
 }
 // 描画後処理
 void DirectXCommon::PostDraw()
