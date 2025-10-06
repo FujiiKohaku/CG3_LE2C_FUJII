@@ -31,6 +31,9 @@ public:
     // Getter
     ID3D12Device* GetDevice() const { return device.Get(); }
     ID3D12GraphicsCommandList* GetCommandList() const { return commandList.Get(); }
+    // SRVヒープとサイズのGetter
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GetSRVDescriptorHeap() const { return srvDescriptorHeap; }
+    uint32_t GetSRVDescriptorSize() const { return descriptorSizeSRV; }
 
     // シェーダーコンパイル関数
     Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(const std::wstring& filepath, const wchar_t* profile);
@@ -126,6 +129,4 @@ private:
     void InitializeDxcCompiler();
     // IMGUI初期化
     void InitializeImGui();
-
-   
 };
