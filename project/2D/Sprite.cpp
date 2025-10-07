@@ -47,11 +47,7 @@ void Sprite::Update()
     Matrix4x4 viewMatrix = MatrixMath::MakeIdentity4x4();
     // projectionMatrixを作成
     // Sprite専用（左上原点）
-    Matrix4x4 orthoSprite = MatrixMath::MakeOrthographicMatrix(
-        0.0f, (float)WinApp::kClientWidth,
-        (float)WinApp::kClientHeight, 0.0f, // ← top, bottom 逆転
-        0.0f, 1.0f);
-
+    Matrix4x4 orthoSprite = MatrixMath::MakeOrthographicMatrix(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f);
 
     // 最終的に行列をまとめてGPUに送る
     transformationMatrixData->WVP = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, orthoSprite));
