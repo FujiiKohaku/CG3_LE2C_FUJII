@@ -1,11 +1,4 @@
 #pragma once
-// #include "Logger.h"
-// #include <cassert>
-// #include <d3d12.h>
-// #include <dxcapi.h>
-// #include <wrl.h>
-// #pragma comment(lib, "d3d12.lib")
-// #pragma comment(lib, "dxgi.lib")
 #include "DirectXCommon.h"
 
 class SpriteManager {
@@ -26,5 +19,7 @@ private:
     // 借りるDirectXCommonのポインタ
     DirectXCommon* dxCommon_ = nullptr;
     Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature = nullptr;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPinelineState = nullptr;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState = nullptr;
+    ID3DBlob* signatureBlob = nullptr;
+    ID3DBlob* errorBlob = nullptr;
 };

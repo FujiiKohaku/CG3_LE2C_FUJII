@@ -446,12 +446,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         std::cerr << "ファイルが存在しません！" << std::endl;
     }
 
-    // 2枚目のTextureを読んで転送するCG2_05_01_page_8
-    DirectX::ScratchImage mipImages2 = dxCommon->LoadTexture(modelData.material.textureFilePath);
+    //// 2枚目のTextureを読んで転送するCG2_05_01_page_8
+    //DirectX::ScratchImage mipImages2 = dxCommon->LoadTexture(modelData.material.textureFilePath);
 
-    const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
-    Microsoft::WRL::ComPtr<ID3D12Resource> textureResource2 = dxCommon->CreateTextureResource(dxCommon->GetDevice(), metadata2); // get
-    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource2 = dxCommon->UploadTextureData(textureResource2.Get(), mipImages2);
+    //const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
+    //Microsoft::WRL::ComPtr<ID3D12Resource> textureResource2 = dxCommon->CreateTextureResource(dxCommon->GetDevice(), metadata2); // get
+    //Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource2 = dxCommon->UploadTextureData(textureResource2.Get(), mipImages2);
 
     // ID3D12Resource* intermediateResource = dxCommon->UploadTextureData(textureResource, mipImages);
 
@@ -468,11 +468,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
 
     // metaData2を基にSRVの設定CG2_05_01_page_9
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2 {};
-    srvDesc2.Format = metadata2.format;
-    srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
-    srvDesc2.Texture2D.MipLevels = UINT(metadata2.mipLevels);
+    //D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2 {};
+    //srvDesc2.Format = metadata2.format;
+    //srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    //srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
+    //srvDesc2.Texture2D.MipLevels = UINT(metadata2.mipLevels);
 
     // SRVを作成するDescriptorHeapの場所を決める//変更CG2_05_01_0page6
     D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = dxCommon->GetCPUDescriptorHandle(dxCommon->GetSRVDescriptorHeap(), dxCommon->GetSRVDescriptorSize(), 1);
@@ -485,7 +485,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // SRVの生成03_00
     dxCommon->GetDevice()->CreateShaderResourceView(textureResource.Get(), &srvDesc, textureSrvHandleCPU);
     // 05_01
-    dxCommon->GetDevice()->CreateShaderResourceView(textureResource2.Get(), &srvDesc2, textureSrvHandleCPU2);
+   // dxCommon->GetDevice()->CreateShaderResourceView(textureResource2.Get(), &srvDesc2, textureSrvHandleCPU2);
     // InputLayout
     D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
     inputElementDescs[0].SemanticName = "POSITION";
@@ -652,12 +652,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     // Viewを作成する06_00_page6
     D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite {};
-    // リソースの先頭のアドレスから使う
-    indexBufferViewSprite.BufferLocation = indexResourceSprite->GetGPUVirtualAddress();
-    // 使用するリソースのサイズはインデックス６つ分のサイズ
-    indexBufferViewSprite.SizeInBytes = sizeof(uint32_t) * 6;
-    // インデックスはuint32_tとする
-    indexBufferViewSprite.Format = DXGI_FORMAT_R32_UINT;
+    indexBufferViewSprite.BufferLocation = indexResourceSprite->GetGPUVirtualAddress(); // リソースの先頭のアドレスから使う
+    indexBufferViewSprite.SizeInBytes = sizeof(uint32_t) * 6; // 使用するリソースのサイズはインデックス６つ分のサイズ
+    indexBufferViewSprite.Format = DXGI_FORMAT_R32_UINT; // インデックスはuint32_tとする
 
     // Sprite用のマテリアルリソースを作る05_03
     Microsoft::WRL::ComPtr<ID3D12Resource> materialResourceSprite = dxCommon->CreateBufferResource(sizeof(Material));
@@ -754,34 +751,35 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             break;
         } else {
 
+            sprite->Update();
             // ここがframeの先頭02_03
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
             ImGui::NewFrame();
 
             // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
-            ImGui::ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
+            //ImGui::ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
 
-            ImGui::Begin("Materialcolor");
-            ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 5.0f);
-            ImGui::SliderAngle("RotateX", &transform.rotate.x, -180.0f, 180.0f);
-            ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
-            ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
-            ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
+            //ImGui::Begin("Materialcolor");
+            //ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 5.0f);
+            //ImGui::SliderAngle("RotateX", &transform.rotate.x, -180.0f, 180.0f);
+            //ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
+            //ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
+            //ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
 
-            /* ImGui::ColorEdit4("Color", &(*materialData).x);*/
-            ImGui::Text("useMonstarBall");
-            ImGui::Checkbox("useMonstarBall", &useMonstarBall);
-            ImGui::Text("LIgthng");
-            ImGui::SliderFloat("x", &directionalLightData->direction.x, -10.0f, 10.0f);
-            ImGui::SliderFloat("y", &directionalLightData->direction.y, -10.0f, 10.0f);
-            ImGui::SliderFloat("z", &directionalLightData->direction.z, -10.0f, 10.0f);
-            ImGui::Text("UVTransform");
-            ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
-            ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
-            ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
+            ///* ImGui::ColorEdit4("Color", &(*materialData).x);*/
+            //ImGui::Text("useMonstarBall");
+            //ImGui::Checkbox("useMonstarBall", &useMonstarBall);
+            //ImGui::Text("LIgthng");
+            //ImGui::SliderFloat("x", &directionalLightData->direction.x, -10.0f, 10.0f);
+            //ImGui::SliderFloat("y", &directionalLightData->direction.y, -10.0f, 10.0f);
+            //ImGui::SliderFloat("z", &directionalLightData->direction.z, -10.0f, 10.0f);
+            //ImGui::Text("UVTransform");
+            //ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+            //ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+            //ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
 
-            ImGui::End();
+            //ImGui::End();
 
             // ImGuiの内部コマンドを生成する02_03
             ImGui::Render(); // ImGui終わりの場所。描画の前02_03--------------------------
@@ -796,11 +794,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // デバッグカメラの更新
             debugCamera.Update();
 
-            // 数字の０キーが押されていたら
-            if (input->IsKeyPressed(DIK_0)) {
-                OutputDebugStringA("Hit 0");
-                soundmanager.SoundPlayWave(bgm);
-            }
+            //// 数字の０キーが押されていたら
+            //if (input->IsKeyPressed(DIK_0)) {
+            //    OutputDebugStringA("Hit 0");
+            //    soundmanager.SoundPlayWave(bgm);
+            //}
 
             //  メイクアフィンマトリックス02_02
             Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
@@ -841,19 +839,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // 画面のクリア処理
 
             // RootSignatureを設定。PS0に設定しているけど別途設定が必要
-            dxCommon->GetCommandList()->SetGraphicsRootSignature(rootSignature.Get());
-            dxCommon->GetCommandList()->SetPipelineState(graphicsPinelineState.Get()); // PS0を設定
-            dxCommon->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView); // VBVを設定
+           // dxCommon->GetCommandList()->SetGraphicsRootSignature(rootSignature.Get());
+           // dxCommon->GetCommandList()->SetPipelineState(graphicsPinelineState.Get()); // PS0を設定
+           // dxCommon->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferView); // VBVを設定
             /// 形状を設定。PS0に設定しているものとはまた別。同じものを設定すると考えていけばよい
-            dxCommon->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+           // dxCommon->GetCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-            dxCommon->GetCommandList()->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+           // dxCommon->GetCommandList()->SetGraphicsRootDescriptorTable(2, useMonstarBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
             //// マテリアルCbufferの場所を設定05_03変更
-            dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress()); // ここでmaterialResource使え
+           // dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress()); // ここでmaterialResource使え
 
             // wvp用のCBufferの場所を設定02_02
-            dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
+            //dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
             // 平行光源用のCbufferの場所を設定05_03
             dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
 
@@ -865,16 +863,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress()); // ここでmaterialResource使え
 
             // 描画
-            dxCommon->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+             dxCommon->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
             // spriteの描画04_00
-            dxCommon->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+             dxCommon->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
             // IBVを設定
-            dxCommon->GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
+             dxCommon->GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
 
-            dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
+             dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
             // UvChecker
-            dxCommon->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 左上のやつ
+           // dxCommon->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 左上のやつ
 
+            sprite->Draw(textureSrvHandleGPU);
             // 描画の最後です//----------------------------------------------------
             //  実際のcommandListのImGuiの描画コマンドを積む
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
