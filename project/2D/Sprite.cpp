@@ -46,9 +46,15 @@ void Sprite::Update()
     // ViewMatrixを作って単位行列を代入（
     Matrix4x4 viewMatrix = MatrixMath::MakeIdentity4x4();
     // projectionMatrixを作成
-    Matrix4x4 ortho = MatrixMath::MakeOrthographicMatrix( 0.0f, (float)WinApp::kClientWidth,  (float)WinApp::kClientHeight, 0.0f,  0.0f, 1.0f); // near, far（2Dなら 0～1 でOK）
+    // Sprite専用（左上原点）
+    Matrix4x4 orthoSprite = MatrixMath::MakeOrthographicMatrix(
+        0.0f, (float)WinApp::kClientWidth,
+        (float)WinApp::kClientHeight, 0.0f, // ← top, bottom 逆転
+        0.0f, 1.0f);
+
+
     // 最終的に行列をまとめてGPUに送る
-    transformationMatrixData->WVP = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, ortho));
+    transformationMatrixData->WVP = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, orthoSprite));
     transformationMatrixData->World = worldMatrix;
 }
 #pragma endregion
@@ -110,7 +116,7 @@ void Sprite::CreateMaterialBuffer()
     materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
     // 今回は赤を書き込んでみる
     materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-    materialData->enableLighting = true;
+    materialData->enableLighting = false;
     materialData->uvTransform = MatrixMath::MakeIdentity4x4(); // 06_01_UuvTransform行列を単位行列で初期化
 }
 

@@ -800,37 +800,37 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             //    soundmanager.SoundPlayWave(bgm);
             //}
 
-            //  メイクアフィンマトリックス02_02
-            Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
-            // カメラのメイクアフィンマトリックス02_02
-            Matrix4x4 cameraMatrix = MatrixMath::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
-            // 逆行列カメラ02_02
-            Matrix4x4 viewMatrix = debugCamera.GetViewMatrix();
-            // 透視投影行列02_02
-            Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, float(WinApp::kClientWidth) / float(WinApp::kClientHeight), 0.1f, 100.0f);
-            // ワールドビュープロジェクション行列02_02
-            Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
-            // CBVのバッファに書き込む02_02
-            // CBVに正しい行列を書き込む
-            memcpy(&wvpData->WVP, &worldViewProjectionMatrix, sizeof(Matrix4x4));
+            ////  メイクアフィンマトリックス02_02
+            //Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
+            //// カメラのメイクアフィンマトリックス02_02
+            //Matrix4x4 cameraMatrix = MatrixMath::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
+            //// 逆行列カメラ02_02
+            //Matrix4x4 viewMatrix = debugCamera.GetViewMatrix();
+            //// 透視投影行列02_02
+            //Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, float(WinApp::kClientWidth) / float(WinApp::kClientHeight), 0.1f, 100.0f);
+            //// ワールドビュープロジェクション行列02_02
+            //Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
+            //// CBVのバッファに書き込む02_02
+            //// CBVに正しい行列を書き込む
+            //memcpy(&wvpData->WVP, &worldViewProjectionMatrix, sizeof(Matrix4x4));
 
-            // Sprite用のworldviewProjectionMatrixを作る04_00
-            Matrix4x4 worldMatrixSprite = MatrixMath::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
-            Matrix4x4 viewMatrixSprite = MatrixMath::MakeIdentity4x4();
-            Matrix4x4 projectionMatrixSprite = MatrixMath::MakeOrthographicMatrix(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f);
-            Matrix4x4 worldViewProjectionMatrixSprite = MatrixMath::Multiply(worldMatrixSprite,
-                MatrixMath::Multiply(viewMatrixSprite, projectionMatrixSprite));
-            // 単位行列を書き込んでおく04_00
-            transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
-            transformationMatrixDataSprite->World = worldMatrixSprite;
+            //// Sprite用のworldviewProjectionMatrixを作る04_00
+            //Matrix4x4 worldMatrixSprite = MatrixMath::MakeAffineMatrix(transformSprite.scale, transformSprite.rotate, transformSprite.translate);
+            //Matrix4x4 viewMatrixSprite = MatrixMath::MakeIdentity4x4();
+            //Matrix4x4 projectionMatrixSprite = MatrixMath::MakeOrthographicMatrix(0.0f, 0.0f, float(WinApp::kClientWidth), float(WinApp::kClientHeight), 0.0f, 100.0f);
+            //Matrix4x4 worldViewProjectionMatrixSprite = MatrixMath::Multiply(worldMatrixSprite,
+            //    MatrixMath::Multiply(viewMatrixSprite, projectionMatrixSprite));
+            //// 単位行列を書き込んでおく04_00
+            //transformationMatrixDataSprite->WVP = worldViewProjectionMatrixSprite;
+            //transformationMatrixDataSprite->World = worldMatrixSprite;
 
             //-------------------------
             // UVTransform用の行列生成
             //-------------------------
-            Matrix4x4 uvTransformMatrix = MatrixMath::Matrix4x4MakeScaleMatrix(uvTransformSprite.scale);
+           /* Matrix4x4 uvTransformMatrix = MatrixMath::Matrix4x4MakeScaleMatrix(uvTransformSprite.scale);
             uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeRotateZMatrix(uvTransformSprite.rotate.z));
             uvTransformMatrix = MatrixMath::Multiply(uvTransformMatrix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
-            materialDataSprite->uvTransform = uvTransformMatrix;
+            materialDataSprite->uvTransform = uvTransformMatrix;*/
 
             // 描画前の処理//----------------------------------------------------
             dxCommon->PreDraw();
@@ -852,24 +852,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
             // wvp用のCBufferの場所を設定02_02
             //dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
-            // 平行光源用のCbufferの場所を設定05_03
-            dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+            //// 平行光源用のCbufferの場所を設定05_03
+            //dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
 
-            // 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
-            dxCommon->GetCommandList()->DrawInstanced(kNumVertices, 1, 0, 0);
-            // obj
-            dxCommon->GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0); // オブジェクトのやつ
-            // マテリアルCbufferの場所を設定05_03変更これ書くとUvChackerがちゃんとする
-            dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress()); // ここでmaterialResource使え
+            //// 描画！(DRAWCALL/ドローコール)。３頂点で１つのインスタンス。インスタンスについては今後_05_00_OHTER
+            //dxCommon->GetCommandList()->DrawInstanced(kNumVertices, 1, 0, 0);
+            //// obj
+            //dxCommon->GetCommandList()->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0); // オブジェクトのやつ
+            //// マテリアルCbufferの場所を設定05_03変更これ書くとUvChackerがちゃんとする
+            //dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress()); // ここでmaterialResource使え
 
-            // 描画
-             dxCommon->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-            // spriteの描画04_00
-             dxCommon->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
-            // IBVを設定
-             dxCommon->GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
+            //// 描画
+            // dxCommon->GetCommandList()->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+            //// spriteの描画04_00
+            // dxCommon->GetCommandList()->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
+            //// IBVを設定
+            // dxCommon->GetCommandList()->IASetIndexBuffer(&indexBufferViewSprite);
 
-             dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
+            // dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
             // UvChecker
            // dxCommon->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 左上のやつ
 
