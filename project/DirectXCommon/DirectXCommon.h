@@ -27,7 +27,8 @@ public:
     void PreDraw();
     // 描画後の処理
     void PostDraw();
-
+    // 最大SRV数(最大テクスチャ枚数)
+    static const uint32_t kMaxSRVCount;
     // Getter
     ID3D12Device* GetDevice() const { return device.Get(); }
     ID3D12GraphicsCommandList* GetCommandList() const { return commandList.Get(); }
@@ -44,8 +45,7 @@ public:
 
     // txtureデータ転送関数
     Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData(Microsoft::WRL::ComPtr<ID3D12Resource> texture, const DirectX::ScratchImage& mipImages);
-    // テクスチャファイルの読み込み関数
-    static DirectX::ScratchImage LoadTexture(const std::string& filePath);
+   
     // ディスクリプタヒープ生成関数
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle);
 
@@ -55,6 +55,7 @@ public:
     static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
 private:
+    
     // DXGIファクトリーの生成
     Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr;
     // デバイス

@@ -41,6 +41,9 @@ void DirectXCommon::Initialize(WinApp* winApp)
     InitializeImGui();
 }
 
+// 最大SRV数(最大テクスチャ枚数)
+const uint32_t DirectXCommon::kMaxSRVCount = 512;
+
 #pragma region SRV特化関数
 // SRVの指定番号のCPUデスクリプタハンドルを取得する
 D3D12_CPU_DESCRIPTOR_HANDLE DirectXCommon::GetSRVCPUDescriptorHandle(uint32_t index)
@@ -254,7 +257,7 @@ void DirectXCommon::InitializeDescriptorHeaps()
     dsvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
 
     // SRV用のヒープ（Shaderから使うのでtrue）
-    srvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+    srvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
 }
 
 #pragma endregion

@@ -9,6 +9,7 @@
 #include "SoundManager.h"
 #include "Sprite.h"
 #include "SpriteManager.h"
+#include "TextureManager.h"
 #include "Unknwn.h"
 #include "Utility.h"
 #include "Winapp/WinApp.h"
@@ -337,6 +338,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     sprite = new Sprite();
     sprite->Initialize(spriteManager);
 
+    // テクスチャマネージャーの初期化
+    TextureManager::GetInstance()->Initialize();
 #ifdef _DEBUG
 
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue = nullptr;
@@ -485,25 +488,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // 05_01
     dxCommon->GetDevice()->CreateShaderResourceView(textureResource2.Get(), &srvDesc2, textureSrvHandleCPU2);
     // InputLayout
-    //D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
-    //inputElementDescs[0].SemanticName = "POSITION";
-    //inputElementDescs[0].SemanticIndex = 0;
-    //inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    //inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+    // D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
+    // inputElementDescs[0].SemanticName = "POSITION";
+    // inputElementDescs[0].SemanticIndex = 0;
+    // inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    // inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-    //inputElementDescs[1].SemanticName = "TEXCOORD";
-    //inputElementDescs[1].SemanticIndex = 0;
-    //inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-    //inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+    // inputElementDescs[1].SemanticName = "TEXCOORD";
+    // inputElementDescs[1].SemanticIndex = 0;
+    // inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+    // inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
     //// 05_03
-    //inputElementDescs[2].SemanticName = "NORMAL";
-    //inputElementDescs[2].SemanticIndex = 0;
-    //inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-    //inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+    // inputElementDescs[2].SemanticName = "NORMAL";
+    // inputElementDescs[2].SemanticIndex = 0;
+    // inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+    // inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
-    //D3D12_INPUT_LAYOUT_DESC inputLayoutDesc {};
-    //inputLayoutDesc.pInputElementDescs = inputElementDescs;
-    //inputLayoutDesc.NumElements = _countof(inputElementDescs);
+    // D3D12_INPUT_LAYOUT_DESC inputLayoutDesc {};
+    // inputLayoutDesc.pInputElementDescs = inputElementDescs;
+    // inputLayoutDesc.NumElements = _countof(inputElementDescs);
 
     // BlendStateの設定
     D3D12_BLEND_DESC blendDesc {};
@@ -874,6 +877,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // 描画の最後です//----------------------------------------------------
             //  実際のcommandListのImGuiの描画コマンドを積む
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
+
+            // テクスチャマネージャーの終了
+            TextureManager::GetInstance()->Finalize();
 
             dxCommon->PostDraw();
         }
