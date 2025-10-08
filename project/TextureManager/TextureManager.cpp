@@ -17,7 +17,6 @@ void TextureManager::Finalize()
         instance = nullptr;
     }
 }
-const uint32_t DirectXCommon::kMaxSRVCount = 512;
 
 void TextureManager::Initialize(DirectXCommon* dxCommon)
 {

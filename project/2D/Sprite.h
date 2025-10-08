@@ -3,15 +3,17 @@
 #include <cstdint> // uint32_t など
 #include <d3d12.h> // D3D12型定義（ID3D12Resourceなど）
 #include <wrl.h> // ComPtrスマートポインタ
+#include <string> // std::string
+#include "TextureManager.h"
 class SpriteManager;
 class Sprite {
 public:
     // 初期化
-    void Initialize(SpriteManager* spriteManager);
+    void Initialize(SpriteManager* spriteManager, std::string textureFilePath);
 
     void Update();
 
-    void Draw(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU);
+    void Draw();
 
     // 位置のGetter/Setter
     const Vector2& GetPosition() const { return position; }
@@ -91,4 +93,5 @@ private:
     void CreateVertexBuffer();
     void CreateMaterialBuffer();
     void CreateTransformationMatrixBuffer();
+    int textureIndex = 0; // テクスチャ番号
 };

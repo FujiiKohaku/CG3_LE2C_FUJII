@@ -287,7 +287,7 @@ ModelData LoadOjFile(const std::string& directoryPath, const std::string& filena
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
 
-    HRESULT hr;
+    // HRESULT hr;
     D3DResourceLeakChecker leakChecker;
 
     // 誰も補足しなかった場合(Unhandled),補足する関数を登録
@@ -326,7 +326,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // ② TextureManager初期化
     // ==========================
     TextureManager::GetInstance()->Initialize(dxCommon);
-
+    TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
     // SpriteManagerのポインタ
     SpriteManager* spriteManager = nullptr;
     // スプライト共通部の初期化
@@ -341,18 +341,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     std::vector<Sprite*> sprites;
     for (uint32_t i = 0; i < 5; i++) {
         Sprite* sprite = new Sprite();
-        sprite->Initialize(spriteManager);
+        sprite->Initialize(spriteManager, "resources/uvChecker.png");
         Vector2 pos = { 100.0f * i, 100.0f };
         sprite->SetPosition(pos);
         sprites.push_back(sprite);
     }
 
-    // テクスチャマネージャーの初期化
-    TextureManager::GetInstance()->Initialize();　
 #ifdef _DEBUG
 
-    Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue = nullptr;
-    if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
+    Microsoft::WRL::ComPtr<ID3D12InfoQueue>
+        infoQueue = nullptr;
+    if (SUCCEEDED(dxCommon->GetDevice()->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
         // やばいエラー時に止まる
         infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
         // エラー時に止まる
@@ -484,24 +483,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
     srvDesc2.Texture2D.MipLevels = UINT(metadata2.mipLevels);
 
-    // SRVを作成するDescriptorHeapの場所を決める//変更CG2_05_01_0page6
-    D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = dxCommon->GetCPUDescriptorHandle(dxCommon->GetSRVDescriptorHeap(), dxCommon->GetSRVDescriptorSize(), 1);
-    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = dxCommon->GetGPUDescriptorHandle(dxCommon->GetSRVDescriptorHeap(), dxCommon->GetSRVDescriptorSize(), 1);
+    //// SRVを作成するDescriptorHeapの場所を決める//変更CG2_05_01_0page6
+    // D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = dxCommon->GetCPUDescriptorHandle(dxCommon->GetSRVDescriptorHeap(), dxCommon->GetSRVDescriptorSize(), 1);
+    // D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = dxCommon->GetGPUDescriptorHandle(dxCommon->GetSRVDescriptorHeap(), dxCommon->GetSRVDescriptorSize(), 1);
 
-    // SRVを作成するDescriptorHeapの場所を決めるCG2_05_01_page_9
-    D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = dxCommon->GetCPUDescriptorHandle(dxCommon->GetSRVDescriptorHeap(), dxCommon->GetSRVDescriptorSize(), 2);
-    D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = dxCommon->GetGPUDescriptorHandle(dxCommon->GetSRVDescriptorHeap(), dxCommon->GetSRVDescriptorSize(), 2);
+    //// SRVを作成するDescriptorHeapの場所を決めるCG2_05_01_page_9
+    // D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = dxCommon->GetCPUDescriptorHandle(dxCommon->GetSRVDescriptorHeap(), dxCommon->GetSRVDescriptorSize(), 2);
+    // D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = dxCommon->GetGPUDescriptorHandle(dxCommon->GetSRVDescriptorHeap(), dxCommon->GetSRVDescriptorSize(), 2);
 
-    //// SRVの生成03_00
-    dxCommon->GetDevice()->CreateShaderResourceView(textureResource.Get(), &srvDesc, textureSrvHandleCPU);
-    // 05_01
-    dxCommon->GetDevice()->CreateShaderResourceView(textureResource2.Get(), &srvDesc2, textureSrvHandleCPU2);
-    // InputLayout
-    // D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
-    // inputElementDescs[0].SemanticName = "POSITION";
-    // inputElementDescs[0].SemanticIndex = 0;
-    // inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    // inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+    ////// SRVの生成03_00
+    // dxCommon->GetDevice()->CreateShaderResourceView(textureResource.Get(), &srvDesc, textureSrvHandleCPU);
+    //// 05_01
+    // dxCommon->GetDevice()->CreateShaderResourceView(textureResource2.Get(), &srvDesc2, textureSrvHandleCPU2);
+    //  InputLayout
+    //  D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
+    //  inputElementDescs[0].SemanticName = "POSITION";
+    //  inputElementDescs[0].SemanticIndex = 0;
+    //  inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    //  inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
     // inputElementDescs[1].SemanticName = "TEXCOORD";
     // inputElementDescs[1].SemanticIndex = 0;
@@ -761,10 +760,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             break;
         } else {
 
-
-
-
-      
             // ここがframeの先頭02_03
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
@@ -889,7 +884,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // UvChecker
             // dxCommon->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 左上のやつ
             for (Sprite* sprite : sprites) {
-                sprite->Draw(textureSrvHandleGPU);
+                sprite->Draw();
             }
 
             // 描画の最後です//----------------------------------------------------
