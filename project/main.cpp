@@ -315,12 +315,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     // WinAppのポインタ
     WinApp* winApp = nullptr;
-
     // WinAppの初期化
     winApp = new WinApp();
     winApp->initialize();
 
- 
     // DirectXCommonのポインタ
     DirectXCommon* dxCommon = nullptr;
     // DirectXCommonの初期化
@@ -337,7 +335,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     Sprite* sprite = nullptr;
 
     // テクスチャマネージャーの初期化
-    TextureManager::GetInstance()->Initialize();
+    TextureManager::GetInstance()->Initialize(); // シングルトンだからね♡
     TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
 
     std::vector<Sprite*> sprites;
