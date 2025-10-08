@@ -7,17 +7,18 @@
 #include <vector>
 class TextureManager {
 public:
-    // シングルトンインスタンス取得
+    // シングルトンインスタンスの取得
     static TextureManager* GetInstance();
-    // 初期化
-    void Initialize();
-
     // 終了
     void Finalize();
-    // テクスチャファイルの読み込み関数
-    void LoadTexture(const std::string& filePath);
 
 private:
+    static TextureManager* instance;
+
+    TextureManager() = default;
+    ~TextureManager() = default;
+    TextureManager(TextureManager&) = delete;
+    TextureManager& operator=(TextureManager&) = delete;
     // テクスチャ1枚分のデータ
     struct TextureData {
         std::string filePath;
@@ -26,13 +27,10 @@ private:
         D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU;
         D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU;
     };
-
-    static TextureManager* instance;
-    TextureManager() = default;
-    ~TextureManager() = default;
-    TextureManager(TextureManager&) = delete;
-    TextureManager& operator=(TextureManager&) = delete;
-
-    // テクスチャコンテナデータ
+    // テクスチャデータ
     std::vector<TextureData> textureDatas;
+
+    // 最大SRV数（最大テクスチャ枚数）
+    static const uint32_t kMaxSRVCount;
+
 };
