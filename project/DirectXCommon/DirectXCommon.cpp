@@ -248,7 +248,9 @@ void DirectXCommon::InitializeDescriptorHeaps()
 {
 
     descriptorSizeSRV = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
     descriptorSizeRTV = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
     descriptorSizeDSV = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
     // RTV用のヒープ（Shaderからは使わないのでfalse）
     rtvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
@@ -258,6 +260,8 @@ void DirectXCommon::InitializeDescriptorHeaps()
 
     // SRV用のヒープ（Shaderから使うのでtrue）
     srvDescriptorHeap = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
+
+
 }
 
 #pragma endregion

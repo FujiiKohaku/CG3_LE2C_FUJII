@@ -13,8 +13,13 @@ TextureManager* TextureManager::GetInstance()
     return instance;
 }
 
-void TextureManager::Initialize()
+void TextureManager::Initialize(DirectXCommon* dxCommon)
 {
+
+    // deviceを借りる
+    device_ = dxCommon->GetDevice();
+    // dxCommonのポインタを借りる
+    dxCommon_ = dxCommon;
     // 初期化処理があればここに記述
     // SRVの数と同数
     textureDatas.reserve(DirectXCommon::kMaxSRVCount);
@@ -60,12 +65,15 @@ void TextureManager::LoadTexture(const std::string& filePath)
 
     textureData.filePath = filePath;
     textureData.metadata = mipImages.GetMetadata();
-    textureData.resource = DirectXCommon::GetInstance()->CreateTextureResource(DirectXCommon::GetInstance()->GetDevice(), textureData.metadata);
+    textureData.resource = dxCommon_->CreateTextureResource(device_, textureData.metadata); // dxcommon
 
     // テクスチャデータの要素数番号をSRVのインデックスとする
     uint32_t srvIndex = static_cast<uint32_t>(textureDatas.size() - 1) + kSRVIndexTop;
-    textureData.srvHandleCPU = DirectXCommon::GetInstance()->GetSRVCPUDescriptorHandle(srvIndex);
-    textureData.srvHandleGPU = DirectXCommon::GetInstance()->GetSRVGPUDescriptorHandle(srvIndex);
+
+    assert(dxCommon_);
+    assert(dxCommon_->GetSRVDescriptorHeap() != nullptr);
+    textureData.srvHandleCPU = dxCommon_->GetSRVCPUDescriptorHandle(srvIndex);
+    textureData.srvHandleGPU = dxCommon_->GetSRVGPUDescriptorHandle(srvIndex);
 
     // --SRV作成--
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc {};
@@ -75,7 +83,7 @@ void TextureManager::LoadTexture(const std::string& filePath)
     srvDesc.Texture2D.MipLevels = UINT(textureData.metadata.mipLevels);
 
     // --- SRV作成 ---
-    DirectXCommon::GetInstance()->GetDevice()->CreateShaderResourceView(textureData.resource.Get(), &srvDesc, textureData.srvHandleCPU);
+    device_->CreateShaderResourceView(textureData.resource.Get(), &srvDesc, textureData.srvHandleCPU);
 }
 
 uint32_t TextureManager::GetTextureIndexByFilePath(const std::string& filepath)

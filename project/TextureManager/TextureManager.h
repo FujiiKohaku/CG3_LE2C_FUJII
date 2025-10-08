@@ -10,7 +10,7 @@ public:
     // シングルトンインスタンス取得
     static TextureManager* GetInstance();
     // 初期化
-    void Initialize();
+    void Initialize(DirectXCommon* dxCommon);
     // 終了
     void Finalize();
     // テクスチャファイルの読み込み関数
@@ -43,6 +43,8 @@ private:
     // テクスチャコンテナデータ
     std::vector<TextureData> textureDatas;
 
+    // DirectXのデバイスへのポインタ（借りるだけ）
+    ID3D12Device* device_ = nullptr;
 
-
+    DirectXCommon* dxCommon_ = nullptr;
 };
