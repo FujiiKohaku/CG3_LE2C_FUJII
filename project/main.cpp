@@ -348,7 +348,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     }
 
     // テクスチャマネージャーの初期化
-    TextureManager::GetInstance()->Initialize();
+    TextureManager::GetInstance()->Initialize();　
 #ifdef _DEBUG
 
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue = nullptr;
