@@ -13,6 +13,22 @@ public:
 
     void Draw(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU);
 
+    // 位置のGetter/Setter
+    const Vector2& GetPosition() const { return position; }
+    void SetPosition(const Vector2& pos) { position = pos; }
+
+    // 回転のGetter / Setter
+    float GetRotation() const { return rotation; }
+    void SetRotation(float rot) { rotation = rot; }
+
+    // 色のGetter/Setter
+    const Vector4& GetColor() const { return materialData->color; }
+    void SetColor(const Vector4& color) { materialData->color = color; }
+
+    // サイズのGetter/Setter
+    const Vector2& GetSize() const { return size; }
+    void SetSize(const Vector2& s) { size = s; }
+
 private:
     // 頂点データ
     struct VertexData {
@@ -37,10 +53,17 @@ private:
         Vector3 scale;
         Vector3 rotate;
         Vector3 translate;
-    }; // トランスフォーム
+    };
+
+    Vector2 position = { 0.0f, 0.0f };
+
+    float rotation = 0.0f;
+
+    // トランスフォーム
     Transform transform {
         { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }
     };
+    Vector2 size = { 640.0f, 360.0f };
     // SpriteManagerのポインタ
     SpriteManager* spriteManager_ = nullptr;
 

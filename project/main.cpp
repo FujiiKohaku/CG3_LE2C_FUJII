@@ -335,8 +335,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // spriteのポインタ
     Sprite* sprite = nullptr;
     // スプライト個人の初期化
-    sprite = new Sprite();
-    sprite->Initialize(spriteManager);
+
+    std::vector<Sprite*> sprites;
+    for (uint32_t i = 0; i < 5; i++) {
+        Sprite* sprite = new Sprite();
+        sprite->Initialize(spriteManager);
+        Vector2 pos = { 100.0f * i, 100.0f };
+        sprite->SetPosition(pos);
+        sprites.push_back(sprite);
+    }
 
     // テクスチャマネージャーの初期化
     TextureManager::GetInstance()->Initialize();
@@ -752,35 +759,39 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             break;
         } else {
 
-            sprite->Update();
+            for (Sprite* sprite : sprites) {
+                sprite->Update();
+            }
             // ここがframeの先頭02_03
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
             ImGui::NewFrame();
 
+            //===================================
+
             // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
             // ImGui::ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
 
-            // ImGui::Begin("Materialcolor");
-            // ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 5.0f);
-            // ImGui::SliderAngle("RotateX", &transform.rotate.x, -180.0f, 180.0f);
-            // ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
-            // ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
-            // ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
+            ImGui::Begin("Materialcolor");
+            ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 5.0f);
+            ImGui::SliderAngle("RotateX", &transform.rotate.x, -180.0f, 180.0f);
+            ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
+            ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
+            ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
 
-            ///* ImGui::ColorEdit4("Color", &(*materialData).x);*/
-            // ImGui::Text("useMonstarBall");
-            // ImGui::Checkbox("useMonstarBall", &useMonstarBall);
-            // ImGui::Text("LIgthng");
-            // ImGui::SliderFloat("x", &directionalLightData->direction.x, -10.0f, 10.0f);
-            // ImGui::SliderFloat("y", &directionalLightData->direction.y, -10.0f, 10.0f);
-            // ImGui::SliderFloat("z", &directionalLightData->direction.z, -10.0f, 10.0f);
-            // ImGui::Text("UVTransform");
-            // ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
-            // ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
-            // ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
+            /* ImGui::ColorEdit4("Color", &(*materialData).x);*/
+            ImGui::Text("useMonstarBall");
+            ImGui::Checkbox("useMonstarBall", &useMonstarBall);
+            ImGui::Text("LIgthng");
+            /*           ImGui::SliderFloat("x", &directionalLightData->direction.x, -10.0f, 10.0f);
+                       ImGui::SliderFloat("y", &directionalLightData->direction.y, -10.0f, 10.0f);
+                       ImGui::SliderFloat("z", &directionalLightData->direction.z, -10.0f, 10.0f);*/
+            ImGui::Text("UVTransform");
+            ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+            ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+            ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
 
-            // ImGui::End();
+            ImGui::End();
 
             // ImGuiの内部コマンドを生成する02_03
             ImGui::Render(); // ImGui終わりの場所。描画の前02_03--------------------------
@@ -872,8 +883,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
             // UvChecker
             // dxCommon->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 左上のやつ
+            for (Sprite* sprite : sprites) {
+                sprite->Draw(textureSrvHandleGPU);
+            }
 
-            sprite->Draw(textureSrvHandleGPU);
             // 描画の最後です//----------------------------------------------------
             //  実際のcommandListのImGuiの描画コマンドを積む
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
@@ -905,7 +918,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     /*  delete input;*/
     delete winApp;
     delete dxCommon;
-    delete sprite;
+
+    for (auto sprite : sprites) {
+        delete sprite;
+    }
+    sprites.clear();
     delete spriteManager;
     return 0;
 

@@ -42,7 +42,8 @@ public:
     Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource(size_t sizeInBytes);
     // Textureリソース生成関数
     Microsoft::WRL::ComPtr<ID3D12Resource> CreateTextureResource(Microsoft::WRL::ComPtr<ID3D12Device> device, const DirectX::TexMetadata& metadata);
-
+    // テクスチャファイルの読み込み関数
+    static DirectX::ScratchImage LoadTexture(const std::string& filePath);
     // txtureデータ転送関数
     Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData(Microsoft::WRL::ComPtr<ID3D12Resource> texture, const DirectX::ScratchImage& mipImages);
    

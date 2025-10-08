@@ -11,8 +11,8 @@ TextureManager* TextureManager::GetInstance()
 
 void TextureManager::Initialize()
 {
-    // ‰Šú‰»ˆ—‚ª‚ ‚ê‚Î‚±‚±‚É‹Lq
-    // SRV‚Ì”‚Æ“¯”
+    // åˆæœŸåŒ–å‡¦ç†ãŒã‚ã‚Œã°ã“ã“ã«è¨˜è¿°
+    // SRVã®æ•°ã¨åŒæ•°
     textureDatas.reserve(DirectXCommon::kMaxSRVCount);
 }
 

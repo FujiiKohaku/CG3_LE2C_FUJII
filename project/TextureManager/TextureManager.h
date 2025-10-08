@@ -7,18 +7,18 @@
 #include <vector>
 class TextureManager {
 public:
-    // ƒVƒ“ƒOƒ‹ƒgƒ“ƒCƒ“ƒXƒ^ƒ“ƒXæ“¾
+    // ã‚·ãƒ³ã‚°ãƒ«ãƒˆãƒ³ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹å–å¾—
     static TextureManager* GetInstance();
-    // ‰Šú‰»
+    // åˆæœŸåŒ–
     void Initialize();
 
-    // I—¹
+    // çµ‚äº†
     void Finalize();
-    // ƒeƒNƒXƒ`ƒƒƒtƒ@ƒCƒ‹‚Ì“Ç‚İ‚İŠÖ”
+    // ãƒ†ã‚¯ã‚¹ãƒãƒ£ãƒ•ã‚¡ã‚¤ãƒ«ã®èª­ã¿è¾¼ã¿é–¢æ•°
     void LoadTexture(const std::string& filePath);
 
 private:
-    // ƒeƒNƒXƒ`ƒƒ1–‡•ª‚Ìƒf[ƒ^
+    // ãƒ†ã‚¯ã‚¹ãƒãƒ£1æšåˆ†ã®ãƒ‡ãƒ¼ã‚¿
     struct TextureData {
         std::string filePath;
         DirectX::TexMetadata metadata;
@@ -33,6 +33,6 @@ private:
     TextureManager(TextureManager&) = delete;
     TextureManager& operator=(TextureManager&) = delete;
 
-    // ƒeƒNƒXƒ`ƒƒƒRƒ“ƒeƒiƒf[ƒ^
+    // ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚³ãƒ³ãƒ†ãƒŠãƒ‡ãƒ¼ã‚¿
     std::vector<TextureData> textureDatas;
 };
