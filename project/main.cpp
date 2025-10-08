@@ -349,7 +349,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #ifdef _DEBUG
 
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue = nullptr;
-    if (SUCCEEDED(dxCommon->GetDevice()>QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
+    if (SUCCEEDED(dxCommon->GetDevice()->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
         // やばいエラー時に止まる
         infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
         // エラー時に止まる
