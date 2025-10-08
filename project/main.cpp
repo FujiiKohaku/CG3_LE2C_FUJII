@@ -313,18 +313,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // std::ofstream logStream(logFilePath);
 #pragma endregion
 
-    // WinAppのポインタ
-    WinApp* winApp = nullptr;
-
-    // WinAppの初期化
-    winApp = new WinApp();
+    // ==========================
+    // ① WinApp・DirectX初期化
+    // ==========================
+    WinApp* winApp = new WinApp();
     winApp->initialize();
 
-    // DirectXCommonのポインタ
-    DirectXCommon* dxCommon = nullptr;
-    // DirectXCommonの初期化
-    dxCommon = new DirectXCommon();
+    DirectXCommon* dxCommon = new DirectXCommon();
     dxCommon->Initialize(winApp);
+
+    // ==========================
+    // ② TextureManager初期化
+    // ==========================
+    TextureManager::GetInstance()->Initialize(dxCommon);
 
     // SpriteManagerのポインタ
     SpriteManager* spriteManager = nullptr;
@@ -334,6 +335,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     // spriteのポインタ
     Sprite* sprite = nullptr;
+
     // スプライト個人の初期化
 
     std::vector<Sprite*> sprites;
@@ -759,9 +761,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             break;
         } else {
 
-            for (Sprite* sprite : sprites) {
-                sprite->Update();
-            }
+
+
+
+      
             // ここがframeの先頭02_03
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
@@ -805,7 +808,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             input->Update();
             // デバッグカメラの更新
             debugCamera.Update();
-
+            for (Sprite* sprite : sprites) {
+                sprite->Update();
+            }
             //// 数字の０キーが押されていたら
             // if (input->IsKeyPressed(DIK_0)) {
             //     OutputDebugStringA("Hit 0");
@@ -918,7 +923,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     /*  delete input;*/
     delete winApp;
     delete dxCommon;
-
+    TextureManager::GetInstance()->Finalize();
     for (auto sprite : sprites) {
         delete sprite;
     }
