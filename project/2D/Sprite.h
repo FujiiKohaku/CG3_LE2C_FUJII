@@ -1,5 +1,6 @@
 #pragma once
 #include "Struct.h" // Vector2, Vector3, Vector4, Matrix4x4 など
+#include "TextureManager.h"
 #include <cstdint> // uint32_t など
 #include <d3d12.h> // D3D12型定義（ID3D12Resourceなど）
 #include <wrl.h> // ComPtrスマートポインタ
@@ -7,11 +8,11 @@ class SpriteManager;
 class Sprite {
 public:
     // 初期化
-    void Initialize(SpriteManager* spriteManager);
+    void Initialize(SpriteManager* spriteManager, std::string textureFilePath);
 
     void Update();
 
-    void Draw(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU);
+    void Draw();
 
     // 位置のGetter/Setter
     const Vector2& GetPosition() const { return position; }
@@ -66,6 +67,8 @@ private:
     Vector2 size = { 640.0f, 360.0f };
     // SpriteManagerのポインタ
     SpriteManager* spriteManager_ = nullptr;
+    // テクスチャ番号
+    uint32_t textureIndex = 0;
 
     // バッファリソース
     //   バッファリソース（GPU用データ）

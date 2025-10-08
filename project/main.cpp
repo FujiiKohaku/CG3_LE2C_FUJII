@@ -320,6 +320,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     winApp = new WinApp();
     winApp->initialize();
 
+ 
     // DirectXCommonのポインタ
     DirectXCommon* dxCommon = nullptr;
     // DirectXCommonの初期化
@@ -334,19 +335,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     // spriteのポインタ
     Sprite* sprite = nullptr;
-    // スプライト個人の初期化
+
+    // テクスチャマネージャーの初期化
+    TextureManager::GetInstance()->Initialize();
+    TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
 
     std::vector<Sprite*> sprites;
     for (uint32_t i = 0; i < 5; i++) {
         Sprite* sprite = new Sprite();
-        sprite->Initialize(spriteManager);
+        sprite->Initialize(spriteManager, "resources/uvChecker.png");
         Vector2 pos = { 100.0f * i, 100.0f };
         sprite->SetPosition(pos);
         sprites.push_back(sprite);
     }
 
-    // テクスチャマネージャーの初期化
-    TextureManager::GetInstance()->Initialize();
 #ifdef _DEBUG
 
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> infoQueue = nullptr;
@@ -442,45 +444,45 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // assert(SUCCEEDED(hr));
 
     // Textureを読んで転送する03_00
-    DirectX::ScratchImage mipImages = dxCommon->LoadTexture("resources/uvChecker.png");
-    const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
-    Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = dxCommon->CreateTextureResource(dxCommon->GetDevice(), metadata); // get
-    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = dxCommon->UploadTextureData(textureResource.Get(), mipImages); //?
+    // DirectX::ScratchImage mipImages = dxCommon->LoadTexture("resources/uvChecker.png");
+    // const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
+    // Microsoft::WRL::ComPtr<ID3D12Resource> textureResource = dxCommon->CreateTextureResource(dxCommon->GetDevice(), metadata); // get
+    // Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = dxCommon->UploadTextureData(textureResource.Get(), mipImages); //?
     // モデル読み込み
-    ModelData modelData = LoadOjFile("resources", "Plane.obj");
+    // ModelData modelData = LoadOjFile("resources", "Plane.obj");
 
-    std::cout << "テクスチャファイルパス: " << modelData.material.textureFilePath
-              << std::endl;
+    // std::cout << "テクスチャファイルパス: " << modelData.material.textureFilePath
+    //           << std::endl;
 
-    if (!std::filesystem::exists(modelData.material.textureFilePath)) {
-        std::cerr << "ファイルが存在しません！" << std::endl;
-    }
+    // if (!std::filesystem::exists(modelData.material.textureFilePath)) {
+    //     std::cerr << "ファイルが存在しません！" << std::endl;
+    // }
 
-    // 2枚目のTextureを読んで転送するCG2_05_01_page_8
-    DirectX::ScratchImage mipImages2 = dxCommon->LoadTexture(modelData.material.textureFilePath);
+    //// 2枚目のTextureを読んで転送するCG2_05_01_page_8
+    // DirectX::ScratchImage mipImages2 = dxCommon->LoadTexture(modelData.material.textureFilePath);
 
-    const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
-    Microsoft::WRL::ComPtr<ID3D12Resource> textureResource2 = dxCommon->CreateTextureResource(dxCommon->GetDevice(), metadata2); // get
-    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource2 = dxCommon->UploadTextureData(textureResource2.Get(), mipImages2);
+    // const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
+    // Microsoft::WRL::ComPtr<ID3D12Resource> textureResource2 = dxCommon->CreateTextureResource(dxCommon->GetDevice(), metadata2); // get
+    // Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource2 = dxCommon->UploadTextureData(textureResource2.Get(), mipImages2);
 
 #pragma region ディスクリプタサイズを取得する（SRV/RTV/DSV）
     // DescriptorSizeを取得しておくCG2_05_01_page_6
 
 #pragma endregion
 
-    // metaDataを基にSRVの設定03_00
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc {};
-    srvDesc.Format = metadata.format;
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
-    srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
+    //// metaDataを基にSRVの設定03_00
+    // D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc {};
+    // srvDesc.Format = metadata.format;
+    // srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    // srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
+    // srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
 
-    // metaData2を基にSRVの設定CG2_05_01_page_9
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2 {};
-    srvDesc2.Format = metadata2.format;
-    srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
-    srvDesc2.Texture2D.MipLevels = UINT(metadata2.mipLevels);
+    //// metaData2を基にSRVの設定CG2_05_01_page_9
+    // D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc2 {};
+    // srvDesc2.Format = metadata2.format;
+    // srvDesc2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    // srvDesc2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
+    // srvDesc2.Texture2D.MipLevels = UINT(metadata2.mipLevels);
 
     // SRVを作成するDescriptorHeapの場所を決める//変更CG2_05_01_0page6
     D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = dxCommon->GetCPUDescriptorHandle(dxCommon->GetSRVDescriptorHeap(), dxCommon->GetSRVDescriptorSize(), 1);
@@ -490,16 +492,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = dxCommon->GetCPUDescriptorHandle(dxCommon->GetSRVDescriptorHeap(), dxCommon->GetSRVDescriptorSize(), 2);
     D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = dxCommon->GetGPUDescriptorHandle(dxCommon->GetSRVDescriptorHeap(), dxCommon->GetSRVDescriptorSize(), 2);
 
-    //// SRVの生成03_00
-    dxCommon->GetDevice()->CreateShaderResourceView(textureResource.Get(), &srvDesc, textureSrvHandleCPU);
-    // 05_01
-    dxCommon->GetDevice()->CreateShaderResourceView(textureResource2.Get(), &srvDesc2, textureSrvHandleCPU2);
-    // InputLayout
-    // D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
-    // inputElementDescs[0].SemanticName = "POSITION";
-    // inputElementDescs[0].SemanticIndex = 0;
-    // inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    // inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+    ////// SRVの生成03_00
+    // dxCommon->GetDevice()->CreateShaderResourceView(textureResource.Get(), &srvDesc, textureSrvHandleCPU);
+    //// 05_01
+    // dxCommon->GetDevice()->CreateShaderResourceView(textureResource2.Get(), &srvDesc2, textureSrvHandleCPU2);
+    //  InputLayout
+    //  D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
+    //  inputElementDescs[0].SemanticName = "POSITION";
+    //  inputElementDescs[0].SemanticIndex = 0;
+    //  inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    //  inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
     // inputElementDescs[1].SemanticName = "TEXCOORD";
     // inputElementDescs[1].SemanticIndex = 0;
@@ -575,17 +577,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // modelDataを使う
     //-------------------------------------------------
 
-    // 頂点リソースを作る
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource = dxCommon->CreateBufferResource(sizeof(VertexData) * modelData.vertices.size());
-    // 頂点バッファービューを作成する
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView {};
-    vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress(); // リソース先頭のアドレスを使う
-    vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size()); // 使用するリソースの頂点のサイズ
-    vertexBufferView.StrideInBytes = sizeof(VertexData); // 1頂点あたりのサイズ
-    // 頂点リソースにデータを書き込む
-    VertexData* vertexData = nullptr;
-    vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-    std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size()); // 頂点データをリソースにコピー
+    //// 頂点リソースを作る
+    // Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource = dxCommon->CreateBufferResource(sizeof(VertexData) * modelData.vertices.size());
+    //// 頂点バッファービューを作成する
+    // D3D12_VERTEX_BUFFER_VIEW vertexBufferView {};
+    // vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress(); // リソース先頭のアドレスを使う
+    // vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size()); // 使用するリソースの頂点のサイズ
+    // vertexBufferView.StrideInBytes = sizeof(VertexData); // 1頂点あたりのサイズ
+    //// 頂点リソースにデータを書き込む
+    // VertexData* vertexData = nullptr;
+    // vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+    // std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size()); // 頂点データをリソースにコピー
 
     //--------------------------
     //  マテリアル
@@ -884,7 +886,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // UvChecker
             // dxCommon->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 左上のやつ
             for (Sprite* sprite : sprites) {
-                sprite->Draw(textureSrvHandleGPU);
+                sprite->Draw();
             }
 
             // 描画の最後です//----------------------------------------------------

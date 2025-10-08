@@ -3,7 +3,7 @@
 #include "SpriteManager.h"
 
 #pragma region 初期化処理
-void Sprite::Initialize(SpriteManager* spriteManager)
+void Sprite::Initialize(SpriteManager* spriteManager, std::string textureFilePath)
 {
     // 引数で受け取ってメンバ変数に記録する
     spriteManager_ = spriteManager;
@@ -13,7 +13,10 @@ void Sprite::Initialize(SpriteManager* spriteManager)
     CreateMaterialBuffer();
     // 変換行列バッファの生成
     CreateTransformationMatrixBuffer();
+    // テクスチャの読み込み
+    textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(textureFilePath);
 }
+
 #pragma endregion
 
 #pragma region 更新処理
@@ -65,9 +68,9 @@ void Sprite::Update()
 #pragma endregion
 
 #pragma region 描画処理
-void Sprite::Draw(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU)
+void Sprite::Draw()
 {
-    textureSrvHandleGPU_ = textureSrvHandleGPU;
+    
 
     // コマンドリストを取得
     ID3D12GraphicsCommandList* commandList
@@ -80,7 +83,7 @@ void Sprite::Draw(D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU)
     // 定数バッファ(変換行列)をセット
     commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResource->GetGPUVirtualAddress());
     // テクスチャをセット
-    commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU_);
+    commandList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(textureIndex));
     // 描画コマンド
     commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 }

@@ -16,6 +16,7 @@
 #include "DirectXTex/d3dx12.h"
 class DirectXCommon {
 public:
+
     // 初期化
     void Initialize(WinApp* winApp);
 
@@ -42,8 +43,8 @@ public:
     Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource(size_t sizeInBytes);
     // Textureリソース生成関数
     Microsoft::WRL::ComPtr<ID3D12Resource> CreateTextureResource(Microsoft::WRL::ComPtr<ID3D12Device> device, const DirectX::TexMetadata& metadata);
-    // テクスチャファイルの読み込み関数
-    static DirectX::ScratchImage LoadTexture(const std::string& filePath);
+    //// テクスチャファイルの読み込み関数
+    //static DirectX::ScratchImage LoadTexture(const std::string& filePath);
     // txtureデータ転送関数
     Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData(Microsoft::WRL::ComPtr<ID3D12Resource> texture, const DirectX::ScratchImage& mipImages);
    
@@ -54,6 +55,14 @@ public:
     static D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index);
     // 指定番号のGPUディスクリプタハンドルを取得する関数
     static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index);
+
+
+
+       static DirectXCommon* GetInstance()
+    {
+        static DirectXCommon instance;
+        return &instance;
+    }
 
 private:
     
