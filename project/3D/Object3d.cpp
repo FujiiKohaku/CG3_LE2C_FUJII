@@ -1,226 +1,170 @@
 #include "Object3d.h"
+#include "MatrixMath.h"
 #include "Object3dManager.h"
+#include <cassert>
 #include <fstream>
 #include <sstream>
+
 void Object3d::Initialize(Object3dManager* object3DManager, DebugCamera debugCamera)
 {
-    // 引数で受け取ってメンバ変数に記録
     object3dManager_ = object3DManager;
-
     debugCamera_ = debugCamera;
 
     // モデル読み込み
     modelData = LoadObjFile("resources", "plane.obj");
 
+    // テクスチャ読み込み
     TextureManager::GetInstance()->LoadTexture(modelData.material.textureFilePath);
     modelData.material.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(modelData.material.textureFilePath);
-    // 頂点リソースを作る
-    vertexResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(VertexData) * modelData.vertices.size());
 
+    // 頂点リソース作成
+    vertexResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(VertexData) * modelData.vertices.size());
     vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
     vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size());
     vertexBufferView.StrideInBytes = sizeof(VertexData);
-
+    VertexData* vertexData = nullptr;
     vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-    std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size()); // 頂点データをリソースにコピー
+    std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size());
 
-    // マテリアルリソースを作る
+    // マテリアル作成
     materialResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(Material));
-
-    // マテリアルにデータを書き込む
     materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+    materialData->color = { 1, 1, 1, 1 };
+    materialData->enableLighting = false;
+    materialData->uvTransform = MatrixMath::MakeIdentity4x4();
 
-    // マテリアルデータの初期値設定
-    materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // 白
-    materialData->enableLighting = false; // ライティング無効
-    materialData->uvTransform = MatrixMath::MakeIdentity4x4(); // UV変換行列を単位行列に
-
-    // TransformationMatrixリソースを作る
+    // 変換行列
     transformationMatrixResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(TransformationMatrix));
-
-    // 書き込み用ポインタを取得
     transformationMatrixResource->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData));
-
-    // 初期値を設定（単位行列）
     transformationMatrixData->WVP = MatrixMath::MakeIdentity4x4();
     transformationMatrixData->World = MatrixMath::MakeIdentity4x4();
 
-    // 平行光源用の定数バッファ（CBV）を作成（バッファサイズは構造体に合わせる）05_03
-    Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(DirectionalLight));
-    // 平行光源用のデータを書き込み
-    DirectionalLight* directionalLightData = nullptr;
+    // 平行光源
+    directionalLightResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(DirectionalLight));
     directionalLightResource->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData));
-    directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // 白色光
-    directionalLightData->direction = MatrixMath::Normalize({ 0.0f, -1.0f, 0.0f }); // 真上から下方向
-    directionalLightData->intensity = 1.0f; // 標準の明るさ
+    directionalLightData->color = { 1, 1, 1, 1 };
+    directionalLightData->direction = MatrixMath::Normalize({ 0, -1, 0 });
+    directionalLightData->intensity = 1.0f;
 
-    // transformの初期化
+    // Transform初期化
     transform = { { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
-
-    cameraTransform = { { 1.0f, 1.0f, 1.0f }, { 0.3f, 0.0f, 0.0f }, { 0.0f, 4.0f, -100.0f } };
+    cameraTransform = { { 1.0f, 1.0f, 1.0f }, { 0.3f, 0.0f, 0.0f }, { 0.0f, 4.0f, -10.0f } };
 }
 
-void Object3d::update()
+void Object3d::Update()
 {
-    //  ワールド行列を作る
     Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
-
-    //  カメラ行列を作る
     Matrix4x4 cameraMatrix = MatrixMath::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
-
-    // ビュー行列を作る
     Matrix4x4 viewMatrix = debugCamera_.GetViewMatrix();
+    Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(
+        0.45f,
+        static_cast<float>(WinApp::kClientWidth) / static_cast<float>(WinApp::kClientHeight),
+        0.1f, 100.0f);
 
-    // ④プロジェクション行列を作る
-    Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, static_cast<float>(WinApp::kClientWidth) / static_cast<float>(WinApp::kClientHeight), 0.1f, 100.0f);
-
-    //  ワールドビュープロジェクション行列を作成
-    Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
-
-    //  定数バッファに書き込む
-    transformationMatrixData->WVP = worldViewProjectionMatrix;
+    transformationMatrixData->WVP = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
     transformationMatrixData->World = worldMatrix;
 }
 
 void Object3d::Draw()
 {
-    // コマンドリスト取得
     ID3D12GraphicsCommandList* commandList = object3dManager_->GetDxCommon()->GetCommandList();
 
-    // ========= RootSignature & PSO設定 =========
-    // Object3dManagerでPreDraw()時に設定されているはずだが、
-    // 念のため明示的に設定してもOK
-    // commandList->SetGraphicsRootSignature(object3dManager_->GetRootSignature());
-    // commandList->SetPipelineState(object3dManager_->GetPipelineState());
-
-    // ========= 頂点バッファ設定 =========
     commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // ========= 定数バッファ設定 =========
-    // [b0] マテリアル（色・UVなど）
     commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
-
-    // [b1] Transform（座標変換行列）
     commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResource->GetGPUVirtualAddress());
 
-    // [t0] SRV（テクスチャ）
-    TextureManager* textureManager = TextureManager::GetInstance();
-    D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = object3dManager_->GetDxCommon()->GetGPUDescriptorHandle(object3dManager_->GetDxCommon()->GetSRVDescriptorHeap(), object3dManager_->GetDxCommon()->GetSRVDescriptorSize(), modelData.material.textureIndex);
+    D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = object3dManager_->GetDxCommon()->GetGPUDescriptorHandle(
+        object3dManager_->GetDxCommon()->GetSRVDescriptorHeap(),
+        object3dManager_->GetDxCommon()->GetSRVDescriptorSize(),
+        modelData.material.textureIndex);
     commandList->SetGraphicsRootDescriptorTable(2, textureHandle);
 
-    // [b2] ライト情報（DirectionalLight）
-    // commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+    commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
 
-    // ========= 描画コール =========
     commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 }
-
-Object3d::MaterialData Object3d::LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename)
+Object3d::ModelData Object3d::LoadObjFile(const std::string& directoryPath, const std::string filename)
 {
-    // 1.中で必要となる変数の宣言
-    MaterialData materialData; // 構築するMaterialData
-    // 2.ファイルを開く
-    std::string line; // ファイルから読んだ１行を格納するもの
-    std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
-    assert(file.is_open()); // とりあえず開けなかったら止める
-    // 3.実際にファイルを読み、MaterialDataを構築していく
+    ModelData modelData;
+    std::vector<Vector4> positions;
+    std::vector<Vector3> normals;
+    std::vector<Vector2> texcoords;
+    std::string line;
+
+    std::ifstream file(directoryPath + "/" + filename);
+    assert(file.is_open());
+
     while (std::getline(file, line)) {
         std::string identifier;
         std::istringstream s(line);
         s >> identifier;
-        // identifierに応じた処理
-        if (identifier == "map_Kd") {
-            std::string textureFilename;
-            s >> textureFilename;
-            // 連結してファイルパスにする
-            materialData.textureFilePath = directoryPath + "/" + textureFilename;
-        }
-    }
-    // 4.materialDataを返す
-    return materialData;
-}
 
-Object3d::ModelData Object3d::LoadObjFile(const std::string& directoryPath, const std::string filename)
-{
-    // 1.中で必要となる変数の宣言
-    ModelData modelData; // 構築するModelData
-    std::vector<Vector4> positions; // 位置
-    std::vector<Vector3> normals; // 法線
-    std::vector<Vector2> texcoords; // テクスチャ座標
-    std::string line; // ファイルから読んだ一行を格納するもの
-
-    // 2.ファイルを開く
-    std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
-    assert(file.is_open()); // とりあえず開けなかったら止める
-
-    // 3.実際にファイルを読み,ModelDataを構築していく
-    while (std::getline(file, line)) {
-        std::string identifiler;
-        std::istringstream s(line);
-        s >> identifiler; // 先頭の識別子を読む
-
-        // identifierに応じた処理
-        if (identifiler == "v") {
-            Vector4 position;
-            s >> position.x >> position.y >> position.z;
-            // 左手座標にする
-            position.x *= -1.0f;
-
-            position.w = 1.0f;
-            positions.push_back(position);
-        } else if (identifiler == "vt") {
-            Vector2 texcoord;
-            s >> texcoord.x >> texcoord.y;
-            // 上下逆にする
-
-            // texcoord.y *= -1.0f;
-            texcoord.y = 1.0f - texcoord.y;
-            // CG2_06_02_kusokusosjsusuawihoafwhgiuwhkgfau
-            texcoords.push_back(texcoord);
-        } else if (identifiler == "vn") {
-            Vector3 normal;
-            s >> normal.x >> normal.y >> normal.z;
-            // 左手座標にする
-            normal.x *= -1.0f;
-
-            normals.push_back(normal);
-        } else if (identifiler == "f") {
-            VertexData triangle[3]; // 三つの頂点を保存
-            // 面は三角形限定。その他は未対応
-            for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
-                std::string vertexDefinition;
-                s >> vertexDefinition;
-                // 頂点の要素へのIndexは「位置/UV/法線」で格納されているので、分解してえIndexを取得する
-                std::istringstream v(vertexDefinition);
-                uint32_t elementIndices[3];
-                for (int32_t element = 0; element < 3; ++element) {
-                    std::string index;
-
-                    std::getline(v, index, '/'); // 区切りでインデックスを読んでいく
-                    elementIndices[element] = std::stoi(index);
+        if (identifier == "v") {
+            Vector4 pos;
+            s >> pos.x >> pos.y >> pos.z;
+            pos.x *= -1.0f;
+            pos.w = 1.0f;
+            positions.push_back(pos);
+        } else if (identifier == "vt") {
+            Vector2 uv;
+            s >> uv.x >> uv.y;
+            uv.y = 1.0f - uv.y;
+            texcoords.push_back(uv);
+        } else if (identifier == "vn") {
+            Vector3 n;
+            s >> n.x >> n.y >> n.z;
+            n.x *= -1.0f;
+            normals.push_back(n);
+        } else if (identifier == "f") {
+            VertexData tri[3];
+            for (int i = 0; i < 3; ++i) {
+                std::string v;
+                s >> v;
+                std::istringstream vtx(v);
+                uint32_t idx[3];
+                for (int j = 0; j < 3; ++j) {
+                    std::string tmp;
+                    std::getline(vtx, tmp, '/');
+                    idx[j] = std::stoi(tmp);
                 }
-                // 要素へのIndexから、実際の要素の値を取得して、頂点を構築する
-                Vector4 position = positions[elementIndices[0] - 1];
-                Vector2 texcoord = texcoords[elementIndices[1] - 1];
-                Vector3 normal = normals[elementIndices[2] - 1];
-                // X軸を反転して左手座標系に
-
-                triangle[faceVertex] = { position, texcoord, normal };
+                tri[i].position = positions[idx[0] - 1];
+                tri[i].texcoord = texcoords[idx[1] - 1];
+                tri[i].normal = normals[idx[2] - 1];
             }
-            // 逆順にして格納（2 → 1 → 0）
-            modelData.vertices.push_back(triangle[2]);
-            modelData.vertices.push_back(triangle[1]);
-            modelData.vertices.push_back(triangle[0]);
-            //?
-        } else if (identifiler == "mtllib") {
-            // materialTemplateLibraryファイルの名前を取得する
-            std::string materialFilename;
-            s >> materialFilename;
-            // 基本的にobjファイルと同一階層mtlは存在させるので、ディレクトリ名とファイル名を渡す。
-            modelData.material = LoadMaterialTemplateFile(directoryPath, materialFilename);
+            modelData.vertices.push_back(tri[2]);
+            modelData.vertices.push_back(tri[1]);
+            modelData.vertices.push_back(tri[0]);
+        } else if (identifier == "mtllib") {
+            std::string mtlFile;
+            s >> mtlFile;
+            modelData.material = LoadMaterialTemplateFile(directoryPath, mtlFile);
         }
     }
-    // 4.ModelDataを返す
     return modelData;
+}
+Object3d::MaterialData Object3d::LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename)
+{
+     //1.中で必要となる変数の宣言
+         MaterialData materialData; // 構築するMaterialData
+         // 2.ファイルを開く
+         std::string line; // ファイルから読んだ１行を格納するもの
+         std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
+         assert(file.is_open()); // とりあえず開けなかったら止める
+         // 3.実際にファイルを読み、MaterialDataを構築していく
+         while (std::getline(file, line)) {
+             std::string identifier;
+             std::istringstream s(line);
+             s >> identifier;
+             // identifierに応じた処理
+             if (identifier == "map_Kd") {
+                 std::string textureFilename;
+                 s >> textureFilename;
+                 // 連結してファイルパスにする
+                 materialData.textureFilePath = directoryPath + "/" + textureFilename;
+             }
+         }
+         // 4.materialDataを返す
+         return materialData;
 }

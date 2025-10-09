@@ -361,10 +361,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // debugcamera初期化一回だけ
     debugCamera.Initialize(winApp);
 
-    Object3d* object3d = nullptr;
-    // 3Dオブジェクト個人の初期化
-    object3d = new Object3d();
-    object3d->Initialize(object3dManager, debugCamera);
+    Object3d object3d;
+    object3d.Initialize(object3dManager, debugCamera);
 
 #ifdef _DEBUG
 
@@ -820,7 +818,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
                 sprite->Update();
             }
 
-            object3d->update();
+            object3d.Update();
 
             //// 数字の０キーが押されていたら
             // if (input->IsKeyPressed(DIK_0)) {
@@ -903,10 +901,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
             // UvChecker
             // dxCommon->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 左上のやつ
-          /*  for (Sprite* sprite : sprites) {
-                sprite->Draw();
-            }*/
-            object3d->Draw();
+
+            object3d.Draw();
+            /*  for (Sprite* sprite : sprites) {
+                  sprite->Draw();
+              }*/
+
             // 描画の最後です//----------------------------------------------------
             //  実際のcommandListのImGuiの描画コマンドを積む
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
@@ -930,7 +930,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // XAudio解放
     soundmanager.Finalize(&bgm);
 
-    delete object3d;
     delete object3dManager;
     // === 1. SpriteやModelなど「描画で使うオブジェクト」を削除 ===
     for (auto sprite : sprites) {
