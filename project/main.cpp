@@ -171,34 +171,34 @@ void GenerateSphereVertices(VertexData* vertices, int kSubdivision,
 }
 
 ///// CG_02_06
-//MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename)
+// MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename)
 //{
-//    // 1.中で必要となる変数の宣言
-//    MaterialData materialData; // 構築するMaterialData
-//    // 2.ファイルを開く
-//    std::string line; // ファイルから読んだ１行を格納するもの
-//    std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
-//    assert(file.is_open()); // とりあえず開けなかったら止める
-//    // 3.実際にファイルを読み、MaterialDataを構築していく
-//    while (std::getline(file, line)) {
-//        std::string identifier;
-//        std::istringstream s(line);
-//        s >> identifier;
-//        // identifierに応じた処理
-//        if (identifier == "map_Kd") {
-//            std::string textureFilename;
-//            s >> textureFilename;
-//            // 連結してファイルパスにする
-//            materialData.textureFilePath = directoryPath + "/" + textureFilename;
-//        }
-//    }
-//    // 4.materialDataを返す
-//    return materialData;
-//}
+//     // 1.中で必要となる変数の宣言
+//     MaterialData materialData; // 構築するMaterialData
+//     // 2.ファイルを開く
+//     std::string line; // ファイルから読んだ１行を格納するもの
+//     std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
+//     assert(file.is_open()); // とりあえず開けなかったら止める
+//     // 3.実際にファイルを読み、MaterialDataを構築していく
+//     while (std::getline(file, line)) {
+//         std::string identifier;
+//         std::istringstream s(line);
+//         s >> identifier;
+//         // identifierに応じた処理
+//         if (identifier == "map_Kd") {
+//             std::string textureFilename;
+//             s >> textureFilename;
+//             // 連結してファイルパスにする
+//             materialData.textureFilePath = directoryPath + "/" + textureFilename;
+//         }
+//     }
+//     // 4.materialDataを返す
+//     return materialData;
+// }
 
 //// std::stringは文字列を扱う
 // 06_02
-//ModelData LoadOjFile(const std::string& directoryPath, const std::string& filename)
+// ModelData LoadOjFile(const std::string& directoryPath, const std::string& filename)
 //{
 //
 //    // 1.中で必要となる変数の宣言
@@ -329,7 +329,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // ② TextureManager初期化
     // ==========================
     TextureManager::GetInstance()->Initialize(dxCommon);
-    TextureManager::GetInstance()->LoadTexture("resources/y.png");
+    TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
     // SpriteManagerのポインタ
     SpriteManager* spriteManager = nullptr;
     // スプライト共通部の初期化
@@ -343,7 +343,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     std::vector<Sprite*> sprites;
     for (uint32_t i = 0; i < 5; i++) {
         Sprite* sprite = new Sprite();
-        sprite->Initialize(spriteManager, "resources/y.png");
+        sprite->Initialize(spriteManager, "resources/uvChecker.png");
         Vector2 pos = { 100.0f * i, 100.0f };
         sprite->SetPosition(pos);
         sprites.push_back(sprite);
@@ -354,10 +354,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     object3dManager = new Object3dManager();
     object3dManager->Initialize(dxCommon);
 
+    //=================================
+    // デバックカメラインスタンス作成
+    //=================================
+    DebugCamera debugCamera;
+    // debugcamera初期化一回だけ
+    debugCamera.Initialize(winApp);
+
     Object3d* object3d = nullptr;
     // 3Dオブジェクト個人の初期化
     object3d = new Object3d();
-    object3d->Initialize(object3dManager);
+    object3d->Initialize(object3dManager, debugCamera);
 
 #ifdef _DEBUG
 
@@ -596,9 +603,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size()); // 使用するリソースの頂点のサイズ
     // vertexBufferView.StrideInBytes = sizeof(VertexData); // 1頂点あたりのサイズ
     //// 頂点リソースにデータを書き込む
-     //VertexData* vertexData = nullptr;
-     //vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-     //std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size()); // 頂点データをリソースにコピー
+    // VertexData* vertexData = nullptr;
+    // vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+    // std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size()); // 頂点データをリソースにコピー
 
     //--------------------------
     //  マテリアル
@@ -750,12 +757,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     input->Initialize(winApp);
 
     //=================================
-    // デバックカメラインスタンス作成
-    //=================================
-    DebugCamera debugCamera;
-    // debugcamera初期化一回だけ
-    debugCamera.Initialize(winApp);
-    //=================================
     // サウンドマネージャーインスタンス作成
     //=================================
     SoundManager soundmanager;
@@ -818,6 +819,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             for (Sprite* sprite : sprites) {
                 sprite->Update();
             }
+
+            object3d->update();
+
             //// 数字の０キーが押されていたら
             // if (input->IsKeyPressed(DIK_0)) {
             //     OutputDebugStringA("Hit 0");
@@ -836,6 +840,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
             //// CBVのバッファに書き込む02_02
             //// CBVに正しい行列を書き込む
+            //
             //// memcpy(&wvpData->WVP, &worldViewProjectionMatrix, sizeof(Matrix4x4));
 
             //// Sprite用のworldviewProjectionMatrixを作る04_00
@@ -898,10 +903,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // dxCommon->GetCommandList()->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
             // UvChecker
             // dxCommon->GetCommandList()->DrawIndexedInstanced(6, 1, 0, 0, 0); // 左上のやつ
-            for (Sprite* sprite : sprites) {
+          /*  for (Sprite* sprite : sprites) {
                 sprite->Draw();
-            }
-
+            }*/
+            object3d->Draw();
             // 描画の最後です//----------------------------------------------------
             //  実際のcommandListのImGuiの描画コマンドを積む
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());

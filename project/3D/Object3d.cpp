@@ -1,16 +1,20 @@
 #include "Object3d.h"
 #include "Object3dManager.h"
 #include <fstream>
-#include <sstream> // © ‚±‚ê‚ª•K—vI
-void Object3d::Initialize(Object3dManager* object3DManager)
+#include <sstream>
+void Object3d::Initialize(Object3dManager* object3DManager, DebugCamera debugCamera)
 {
-    // ˆø”‚Åó‚¯æ‚Á‚Äƒƒ“ƒo•Ï”‚É‹L˜^
+    // å¼•æ•°ã§å—ã‘å–ã£ã¦ãƒ¡ãƒ³ãƒå¤‰æ•°ã«è¨˜éŒ²
     object3dManager_ = object3DManager;
 
-    // ƒ‚ƒfƒ‹“Ç‚İ‚İ
+    debugCamera_ = debugCamera;
+
+    // ãƒ¢ãƒ‡ãƒ«èª­ã¿è¾¼ã¿
     modelData = LoadObjFile("resources", "plane.obj");
 
-    // ’¸“_ƒŠƒ\[ƒX‚ğì‚é
+    TextureManager::GetInstance()->LoadTexture(modelData.material.textureFilePath);
+    modelData.material.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(modelData.material.textureFilePath);
+    // é ‚ç‚¹ãƒªã‚½ãƒ¼ã‚¹ã‚’ä½œã‚‹
     vertexResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(VertexData) * modelData.vertices.size());
 
     vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
@@ -18,58 +22,149 @@ void Object3d::Initialize(Object3dManager* object3DManager)
     vertexBufferView.StrideInBytes = sizeof(VertexData);
 
     vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-    std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size()); // ’¸“_ƒf[ƒ^‚ğƒŠƒ\[ƒX‚ÉƒRƒs[
+    std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size()); // é ‚ç‚¹ãƒ‡ãƒ¼ã‚¿ã‚’ãƒªã‚½ãƒ¼ã‚¹ã«ã‚³ãƒ”ãƒ¼
+
+    // ãƒãƒ†ãƒªã‚¢ãƒ«ãƒªã‚½ãƒ¼ã‚¹ã‚’ä½œã‚‹
+    materialResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(Material));
+
+    // ãƒãƒ†ãƒªã‚¢ãƒ«ã«ãƒ‡ãƒ¼ã‚¿ã‚’æ›¸ãè¾¼ã‚€
+    materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+
+    // ãƒãƒ†ãƒªã‚¢ãƒ«ãƒ‡ãƒ¼ã‚¿ã®åˆæœŸå€¤è¨­å®š
+    materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // ç™½
+    materialData->enableLighting = false; // ãƒ©ã‚¤ãƒ†ã‚£ãƒ³ã‚°ç„¡åŠ¹
+    materialData->uvTransform = MatrixMath::MakeIdentity4x4(); // UVå¤‰æ›è¡Œåˆ—ã‚’å˜ä½è¡Œåˆ—ã«
+
+    // TransformationMatrixãƒªã‚½ãƒ¼ã‚¹ã‚’ä½œã‚‹
+    transformationMatrixResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(TransformationMatrix));
+
+    // æ›¸ãè¾¼ã¿ç”¨ãƒã‚¤ãƒ³ã‚¿ã‚’å–å¾—
+    transformationMatrixResource->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData));
+
+    // åˆæœŸå€¤ã‚’è¨­å®šï¼ˆå˜ä½è¡Œåˆ—ï¼‰
+    transformationMatrixData->WVP = MatrixMath::MakeIdentity4x4();
+    transformationMatrixData->World = MatrixMath::MakeIdentity4x4();
+
+    // å¹³è¡Œå…‰æºç”¨ã®å®šæ•°ãƒãƒƒãƒ•ã‚¡ï¼ˆCBVï¼‰ã‚’ä½œæˆï¼ˆãƒãƒƒãƒ•ã‚¡ã‚µã‚¤ã‚ºã¯æ§‹é€ ä½“ã«åˆã‚ã›ã‚‹ï¼‰05_03
+    Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(DirectionalLight));
+    // å¹³è¡Œå…‰æºç”¨ã®ãƒ‡ãƒ¼ã‚¿ã‚’æ›¸ãè¾¼ã¿
+    DirectionalLight* directionalLightData = nullptr;
+    directionalLightResource->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData));
+    directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f }; // ç™½è‰²å…‰
+    directionalLightData->direction = MatrixMath::Normalize({ 0.0f, -1.0f, 0.0f }); // çœŸä¸Šã‹ã‚‰ä¸‹æ–¹å‘
+    directionalLightData->intensity = 1.0f; // æ¨™æº–ã®æ˜ã‚‹ã•
+
+    // transformã®åˆæœŸåŒ–
+    transform = { { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
+
+    cameraTransform = { { 1.0f, 1.0f, 1.0f }, { 0.3f, 0.0f, 0.0f }, { 0.0f, 4.0f, -100.0f } };
+}
+
+void Object3d::update()
+{
+    //  ãƒ¯ãƒ¼ãƒ«ãƒ‰è¡Œåˆ—ã‚’ä½œã‚‹
+    Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
+
+    //  ã‚«ãƒ¡ãƒ©è¡Œåˆ—ã‚’ä½œã‚‹
+    Matrix4x4 cameraMatrix = MatrixMath::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
+
+    // ãƒ“ãƒ¥ãƒ¼è¡Œåˆ—ã‚’ä½œã‚‹
+    Matrix4x4 viewMatrix = debugCamera_.GetViewMatrix();
+
+    // â‘£ãƒ—ãƒ­ã‚¸ã‚§ã‚¯ã‚·ãƒ§ãƒ³è¡Œåˆ—ã‚’ä½œã‚‹
+    Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, static_cast<float>(WinApp::kClientWidth) / static_cast<float>(WinApp::kClientHeight), 0.1f, 100.0f);
+
+    //  ãƒ¯ãƒ¼ãƒ«ãƒ‰ãƒ“ãƒ¥ãƒ¼ãƒ—ãƒ­ã‚¸ã‚§ã‚¯ã‚·ãƒ§ãƒ³è¡Œåˆ—ã‚’ä½œæˆ
+    Matrix4x4 worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
+
+    //  å®šæ•°ãƒãƒƒãƒ•ã‚¡ã«æ›¸ãè¾¼ã‚€
+    transformationMatrixData->WVP = worldViewProjectionMatrix;
+    transformationMatrixData->World = worldMatrix;
+}
+
+void Object3d::Draw()
+{
+    // ã‚³ãƒãƒ³ãƒ‰ãƒªã‚¹ãƒˆå–å¾—
+    ID3D12GraphicsCommandList* commandList = object3dManager_->GetDxCommon()->GetCommandList();
+
+    // ========= RootSignature & PSOè¨­å®š =========
+    // Object3dManagerã§PreDraw()æ™‚ã«è¨­å®šã•ã‚Œã¦ã„ã‚‹ã¯ãšã ãŒã€
+    // å¿µã®ãŸã‚æ˜ç¤ºçš„ã«è¨­å®šã—ã¦ã‚‚OK
+    // commandList->SetGraphicsRootSignature(object3dManager_->GetRootSignature());
+    // commandList->SetPipelineState(object3dManager_->GetPipelineState());
+
+    // ========= é ‚ç‚¹ãƒãƒƒãƒ•ã‚¡è¨­å®š =========
+    commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // ========= å®šæ•°ãƒãƒƒãƒ•ã‚¡è¨­å®š =========
+    // [b0] ãƒãƒ†ãƒªã‚¢ãƒ«ï¼ˆè‰²ãƒ»UVãªã©ï¼‰
+    commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
+
+    // [b1] Transformï¼ˆåº§æ¨™å¤‰æ›è¡Œåˆ—ï¼‰
+    commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResource->GetGPUVirtualAddress());
+
+    // [t0] SRVï¼ˆãƒ†ã‚¯ã‚¹ãƒãƒ£ï¼‰
+    TextureManager* textureManager = TextureManager::GetInstance();
+    D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = object3dManager_->GetDxCommon()->GetGPUDescriptorHandle(object3dManager_->GetDxCommon()->GetSRVDescriptorHeap(), object3dManager_->GetDxCommon()->GetSRVDescriptorSize(), modelData.material.textureIndex);
+    commandList->SetGraphicsRootDescriptorTable(2, textureHandle);
+
+    // [b2] ãƒ©ã‚¤ãƒˆæƒ…å ±ï¼ˆDirectionalLightï¼‰
+    // commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+
+    // ========= æç”»ã‚³ãƒ¼ãƒ« =========
+    commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 }
 
 Object3d::MaterialData Object3d::LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename)
 {
-    // 1.’†‚Å•K—v‚Æ‚È‚é•Ï”‚ÌéŒ¾
-    MaterialData materialData; // \’z‚·‚éMaterialData
-    // 2.ƒtƒ@ƒCƒ‹‚ğŠJ‚­
-    std::string line; // ƒtƒ@ƒCƒ‹‚©‚ç“Ç‚ñ‚¾‚Ps‚ğŠi”[‚·‚é‚à‚Ì
-    std::ifstream file(directoryPath + "/" + filename); // ƒtƒ@ƒCƒ‹‚ğŠJ‚­
-    assert(file.is_open()); // ‚Æ‚è‚ ‚¦‚¸ŠJ‚¯‚È‚©‚Á‚½‚ç~‚ß‚é
-    // 3.ÀÛ‚Éƒtƒ@ƒCƒ‹‚ğ“Ç‚İAMaterialData‚ğ\’z‚µ‚Ä‚¢‚­
+    // 1.ä¸­ã§å¿…è¦ã¨ãªã‚‹å¤‰æ•°ã®å®£è¨€
+    MaterialData materialData; // æ§‹ç¯‰ã™ã‚‹MaterialData
+    // 2.ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã
+    std::string line; // ãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰èª­ã‚“ã ï¼‘è¡Œã‚’æ ¼ç´ã™ã‚‹ã‚‚ã®
+    std::ifstream file(directoryPath + "/" + filename); // ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã
+    assert(file.is_open()); // ã¨ã‚Šã‚ãˆãšé–‹ã‘ãªã‹ã£ãŸã‚‰æ­¢ã‚ã‚‹
+    // 3.å®Ÿéš›ã«ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿ã€MaterialDataã‚’æ§‹ç¯‰ã—ã¦ã„ã
     while (std::getline(file, line)) {
         std::string identifier;
         std::istringstream s(line);
         s >> identifier;
-        // identifier‚É‰‚¶‚½ˆ—
+        // identifierã«å¿œã˜ãŸå‡¦ç†
         if (identifier == "map_Kd") {
             std::string textureFilename;
             s >> textureFilename;
-            // ˜AŒ‹‚µ‚Äƒtƒ@ƒCƒ‹ƒpƒX‚É‚·‚é
+            // é€£çµã—ã¦ãƒ•ã‚¡ã‚¤ãƒ«ãƒ‘ã‚¹ã«ã™ã‚‹
             materialData.textureFilePath = directoryPath + "/" + textureFilename;
         }
     }
-    // 4.materialData‚ğ•Ô‚·
+    // 4.materialDataã‚’è¿”ã™
     return materialData;
 }
 
 Object3d::ModelData Object3d::LoadObjFile(const std::string& directoryPath, const std::string filename)
 {
-    // 1.’†‚Å•K—v‚Æ‚È‚é•Ï”‚ÌéŒ¾
-    ModelData modelData; // \’z‚·‚éModelData
-    std::vector<Vector4> positions; // ˆÊ’u
-    std::vector<Vector3> normals; // –@ü
-    std::vector<Vector2> texcoords; // ƒeƒNƒXƒ`ƒƒÀ•W
-    std::string line; // ƒtƒ@ƒCƒ‹‚©‚ç“Ç‚ñ‚¾ˆês‚ğŠi”[‚·‚é‚à‚Ì
+    // 1.ä¸­ã§å¿…è¦ã¨ãªã‚‹å¤‰æ•°ã®å®£è¨€
+    ModelData modelData; // æ§‹ç¯‰ã™ã‚‹ModelData
+    std::vector<Vector4> positions; // ä½ç½®
+    std::vector<Vector3> normals; // æ³•ç·š
+    std::vector<Vector2> texcoords; // ãƒ†ã‚¯ã‚¹ãƒãƒ£åº§æ¨™
+    std::string line; // ãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰èª­ã‚“ã ä¸€è¡Œã‚’æ ¼ç´ã™ã‚‹ã‚‚ã®
 
-    // 2.ƒtƒ@ƒCƒ‹‚ğŠJ‚­
-    std::ifstream file(directoryPath + "/" + filename); // ƒtƒ@ƒCƒ‹‚ğŠJ‚­
-    assert(file.is_open()); // ‚Æ‚è‚ ‚¦‚¸ŠJ‚¯‚È‚©‚Á‚½‚ç~‚ß‚é
+    // 2.ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã
+    std::ifstream file(directoryPath + "/" + filename); // ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã
+    assert(file.is_open()); // ã¨ã‚Šã‚ãˆãšé–‹ã‘ãªã‹ã£ãŸã‚‰æ­¢ã‚ã‚‹
 
-    // 3.ÀÛ‚Éƒtƒ@ƒCƒ‹‚ğ“Ç‚İ,ModelData‚ğ\’z‚µ‚Ä‚¢‚­
+    // 3.å®Ÿéš›ã«ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿,ModelDataã‚’æ§‹ç¯‰ã—ã¦ã„ã
     while (std::getline(file, line)) {
         std::string identifiler;
         std::istringstream s(line);
-        s >> identifiler; // æ“ª‚Ì¯•Êq‚ğ“Ç‚Ş
+        s >> identifiler; // å…ˆé ­ã®è­˜åˆ¥å­ã‚’èª­ã‚€
 
-        // identifier‚É‰‚¶‚½ˆ—
+        // identifierã«å¿œã˜ãŸå‡¦ç†
         if (identifiler == "v") {
             Vector4 position;
             s >> position.x >> position.y >> position.z;
-            // ¶èÀ•W‚É‚·‚é
+            // å·¦æ‰‹åº§æ¨™ã«ã™ã‚‹
             position.x *= -1.0f;
 
             position.w = 1.0f;
@@ -77,7 +172,7 @@ Object3d::ModelData Object3d::LoadObjFile(const std::string& directoryPath, cons
         } else if (identifiler == "vt") {
             Vector2 texcoord;
             s >> texcoord.x >> texcoord.y;
-            // ã‰º‹t‚É‚·‚é
+            // ä¸Šä¸‹é€†ã«ã™ã‚‹
 
             // texcoord.y *= -1.0f;
             texcoord.y = 1.0f - texcoord.y;
@@ -86,46 +181,46 @@ Object3d::ModelData Object3d::LoadObjFile(const std::string& directoryPath, cons
         } else if (identifiler == "vn") {
             Vector3 normal;
             s >> normal.x >> normal.y >> normal.z;
-            // ¶èÀ•W‚É‚·‚é
+            // å·¦æ‰‹åº§æ¨™ã«ã™ã‚‹
             normal.x *= -1.0f;
 
             normals.push_back(normal);
         } else if (identifiler == "f") {
-            VertexData triangle[3]; // O‚Â‚Ì’¸“_‚ğ•Û‘¶
-            // –Ê‚ÍOŠpŒ`ŒÀ’èB‚»‚Ì‘¼‚Í–¢‘Î‰
+            VertexData triangle[3]; // ä¸‰ã¤ã®é ‚ç‚¹ã‚’ä¿å­˜
+            // é¢ã¯ä¸‰è§’å½¢é™å®šã€‚ãã®ä»–ã¯æœªå¯¾å¿œ
             for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
                 std::string vertexDefinition;
                 s >> vertexDefinition;
-                // ’¸“_‚Ì—v‘f‚Ö‚ÌIndex‚ÍuˆÊ’u/UV/–@üv‚ÅŠi”[‚³‚ê‚Ä‚¢‚é‚Ì‚ÅA•ª‰ğ‚µ‚Ä‚¦Index‚ğæ“¾‚·‚é
+                // é ‚ç‚¹ã®è¦ç´ ã¸ã®Indexã¯ã€Œä½ç½®/UV/æ³•ç·šã€ã§æ ¼ç´ã•ã‚Œã¦ã„ã‚‹ã®ã§ã€åˆ†è§£ã—ã¦ãˆIndexã‚’å–å¾—ã™ã‚‹
                 std::istringstream v(vertexDefinition);
                 uint32_t elementIndices[3];
                 for (int32_t element = 0; element < 3; ++element) {
                     std::string index;
 
-                    std::getline(v, index, '/'); // ‹æØ‚è‚ÅƒCƒ“ƒfƒbƒNƒX‚ğ“Ç‚ñ‚Å‚¢‚­
+                    std::getline(v, index, '/'); // åŒºåˆ‡ã‚Šã§ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’èª­ã‚“ã§ã„ã
                     elementIndices[element] = std::stoi(index);
                 }
-                // —v‘f‚Ö‚ÌIndex‚©‚çAÀÛ‚Ì—v‘f‚Ì’l‚ğæ“¾‚µ‚ÄA’¸“_‚ğ\’z‚·‚é
+                // è¦ç´ ã¸ã®Indexã‹ã‚‰ã€å®Ÿéš›ã®è¦ç´ ã®å€¤ã‚’å–å¾—ã—ã¦ã€é ‚ç‚¹ã‚’æ§‹ç¯‰ã™ã‚‹
                 Vector4 position = positions[elementIndices[0] - 1];
                 Vector2 texcoord = texcoords[elementIndices[1] - 1];
                 Vector3 normal = normals[elementIndices[2] - 1];
-                // X²‚ğ”½“]‚µ‚Ä¶èÀ•WŒn‚É
+                // Xè»¸ã‚’åè»¢ã—ã¦å·¦æ‰‹åº§æ¨™ç³»ã«
 
                 triangle[faceVertex] = { position, texcoord, normal };
             }
-            // ‹t‡‚É‚µ‚ÄŠi”[i2 ¨ 1 ¨ 0j
+            // é€†é †ã«ã—ã¦æ ¼ç´ï¼ˆ2 â†’ 1 â†’ 0ï¼‰
             modelData.vertices.push_back(triangle[2]);
             modelData.vertices.push_back(triangle[1]);
             modelData.vertices.push_back(triangle[0]);
             //?
         } else if (identifiler == "mtllib") {
-            // materialTemplateLibraryƒtƒ@ƒCƒ‹‚Ì–¼‘O‚ğæ“¾‚·‚é
+            // materialTemplateLibraryãƒ•ã‚¡ã‚¤ãƒ«ã®åå‰ã‚’å–å¾—ã™ã‚‹
             std::string materialFilename;
             s >> materialFilename;
-            // Šî–{“I‚Éobjƒtƒ@ƒCƒ‹‚Æ“¯ˆêŠK‘wmtl‚Í‘¶İ‚³‚¹‚é‚Ì‚ÅAƒfƒBƒŒƒNƒgƒŠ–¼‚Æƒtƒ@ƒCƒ‹–¼‚ğ“n‚·B
+            // åŸºæœ¬çš„ã«objãƒ•ã‚¡ã‚¤ãƒ«ã¨åŒä¸€éšå±¤mtlã¯å­˜åœ¨ã•ã›ã‚‹ã®ã§ã€ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªåã¨ãƒ•ã‚¡ã‚¤ãƒ«åã‚’æ¸¡ã™ã€‚
             modelData.material = LoadMaterialTemplateFile(directoryPath, materialFilename);
         }
     }
-    // 4.ModelData‚ğ•Ô‚·
+    // 4.ModelDataã‚’è¿”ã™
     return modelData;
 }
