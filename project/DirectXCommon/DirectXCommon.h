@@ -32,6 +32,8 @@ public:
     // Getter
     ID3D12Device* GetDevice() const { return device.Get(); }
     ID3D12GraphicsCommandList* GetCommandList() const { return commandList.Get(); }
+    ID3D12CommandAllocator* GetCommandAllocator() const { return commandAllocator.Get(); }
+    ID3D12CommandQueue* GetCommandQueue() const { return commandQueue.Get(); }
     // SRVヒープとサイズのGetter
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GetSRVDescriptorHeap() const { return srvDescriptorHeap; }
     uint32_t GetSRVDescriptorSize() const { return descriptorSizeSRV; }
@@ -42,11 +44,11 @@ public:
     Microsoft::WRL::ComPtr<ID3D12Resource> CreateBufferResource(size_t sizeInBytes);
     // Textureリソース生成関数
     Microsoft::WRL::ComPtr<ID3D12Resource> CreateTextureResource(Microsoft::WRL::ComPtr<ID3D12Device> device, const DirectX::TexMetadata& metadata);
-    // テクスチャファイルの読み込み関数
-    static DirectX::ScratchImage LoadTexture(const std::string& filePath);
-    // txtureデータ転送関数
+    //// テクスチャファイルの読み込み関数
+    // static DirectX::ScratchImage LoadTexture(const std::string& filePath);
+    //  txtureデータ転送関数
     Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData(Microsoft::WRL::ComPtr<ID3D12Resource> texture, const DirectX::ScratchImage& mipImages);
-   
+
     // ディスクリプタヒープ生成関数
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisivle);
 
@@ -55,8 +57,9 @@ public:
     // 指定番号のGPUディスクリプタハンドルを取得する関数
     static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
+    void WaitForGPU();
+
 private:
-    
     // DXGIファクトリーの生成
     Microsoft::WRL::ComPtr<IDXGIFactory7> dxgiFactory = nullptr;
     // デバイス

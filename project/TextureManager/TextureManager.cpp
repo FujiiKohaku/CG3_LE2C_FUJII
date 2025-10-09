@@ -65,6 +65,12 @@ void TextureManager::LoadTexture(const std::string& filePath)
     // テクスチャリソースを生成
     textureData.resource = dxCommon_->CreateTextureResource(dxCommon_->GetDevice(), textureData.metadata);
 
+    Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = dxCommon_->UploadTextureData(textureData.resource, mipImages);
+    // コマンドを閉じてGPUに送る
+    dxCommon_->GetCommandList()->Close();
+    ID3D12CommandList* lists[] = { dxCommon_->GetCommandList() };
+    dxCommon_->GetCommandQueue()->ExecuteCommandLists(_countof(lists), lists);
+
     uint32_t srvIndex = static_cast<uint32_t>(textureDatas.size() - 1) + kSRVIndexTop;
     // CPU・GPUハンドルを取得
     textureData.srvHandleCPU = dxCommon_->GetCPUDescriptorHandle(dxCommon_->GetSRVDescriptorHeap(), dxCommon_->GetSRVDescriptorSize(), srvIndex);
@@ -78,11 +84,17 @@ void TextureManager::LoadTexture(const std::string& filePath)
     srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
     srvDesc.Texture2D.MipLevels = static_cast<UINT>(textureData.metadata.mipLevels);
 
-    // SRVの生成（←引数の順番に注意！）
+    // SRVの生成（
     dxCommon_->GetDevice()->CreateShaderResourceView(
         textureData.resource.Get(), // リソース
         &srvDesc, // SRVの設定
         textureData.srvHandleCPU); // CPUハンドル（書き込み先）
+    // GPUにアップロード完了を保証
+    dxCommon_->WaitForGPU();
+    // コマンド再利用可能に
+    dxCommon_->GetCommandAllocator()->Reset();
+    dxCommon_->GetCommandList()->Reset(dxCommon_->GetCommandAllocator(), nullptr);
+  
 }
 
 // ImGuiで0番を使用するため、1番から使用
