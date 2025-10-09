@@ -415,6 +415,7 @@ void DirectXCommon::PreDraw()
     commandList->RSSetViewports(1, &viewport); // viewportを設定
     // シザー矩形の設定
     commandList->RSSetScissorRects(1, &scissorRect); // Scirssorを設定
+
 }
 
 // 描画後処理

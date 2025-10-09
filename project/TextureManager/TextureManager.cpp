@@ -1,4 +1,5 @@
 #include "TextureManager.h"
+#include <format>
 TextureManager* TextureManager::instance = nullptr;
 
 TextureManager* TextureManager::GetInstance()
@@ -94,7 +95,7 @@ void TextureManager::LoadTexture(const std::string& filePath)
     // コマンド再利用可能に
     dxCommon_->GetCommandAllocator()->Reset();
     dxCommon_->GetCommandList()->Reset(dxCommon_->GetCommandAllocator(), nullptr);
-  
+    Logger::Log(std::format("srvIndex = {}", srvIndex));
 }
 
 // ImGuiで0番を使用するため、1番から使用

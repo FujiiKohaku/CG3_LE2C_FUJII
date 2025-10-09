@@ -379,7 +379,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // 画面のクリア処理
 
             object3d.Draw();
-            /*  for (Sprite* sprite : sprites) {
+             /* for (Sprite* sprite : sprites) {
                   sprite->Draw();
               }*/
               // spriteの描画準備
