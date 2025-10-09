@@ -6,6 +6,8 @@
 #include "DirectXCommon.h"
 #include "Input.h"
 #include "MatrixMath.h"
+#include "Object3D.h"
+#include "Object3dManager.h"
 #include "SoundManager.h"
 #include "Sprite.h"
 #include "SpriteManager.h"
@@ -326,7 +328,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // ② TextureManager初期化
     // ==========================
     TextureManager::GetInstance()->Initialize(dxCommon);
-    TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
+    TextureManager::GetInstance()->LoadTexture("resources/y.png");
     // SpriteManagerのポインタ
     SpriteManager* spriteManager = nullptr;
     // スプライト共通部の初期化
@@ -337,15 +339,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     Sprite* sprite = nullptr;
 
     // スプライト個人の初期化
-
     std::vector<Sprite*> sprites;
     for (uint32_t i = 0; i < 5; i++) {
         Sprite* sprite = new Sprite();
-        sprite->Initialize(spriteManager, "resources/uvChecker.png");
+        sprite->Initialize(spriteManager, "resources/y.png");
         Vector2 pos = { 100.0f * i, 100.0f };
         sprite->SetPosition(pos);
         sprites.push_back(sprite);
     }
+
+    Object3dManager* object3dManager = nullptr;
+    // 3Dオブジェクト共通部の初期化
+    object3dManager = new Object3dManager();
+    object3dManager->Initialize(dxCommon);
+
+    Object3d* object3d = nullptr;
+    // 3Dオブジェクト個人の初期化
+    object3d = new Object3d();
+    object3d->Initialize();
 
 #ifdef _DEBUG
 
@@ -845,8 +856,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
             // 描画前の処理//----------------------------------------------------
             dxCommon->PreDraw();
+
             // spriteの描画準備
             spriteManager->PreDraw();
+            // 3Dオブジェクトの描画準備
+            object3dManager->PreDraw();
             // 画面のクリア処理
 
             // RootSignatureを設定。PS0に設定しているけど別途設定が必要
@@ -893,7 +907,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
             dxCommon->PostDraw();
             Logger::Log("CommandList state check before Close()");
-            
         }
     }
 
@@ -910,6 +923,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // リリースする場所
     // XAudio解放
     soundmanager.Finalize(&bgm);
+
+    delete object3d;
+    delete object3dManager;
     // === 1. SpriteやModelなど「描画で使うオブジェクト」を削除 ===
     for (auto sprite : sprites) {
         delete sprite;
