@@ -12,7 +12,11 @@ void Object3d::Initialize(Object3dManager* object3DManager, DebugCamera debugCam
 
     // モデル読み込み
     modelData = LoadObjFile("resources", "plane.obj");
-
+    // ⚠️ OBJ/MTL に map_Kd がない場合、ファイルパスが空になることがある
+    if (modelData.material.textureFilePath.empty()) {
+        // デフォルトテクスチャを明示的に指定（今使っている uvChecker など）
+        modelData.material.textureFilePath = "resources/uvChecker.png";
+    }
     // テクスチャ読み込み
     TextureManager::GetInstance()->LoadTexture(modelData.material.textureFilePath);
     modelData.material.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(modelData.material.textureFilePath);

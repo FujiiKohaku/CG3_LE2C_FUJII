@@ -371,19 +371,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
             object3d.Update();
 
-            dxCommon->PreDraw();
 
-          
+
+            dxCommon->PreDraw();
+            
+
             // 3Dオブジェクトの描画準備
             object3dManager->PreDraw();
             // 画面のクリア処理
 
             object3d.Draw();
-             /* for (Sprite* sprite : sprites) {
-                  sprite->Draw();
-              }*/
-              // spriteの描画準備
+
+            // spriteの描画準備
             spriteManager->PreDraw();
+            /* for (Sprite* sprite : sprites) {
+                 sprite->Draw();
+             }*/
             // 描画の最後です//----------------------------------------------------
             //  実際のcommandListのImGuiの描画コマンドを積む
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());

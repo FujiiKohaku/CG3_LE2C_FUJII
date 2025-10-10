@@ -1,7 +1,8 @@
 #include "TextureManager.h"
 #include <format>
 TextureManager* TextureManager::instance = nullptr;
-
+// ImGuiで0番を使用するため、1番から使用
+uint32_t TextureManager::kSRVIndexTop = 1;
 TextureManager* TextureManager::GetInstance()
 {
     // インスタンスがなければ生成
@@ -73,6 +74,8 @@ void TextureManager::LoadTexture(const std::string& filePath)
     dxCommon_->GetCommandQueue()->ExecuteCommandLists(_countof(lists), lists);
 
     uint32_t srvIndex = static_cast<uint32_t>(textureDatas.size() - 1) + kSRVIndexTop;
+
+    Logger::Log(std::format("Texture Loaded: {}, SRV Index: {}", filePath, srvIndex));
     // CPU・GPUハンドルを取得
     textureData.srvHandleCPU = dxCommon_->GetCPUDescriptorHandle(dxCommon_->GetSRVDescriptorHeap(), dxCommon_->GetSRVDescriptorSize(), srvIndex);
 
@@ -98,8 +101,7 @@ void TextureManager::LoadTexture(const std::string& filePath)
     Logger::Log(std::format("srvIndex = {}", srvIndex));
 }
 
-// ImGuiで0番を使用するため、1番から使用
-uint32_t TextureManager::kSRVIndexTop = 1;
+
 
 uint32_t TextureManager::GetTextureIndexByFilePath(const std::string& filePath)
 {
@@ -110,8 +112,8 @@ uint32_t TextureManager::GetTextureIndexByFilePath(const std::string& filePath)
         [&](TextureData& textureData) { return textureData.filePath == filePath; });
 
     if (it != textureDatas.end()) {
-        // 読み込み済みなら要素番号を返す
-        uint32_t textureIndex = static_cast<uint32_t>(std::distance(textureDatas.begin(), it));
+        // SRVヒープ上のインデックス = 配列の位置 + kSRVIndexTop
+        uint32_t textureIndex = static_cast<uint32_t>(std::distance(textureDatas.begin(), it)) + kSRVIndexTop;
         return textureIndex;
     }
 

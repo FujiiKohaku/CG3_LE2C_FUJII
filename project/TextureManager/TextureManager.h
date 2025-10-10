@@ -45,6 +45,4 @@ private:
     DirectXCommon* dxCommon_ = nullptr;
     // SRVインデックスの開始番号
     static uint32_t kSRVIndexTop;
-
-
 };
