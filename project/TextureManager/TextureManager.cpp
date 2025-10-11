@@ -124,11 +124,12 @@ uint32_t TextureManager::GetTextureIndexByFilePath(const std::string& filePath)
 
 D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::GetSrvHandleGPU(uint32_t textureIndex)
 {
-    // 範囲外アクセス防止
-    assert(textureIndex < textureDatas.size());
+    // 範囲外アクセス防止（kSRVIndexTop考慮）
+    assert(textureIndex >= kSRVIndexTop);
+    assert(textureIndex - kSRVIndexTop < textureDatas.size());
 
-    // 指定番号のテクスチャデータを取得
-    TextureData& textureData = textureDatas[textureIndex];
+    // 正しい位置から取得
+    TextureData& textureData = textureDatas[textureIndex - kSRVIndexTop];
 
     // GPUハンドルを返す
     return textureData.srvHandleGPU;
