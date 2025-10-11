@@ -194,16 +194,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // 3Dモデルとオブジェクトの関係まとめ
     // ===============================
     //
-    //  Model（モデル）
+    // Model（モデル）
     //   ・見た目のデータ（形・テクスチャ）を管理
     //   ・同じモデルを複数のオブジェクトで使い回せる
     //
-    //  Object3d（オブジェクト）
+    // Object3d（オブジェクト）
     //   ・実際に表示される実体
     //   ・位置・回転・スケールを持つ
     //   ・どのModelを使うかを指定して描画する
     //
-    //  ModelCommon / Object3dManager
+    // ModelCommon / Object3dManager
     //   ・共通の描画設定やパイプラインを管理
     //
     //  使用手順（操作説明）
@@ -230,17 +230,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     // 2Dスプライト関連まとめ
     // ===============================
     //
-    // TextureManager（シングルトン）
+    //  TextureManager（シングルトン）
     //   ・全テクスチャを一括で管理するクラス
     //   ・同じ画像を何度も読み込まないようにする
     //   ・Initialize(dxCommon)でDirectX情報を登録
     //   ・LoadTexture("path")で画像をGPUに読み込み
     //
-    //  SpriteManager
+    // SpriteManager
     //   ・スプライト描画用の共通設定を管理
     //   ・複数のSpriteをまとめて扱う
     //
-    // Sprite
+    //  Sprite
     //   ・実際に画面に表示する2D画像
     //   ・1枚ごとに位置・回転・スケールを持つ
     //
@@ -265,7 +265,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #pragma region object sprite
 
     // =============================
-    //  基本システムの初期化
+    // 1. 基本システムの初期化
     // =============================
     WinApp* winApp = new WinApp();
     winApp->initialize();
@@ -274,7 +274,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     dxCommon->Initialize(winApp);
 
     // =============================
-    // テクスチャ・スプライト関係
+    // 2. テクスチャ・スプライト関係
     // =============================
 
     // TextureManager（シングルトン）
@@ -294,7 +294,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     }
 
     // =============================
-    // 3D関連の初期化
+    // 3. 3D関連の初期化
     // =============================
 
     // Object3dManager
@@ -310,7 +310,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     modelCommon.Initialize(dxCommon);
 
     // =============================
-    //  モデルと3Dオブジェクト生成
+    // 4. モデルと3Dオブジェクト生成
     // =============================
 
     // モデルを生成
@@ -402,61 +402,52 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             break;
         } else {
 
-            // ===============================
-            // メインループ内処理
-            // ===============================
-
-            // ====== ImGui（開発UI）のフレーム開始 ======
+            // ここがframeの先頭02_03
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
             ImGui::NewFrame();
 
-            // ※ここにImGui::Begin() ～ ImGui::End() のUIコードを書く
+            //===================================
 
-            ImGui::End();
+            // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
+            // ImGui::ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
 
-            // ====== ImGuiの内部コマンドを生成 ======
-            ImGui::Render(); // ImGuiの描画データを作成
+            // ImGuiの内部コマンドを生成する02_03
+            ImGui::Render(); // ImGui終わりの場所。描画の前02_03--------------------------
 
-            // ===============================
-            //  ゲーム更新処理（Update）
-            // ===============================
+            //===================================
+            //  ゲームの処理02_02
+            //===================================
 
-            input->Update(); // キー入力更新
-            debugCamera.Update(); // デバッグカメラ更新
-
+            // インプットの更新
+            input->Update();
+            // デバッグカメラの更新
+            debugCamera.Update();
             for (Sprite* sprite : sprites) {
-                sprite->Update(); // 各スプライト更新
+                sprite->Update();
             }
 
-            object3d.Update(); // 汎用3Dオブジェクト更新
-            player2.Update(); // プレイヤー更新
-            enemy.Update(); // 敵オブジェクト更新
+            object3d.Update();
 
-            // ===============================
-            //  描画処理（Draw）
-            // ===============================
+            player2.Update();
+            enemy.Update();
+            dxCommon->PreDraw();
 
-            dxCommon->PreDraw(); // 描画の開始
+            // 3Dオブジェクトの描画準備
+            object3dManager->PreDraw();
+            // 画面のクリア処理
 
-            // --- 3D描画 ---
-            object3dManager->PreDraw(); // 3D描画パイプライン設定
             object3d.Draw();
             player2.Draw();
-            enemy.Draw();
-
-            // --- 2D描画 ---
-            spriteManager->PreDraw(); // スプライト用パイプライン設定
+            // spriteの描画準備
+            spriteManager->PreDraw();
             for (Sprite* sprite : sprites) {
                 sprite->Draw();
             }
-
-            // --- ImGui描画 ---
+            // 描画の最後です//----------------------------------------------------
+            //  実際のcommandListのImGuiの描画コマンドを積む
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
-
-            // --- フレームの終わり ---
-            dxCommon->PostDraw(); // コマンド実行＆画面に表示
-
+            dxCommon->PostDraw();
             Logger::Log("CommandList state check before Close()");
         }
     }
