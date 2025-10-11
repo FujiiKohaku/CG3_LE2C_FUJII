@@ -402,52 +402,66 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             break;
         } else {
 
-            // ここがframeの先頭02_03
+            // ==============================
+            //  フレームの先頭処理
+            // ==============================
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
             ImGui::NewFrame();
 
-            //===================================
+            // ==============================
+            //  開発用UI
+            // ==============================
+            
+            // ImGui::ShowDemoWindow();
 
-            // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
-            // ImGui::ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
+            ImGui::Render(); // ImGuiの内部コマンドを生成（描画直前に呼ぶ）
 
-            // ImGuiの内部コマンドを生成する02_03
-            ImGui::Render(); // ImGui終わりの場所。描画の前02_03--------------------------
-
-            //===================================
-            //  ゲームの処理02_02
-            //===================================
-
-            // インプットの更新
+            // ==============================
+            //  更新処理（Update）
+            // ==============================
+            // 入力状態の更新
             input->Update();
-            // デバッグカメラの更新
+
+            // カメラの更新
             debugCamera.Update();
+
+            // 各スプライトの更新
             for (Sprite* sprite : sprites) {
                 sprite->Update();
             }
 
+            // 各3Dオブジェクトの更新
             object3d.Update();
-
             player2.Update();
             enemy.Update();
+
+            // ==============================
+            //  描画処理（Draw）
+            // ==============================
+
+            // バックバッファの切り替え準備
             dxCommon->PreDraw();
 
-            // 3Dオブジェクトの描画準備
-            object3dManager->PreDraw();
-            // 画面のクリア処理
-
+            // ----- 3Dオブジェクト描画 -----
+            object3dManager->PreDraw(); // 3D描画準備
             object3d.Draw();
             player2.Draw();
-            // spriteの描画準備
-            spriteManager->PreDraw();
+            enemy.Draw();
+
+            // ----- スプライト描画 -----
+            spriteManager->PreDraw(); // 2D描画準備
             for (Sprite* sprite : sprites) {
                 sprite->Draw();
             }
-            // 描画の最後です//----------------------------------------------------
-            //  実際のcommandListのImGuiの描画コマンドを積む
+
+            // ----- ImGui描画（デバッグUI） -----
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
+
+            // ----- 描画終了処理 -----
             dxCommon->PostDraw();
+
+            // コマンドリスト状態確認ログ
             Logger::Log("CommandList state check before Close()");
         }
     }
