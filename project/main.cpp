@@ -189,21 +189,99 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     std::filesystem::create_directory("logs");
     // main関数の先頭//
 
-#pragma region ログファイルの準備
+#pragma region object説明書
+    // ===============================
+    // 3Dモデルとオブジェクトの関係まとめ
+    // ===============================
+    //
+    //  Model（モデル）
+    //   ・見た目のデータ（形・テクスチャ）を管理
+    //   ・同じモデルを複数のオブジェクトで使い回せる
+    //
+    //  Object3d（オブジェクト）
+    //   ・実際に表示される実体
+    //   ・位置・回転・スケールを持つ
+    //   ・どのModelを使うかを指定して描画する
+    //
+    //  ModelCommon / Object3dManager
+    //   ・共通の描画設定やパイプラインを管理
+    //
+    //  使用手順（操作説明）
+    // 1. Modelを作る → model.Initialize(&modelCommon);
+    // 2. Object3dを作る → object.Initialize(manager, camera);
+    // 3. Object3dにModelをセット → object.SetModel(&model);
+    // 4. 必要に応じて位置や回転を変更 → object.SetTranslate({x, y, z});
+    // 5. 毎フレーム Update() → Draw() で描画
+    //
+    // 例：
+    // Model modelPlayer;
+    // Object3d player;
+    // player.SetModel(&modelPlayer);
+    // player.SetTranslate({3, 0, 0});
+    // player.Draw();
+    //
+    // ===============================
 
 #pragma endregion
 
-    // アプリ全体で生きる
+#pragma region sprite説明書
+
+    // ===============================
+    // 2Dスプライト関連まとめ
+    // ===============================
+    //
+    // TextureManager（シングルトン）
+    //   ・全テクスチャを一括で管理するクラス
+    //   ・同じ画像を何度も読み込まないようにする
+    //   ・Initialize(dxCommon)でDirectX情報を登録
+    //   ・LoadTexture("path")で画像をGPUに読み込み
+    //
+    //  SpriteManager
+    //   ・スプライト描画用の共通設定を管理
+    //   ・複数のSpriteをまとめて扱う
+    //
+    // Sprite
+    //   ・実際に画面に表示する2D画像
+    //   ・1枚ごとに位置・回転・スケールを持つ
+    //
+    // 使用手順
+    // 1. TextureManagerを初期化して画像を読み込む
+    // 2. SpriteManagerを初期化する
+    // 3. Spriteを生成して画像パスを指定して初期化
+    // 4. Update() → Draw() で描画する
+    //
+    //  例：スプライトを5枚生成
+    //   std::vector<Sprite*> sprites;
+    //   for (int i = 0; i < 5; i++) {
+    //       Sprite* sprite = new Sprite();
+    //       sprite->Initialize(spriteManager, "resources/uvChecker.png");
+    //       sprites.push_back(sprite);
+    //   }
+    //
+    // ===============================
+
+#pragma endregion
+
+#pragma region object sprite
+
+    // =============================
+    //  基本システムの初期化
+    // =============================
     WinApp* winApp = new WinApp();
     winApp->initialize();
 
     DirectXCommon* dxCommon = new DirectXCommon();
     dxCommon->Initialize(winApp);
 
-    // シングルトン（new不要）
+    // =============================
+    // テクスチャ・スプライト関係
+    // =============================
+
+    // TextureManager（シングルトン）
     TextureManager::GetInstance()->Initialize(dxCommon);
     TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
-    // スプライト関連
+
+    // SpriteManager
     SpriteManager* spriteManager = new SpriteManager();
     spriteManager->Initialize(dxCommon);
 
@@ -215,36 +293,73 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         sprites.push_back(sprite);
     }
 
-    // 3D関連
+    // =============================
+    // 3D関連の初期化
+    // =============================
+
+    // Object3dManager
     Object3dManager* object3dManager = new Object3dManager();
     object3dManager->Initialize(dxCommon);
 
+    // カメラ
     DebugCamera debugCamera;
     debugCamera.Initialize(winApp);
 
+    // モデル共通設定
     ModelCommon modelCommon;
     modelCommon.Initialize(dxCommon);
 
-    Model model;
-    model.Initialize(&modelCommon);
-    Model modelPlayer;
-    modelPlayer.Initialize(&modelCommon); // player.objなどを読み込み
+    // =============================
+    //  モデルと3Dオブジェクト生成
+    // =============================
 
-    Model modelEnemy;
-    modelEnemy.Initialize(&modelCommon); // enemy.objなどを読み込み
-    Object3d object3d;
+    // モデルを生成
+    Model model; // 汎用モデル
+    model.Initialize(&modelCommon);
+
+    Model modelPlayer; // プレイヤー用モデル
+    modelPlayer.Initialize(&modelCommon);
+
+    Model modelEnemy; // 敵用モデル
+    modelEnemy.Initialize(&modelCommon);
+
+    // 3Dオブジェクト生成
+    Object3d object3d; // メインオブジェクト
     object3d.Initialize(object3dManager, debugCamera);
     object3d.SetModel(&model);
-   
+
+    // プレイヤー
     Object3d player2;
     player2.Initialize(object3dManager, debugCamera);
     player2.SetModel(&modelPlayer);
-    player2.SetTranslate({ 3.0f, 0.0f, 0.0f }); // ← 同じモデルでも別位置に配置
+    player2.SetTranslate({ 3.0f, 0.0f, 0.0f }); // 右に移動
 
+    // 敵
     Object3d enemy;
     enemy.Initialize(object3dManager, debugCamera);
     enemy.SetModel(&modelEnemy);
-    enemy.SetTranslate({ -2.0f, 0.0f, 0.0f });
+    enemy.SetTranslate({ -2.0f, 0.0f, 0.0f }); // 左に移動
+#pragma endregion
+
+    //=================================
+    // キーボードインスタンス作成
+    //=================================
+    Input* input = nullptr;
+    input = new Input();
+    //=================================
+    // キーボード情報の取得開始
+    //=================================
+    input->Initialize(winApp);
+
+    //=================================
+    // サウンドマネージャーインスタンス作成
+    //=================================
+    SoundManager soundmanager;
+    // サウンドマネージャー初期化！
+    soundmanager.Initialize();
+    // サウンドファイルを読み込み（パスはプロジェクトに合わせて調整）
+    SoundData bgm = soundmanager.SoundLoadWave("Resources/BGM.wav");
+
 #ifdef _DEBUG
 
     Microsoft::WRL::ComPtr<ID3D12InfoQueue>
@@ -277,48 +392,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 #endif // DEBUG
 
-    // 変数//
-    // spriteトランスフォーム
-    Transform transformSprite {
-        { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }
-    };
-    // トランスフォーム
-    Transform transform {
-        { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }
-    };
-    // カメラトランスフォーム
-    Transform cameraTransform {
-        { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -5.0f }
-    };
-    // UVTransform用の変数を用意
-    Transform uvTransformSprite {
-        { 1.0f, 1.0f, 1.0f },
-        { 0.0f, 0.0f, 0.0f },
-        { 0.0f, 0.0f, 0.0f },
-    };
-
-    // Textureの切り替え
-    bool useMonstarBall = true;
-
     MSG msg {};
-    //=================================
-    // キーボードインスタンス作成
-    //=================================
-    Input* input = nullptr;
-    input = new Input();
-    //=================================
-    // キーボード情報の取得開始
-    //=================================
-    input->Initialize(winApp);
-
-    //=================================
-    // サウンドマネージャーインスタンス作成
-    //=================================
-    SoundManager soundmanager;
-    // サウンドマネージャー初期化！
-    soundmanager.Initialize();
-    // サウンドファイルを読み込み（パスはプロジェクトに合わせて調整）
-    SoundData bgm = soundmanager.SoundLoadWave("Resources/BGM.wav");
 
     // ウィンドウの×ボタンが押されるまでループ
     while (msg.message != WM_QUIT) {
@@ -328,74 +402,61 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             break;
         } else {
 
-            // ここがframeの先頭02_03
+            // ===============================
+            // メインループ内処理
+            // ===============================
+
+            // ====== ImGui（開発UI）のフレーム開始 ======
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplWin32_NewFrame();
             ImGui::NewFrame();
 
-            //===================================
-
-            // 開発用UIの処理。実際に開発用のUIを出す場合はここをげ０無固有の処理を置き換える02_03
-            // ImGui::ShowDemoWindow(); // ImGuiの始まりの場所-----------------------------
-
-            ImGui::Begin("Materialcolor");
-            ImGui::SliderFloat3("Scale", &transform.scale.x, 0.1f, 5.0f);
-            ImGui::SliderAngle("RotateX", &transform.rotate.x, -180.0f, 180.0f);
-            ImGui::SliderAngle("RotateY", &transform.rotate.y, -180.0f, 180.0f);
-            ImGui::SliderAngle("RotateZ", &transform.rotate.z, -180.0f, 180.0f);
-            ImGui::SliderFloat3("Translate", &transform.translate.x, -5.0f, 5.0f);
-
-            /* ImGui::ColorEdit4("Color", &(*materialData).x);*/
-            ImGui::Text("useMonstarBall");
-            ImGui::Checkbox("useMonstarBall", &useMonstarBall);
-            ImGui::Text("LIgthng");
-            /*           ImGui::SliderFloat("x", &directionalLightData->direction.x, -10.0f, 10.0f);
-                       ImGui::SliderFloat("y", &directionalLightData->direction.y, -10.0f, 10.0f);
-                       ImGui::SliderFloat("z", &directionalLightData->direction.z, -10.0f, 10.0f);*/
-            ImGui::Text("UVTransform");
-            ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
-            ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
-            ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
+            // ※ここにImGui::Begin() ～ ImGui::End() のUIコードを書く
 
             ImGui::End();
 
-            // ImGuiの内部コマンドを生成する02_03
-            ImGui::Render(); // ImGui終わりの場所。描画の前02_03--------------------------
+            // ====== ImGuiの内部コマンドを生成 ======
+            ImGui::Render(); // ImGuiの描画データを作成
 
-            //===================================
-            //  ゲームの処理02_02
-            //===================================
-            //  02_02
-            waveTime += 0.05f;
-            // インプットの更新
-            input->Update();
-            // デバッグカメラの更新
-            debugCamera.Update();
+            // ===============================
+            //  ゲーム更新処理（Update）
+            // ===============================
+
+            input->Update(); // キー入力更新
+            debugCamera.Update(); // デバッグカメラ更新
+
             for (Sprite* sprite : sprites) {
-                sprite->Update();
+                sprite->Update(); // 各スプライト更新
             }
 
-            object3d.Update();
-        
-            player2.Update();
-            enemy.Update();
-            dxCommon->PreDraw();
+            object3d.Update(); // 汎用3Dオブジェクト更新
+            player2.Update(); // プレイヤー更新
+            enemy.Update(); // 敵オブジェクト更新
 
-            // 3Dオブジェクトの描画準備
-            object3dManager->PreDraw();
-            // 画面のクリア処理
-      
+            // ===============================
+            //  描画処理（Draw）
+            // ===============================
+
+            dxCommon->PreDraw(); // 描画の開始
+
+            // --- 3D描画 ---
+            object3dManager->PreDraw(); // 3D描画パイプライン設定
             object3d.Draw();
             player2.Draw();
-            // spriteの描画準備
-            spriteManager->PreDraw();
-             for (Sprite* sprite : sprites) {
-                 sprite->Draw();
-             }
-            // 描画の最後です//----------------------------------------------------
-            //  実際のcommandListのImGuiの描画コマンドを積む
+            enemy.Draw();
+
+            // --- 2D描画 ---
+            spriteManager->PreDraw(); // スプライト用パイプライン設定
+            for (Sprite* sprite : sprites) {
+                sprite->Draw();
+            }
+
+            // --- ImGui描画 ---
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
-            dxCommon->PostDraw();
+
+            // --- フレームの終わり ---
+            dxCommon->PostDraw(); // コマンド実行＆画面に表示
+
             Logger::Log("CommandList state check before Close()");
         }
     }
