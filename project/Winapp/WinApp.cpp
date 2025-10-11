@@ -4,28 +4,36 @@
 #include "imgui/imgui_impl_win32.h" // Win32 連携
 #include <Windows.h>
 #include <cstdint>
-// #include <imgui/imgui_impl_win32.cpp>
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-// ウィンドウプロシージャ
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
+    HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+//==================================================================
+//  ウィンドウプロシージャ
+//  Windowsからのメッセージを処理する
+//==================================================================
 LRESULT CALLBACK WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-
+    // ImGui用メッセージ処理（優先）
     if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
         return true;
     }
 
-    // メッセージに応じて固有の処理を行う
+    // メッセージに応じた固有処理
     switch (msg) {
-        // ウィンドウが破棄された
-    case WM_DESTROY:
-        // OSに対して、アプリの終了を伝える
-        PostQuitMessage(0);
+    case WM_DESTROY: // ウィンドウが破棄された
+        PostQuitMessage(0); // OSにアプリ終了を通知
         return 0;
     }
-    // 標準のメッセージ処理を行う
+
+    // 標準のメッセージ処理を実行
     return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
+//==================================================================
+//  メッセージ処理関数
+//  戻り値 true: 終了メッセージを受け取った
+//==================================================================
 bool WinApp::ProcessMessage()
 {
     MSG msg {};
@@ -33,6 +41,8 @@ bool WinApp::ProcessMessage()
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+
+    // 終了メッセージを検出
     if (msg.message == WM_QUIT) {
         return true;
     }
@@ -40,45 +50,46 @@ bool WinApp::ProcessMessage()
     return false;
 }
 
+//==================================================================
+//  初期化処理
+//  ウィンドウクラス登録・生成・表示
+//==================================================================
 void WinApp::initialize()
 {
-
+    // COMライブラリ初期化（マルチスレッド対応）
     CoInitializeEx(0, COINIT_MULTITHREADED);
-    // 出力
 
-    // ウィンドウプロシージャ
-    wc_.lpfnWndProc = WindowProc;
-    // ウィンドウクラス名(何でもよい)
-    wc_.lpszClassName = L"CG2WindowClass";
-    // インスタンスバンドル
-    wc_.hInstance = GetModuleHandle(nullptr);
-    // カーソル
-    wc_.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    // ウィンドウクラスを登録する
+    // ウィンドウクラス設定
+    wc_.lpfnWndProc = WindowProc; // ウィンドウプロシージャ
+    wc_.lpszClassName = L"CG2WindowClass"; // クラス名
+    wc_.hInstance = GetModuleHandle(nullptr); // インスタンスハンドル
+    wc_.hCursor = LoadCursor(nullptr, IDC_ARROW); // カーソル設定
+
+    // ウィンドウクラスを登録
     RegisterClass(&wc_);
 
-    // ウィンドウサイズを表す構造体体にクライアント領域を入れる
+    // クライアント領域を元にウィンドウサイズを調整
     RECT wrc = { 0, 0, kClientWidth, kClientHeight };
-    // クライアント領域をもとに実際のサイズにwrcを変更してもらう
     AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
 
-    // ウィンドウの生成
-    hwnd_ = CreateWindow(wc_.lpszClassName, // 利用するクラス名
-        L"CG2", // タイトルバーの文字(何でもよい)
-        WS_OVERLAPPEDWINDOW, // よく見るウィンドウスタイル
-        CW_USEDEFAULT, // 表示X座標(Windowsに任せる)
-        CW_USEDEFAULT, // 表示Y座標(WindowsOSに任せる)
-        wrc.right - wrc.left, // ウィンドウ横幅
-        wrc.bottom - wrc.top, // ウィンドウ縦幅
-        nullptr, // 親ウィンドウハンドル
-        nullptr, // メニューハンドル
-        wc_.hInstance, // インスタンスハンドル
-        nullptr); // オプション
+    // ウィンドウ生成
+    hwnd_ = CreateWindow(
+        wc_.lpszClassName, // クラス名
+        L"CG2", // タイトル
+        WS_OVERLAPPEDWINDOW, // スタイル
+        CW_USEDEFAULT, CW_USEDEFAULT, // 位置（自動）
+        wrc.right - wrc.left, // 幅
+        wrc.bottom - wrc.top, // 高さ
+        nullptr, nullptr, wc_.hInstance, nullptr);
 
-    // ウィンドウを表示する
+    // ウィンドウ表示
     ShowWindow(hwnd_, SW_SHOW);
 }
 
+//==================================================================
+//  終了処理
+//  ウィンドウ破棄とCOM解放
+//==================================================================
 void WinApp::Finalize()
 {
     CloseWindow(hwnd_);
