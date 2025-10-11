@@ -6,6 +6,8 @@
 #include "DirectXCommon.h"
 #include "Input.h"
 #include "MatrixMath.h"
+#include "Model.h"
+#include "ModelCommon.h"
 #include "Object3D.h"
 #include "Object3dManager.h"
 #include "SoundManager.h"
@@ -191,54 +193,58 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 #pragma endregion
 
-    // ==========================
-    // ① WinApp・DirectX初期化
-    // ==========================
+    // アプリ全体で生きる
     WinApp* winApp = new WinApp();
     winApp->initialize();
 
     DirectXCommon* dxCommon = new DirectXCommon();
     dxCommon->Initialize(winApp);
 
-    // ==========================
-    // ② TextureManager初期化
-    // ==========================
+    // シングルトン（new不要）
     TextureManager::GetInstance()->Initialize(dxCommon);
     TextureManager::GetInstance()->LoadTexture("resources/uvChecker.png");
-    // SpriteManagerのポインタ
-    SpriteManager* spriteManager = nullptr;
-    // スプライト共通部の初期化
-    spriteManager = new SpriteManager();
+    // スプライト関連
+    SpriteManager* spriteManager = new SpriteManager();
     spriteManager->Initialize(dxCommon);
 
-    // spriteのポインタ
-    Sprite* sprite = nullptr;
-
-    // スプライト個人の初期化
+    // スプライトを5枚生成
     std::vector<Sprite*> sprites;
     for (uint32_t i = 0; i < 5; i++) {
         Sprite* sprite = new Sprite();
         sprite->Initialize(spriteManager, "resources/uvChecker.png");
-        Vector2 pos = { 100.0f * i, 100.0f };
-        sprite->SetPosition(pos);
         sprites.push_back(sprite);
     }
 
-    Object3dManager* object3dManager = nullptr;
-    // 3Dオブジェクト共通部の初期化
-    object3dManager = new Object3dManager();
+    // 3D関連
+    Object3dManager* object3dManager = new Object3dManager();
     object3dManager->Initialize(dxCommon);
 
-    //=================================
-    // デバックカメラインスタンス作成
-    //=================================
     DebugCamera debugCamera;
-    // debugcamera初期化一回だけ
     debugCamera.Initialize(winApp);
 
+    ModelCommon modelCommon;
+    modelCommon.Initialize(dxCommon);
+
+    Model model;
+    model.Initialize(&modelCommon);
+    Model modelPlayer;
+    modelPlayer.Initialize(&modelCommon); // player.objなどを読み込み
+
+    Model modelEnemy;
+    modelEnemy.Initialize(&modelCommon); // enemy.objなどを読み込み
     Object3d object3d;
     object3d.Initialize(object3dManager, debugCamera);
+    object3d.SetModel(&model);
+   
+    Object3d player2;
+    player2.Initialize(object3dManager, debugCamera);
+    player2.SetModel(&modelPlayer);
+    player2.SetTranslate({ 3.0f, 0.0f, 0.0f }); // ← 同じモデルでも別位置に配置
 
+    Object3d enemy;
+    enemy.Initialize(object3dManager, debugCamera);
+    enemy.SetModel(&modelEnemy);
+    enemy.SetTranslate({ -2.0f, 0.0f, 0.0f });
 #ifdef _DEBUG
 
     Microsoft::WRL::ComPtr<ID3D12InfoQueue>
@@ -370,23 +376,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             }
 
             object3d.Update();
-
-
-
+        
+            player2.Update();
+            enemy.Update();
             dxCommon->PreDraw();
-            
 
             // 3Dオブジェクトの描画準備
             object3dManager->PreDraw();
             // 画面のクリア処理
-
+      
             object3d.Draw();
-
+            player2.Draw();
             // spriteの描画準備
             spriteManager->PreDraw();
-            /* for (Sprite* sprite : sprites) {
+             for (Sprite* sprite : sprites) {
                  sprite->Draw();
-             }*/
+             }
             // 描画の最後です//----------------------------------------------------
             //  実際のcommandListのImGuiの描画コマンドを積む
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());

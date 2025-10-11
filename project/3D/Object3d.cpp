@@ -1,37 +1,37 @@
 #include "Object3d.h"
 #include "MatrixMath.h"
+#include "Model.h"
 #include "Object3dManager.h"
 #include <cassert>
 #include <fstream>
 #include <sstream>
-
 void Object3d::Initialize(Object3dManager* object3DManager, DebugCamera debugCamera)
 {
     object3dManager_ = object3DManager;
     debugCamera_ = debugCamera;
 
-    // モデル読み込み
-    modelData = LoadObjFile("resources", "plane.obj");
+    //// モデル読み込み
+    // modelData = LoadObjFile("resources", "plane.obj");
 
-    // テクスチャ読み込み
-    TextureManager::GetInstance()->LoadTexture(modelData.material.textureFilePath);
-    modelData.material.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(modelData.material.textureFilePath);
+    //// テクスチャ読み込み
+    // TextureManager::GetInstance()->LoadTexture(modelData.material.textureFilePath);
+    // modelData.material.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(modelData.material.textureFilePath);
 
-    // 頂点リソース作成
-    vertexResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(VertexData) * modelData.vertices.size());
-    vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
-    vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size());
-    vertexBufferView.StrideInBytes = sizeof(VertexData);
-    VertexData* vertexData = nullptr;
-    vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-    std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size());
+    //// 頂点リソース作成
+    // vertexResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(VertexData) * modelData.vertices.size());
+    // vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
+    // vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size());
+    // vertexBufferView.StrideInBytes = sizeof(VertexData);
+    // VertexData* vertexData = nullptr;
+    // vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+    // std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size());
 
-    // マテリアル作成
-    materialResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(Material));
-    materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
-    materialData->color = { 1, 1, 1, 1 };
-    materialData->enableLighting = false;
-    materialData->uvTransform = MatrixMath::MakeIdentity4x4();
+    //// マテリアル作成
+    // materialResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(Material));
+    // materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
+    // materialData->color = { 1, 1, 1, 1 };
+    // materialData->enableLighting = false;
+    // materialData->uvTransform = MatrixMath::MakeIdentity4x4();
 
     // 変換行列
     transformationMatrixResource = object3dManager_->GetDxCommon()->CreateBufferResource(sizeof(TransformationMatrix));
@@ -69,21 +69,24 @@ void Object3d::Draw()
 {
     ID3D12GraphicsCommandList* commandList = object3dManager_->GetDxCommon()->GetCommandList();
 
-    commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    /* commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);*/
 
-    commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
+    /* commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());*/
     commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResource->GetGPUVirtualAddress());
 
-    D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = object3dManager_->GetDxCommon()->GetGPUDescriptorHandle(
+    /*D3D12_GPU_DESCRIPTOR_HANDLE textureHandle = object3dManager_->GetDxCommon()->GetGPUDescriptorHandle(
         object3dManager_->GetDxCommon()->GetSRVDescriptorHeap(),
         object3dManager_->GetDxCommon()->GetSRVDescriptorSize(),
         modelData.material.textureIndex);
-    commandList->SetGraphicsRootDescriptorTable(2, textureHandle);
+    commandList->SetGraphicsRootDescriptorTable(2, textureHandle);*/
 
     commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
+    if (model_) {
+        model_->Draw();
+    }
 
-    commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+    /*   commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);*/
 }
 Object3d::ModelData Object3d::LoadObjFile(const std::string& directoryPath, const std::string filename)
 {
@@ -92,7 +95,7 @@ Object3d::ModelData Object3d::LoadObjFile(const std::string& directoryPath, cons
     std::vector<Vector3> normals; // 法線
     std::vector<Vector2> texcoords; // テクスチャ座標
     std::string line; // ファイルから読んだ一行を格納するもの
-
+    Object3d::ModelData modelData;
     // 2.ファイルを開く
     std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
     assert(file.is_open()); // とりあえず開けなかったら止める
@@ -108,7 +111,7 @@ Object3d::ModelData Object3d::LoadObjFile(const std::string& directoryPath, cons
             Vector4 position;
             s >> position.x >> position.y >> position.z;
             // 左手座標にする
-            //position.x *= -1.0f;
+            // position.x *= -1.0f;
 
             position.w = 1.0f;
             positions.push_back(position);
@@ -117,7 +120,7 @@ Object3d::ModelData Object3d::LoadObjFile(const std::string& directoryPath, cons
             s >> texcoord.x >> texcoord.y;
             // 上下逆にする
 
-            //texcoord.y *= -1.0f;
+            // texcoord.y *= -1.0f;
             texcoord.y = 1.0f - texcoord.y;
             // CG2_06_02_kusokusosjsusuawihoafwhgiuwhkgfau
             texcoords.push_back(texcoord);

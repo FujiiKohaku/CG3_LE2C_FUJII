@@ -37,7 +37,6 @@ public:
     // SRVヒープとサイズのGetter
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GetSRVDescriptorHeap() const { return srvDescriptorHeap; }
     uint32_t GetSRVDescriptorSize() const { return descriptorSizeSRV; }
-
     // シェーダーコンパイル関数
     Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(const std::wstring& filepath, const wchar_t* profile);
     // リソース生成関数

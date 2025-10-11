@@ -189,6 +189,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="2D\SpriteManager.cpp" />
     <ClCompile Include="3D\Object3dManager.cpp" />
     <ClCompile Include="3D\Object3d.cpp" />
+    <ClCompile Include="3D\Model.cpp" />
+    <ClCompile Include="3D\ModelCommon.cpp" />
     <ClCompile Include="StringUtility\StringUtility.cpp" />
     <ClCompile Include="TextureManager\TextureManager.cpp" />
     <ClCompile Include="Utility.cpp">
@@ -240,6 +242,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="2D\SpriteManager.h" />
     <ClInclude Include="3D\Object3dManager.h" />
     <ClInclude Include="3D\Object3d.h" />
+    <ClInclude Include="3D\Model.h" />
+    <ClInclude Include="3D\ModelCommon.h" />
     <ClInclude Include="StringUtility\StringUtility.h" />
     <ClInclude Include="TextureManager\TextureManager.h" />
     <ClInclude Include="Utility.h" />

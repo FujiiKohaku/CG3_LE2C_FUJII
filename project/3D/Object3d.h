@@ -6,9 +6,8 @@
 #include <string>
 #include <vector>
 #include <wrl.h>
-
 class Object3dManager;
-
+class Model;
 class Object3d {
 public:
     // ===============================
@@ -54,7 +53,6 @@ public:
         Vector3 translate;
     };
 
-public:
     // ===============================
     // メンバ関数
     // ===============================
@@ -62,9 +60,20 @@ public:
     void Update();
     void Draw();
 
-private:
-    ModelData LoadObjFile(const std::string& directoryPath, const std::string filename);
-    MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename);
+    static ModelData LoadObjFile(const std::string& directoryPath, const std::string filename);
+    static MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename);
+
+    // setter
+    void SetModel(Model* model) { model_ = model; }
+    // === setter ===
+    void SetScale(const Vector3& scale) { transform.scale = scale; }
+    void SetRotate(const Vector3& rotate) { transform.rotate = rotate; }
+    void SetTranslate(const Vector3& translate) { transform.translate = translate; }
+
+    // === getter ===
+    const Vector3& GetScale() const { return transform.scale; }
+    const Vector3& GetRotate() const { return transform.rotate; }
+    const Vector3& GetTranslate() const { return transform.translate; }
 
 private:
     // ===============================
@@ -72,14 +81,15 @@ private:
     // ===============================
     Object3dManager* object3dManager_ = nullptr;
 
+    Model* model_ = nullptr;
     // バッファ系
-    Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource;
-    Microsoft::WRL::ComPtr<ID3D12Resource> materialResource;
+  /*  Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource;*/
+    //Microsoft::WRL::ComPtr<ID3D12Resource> materialResource;
     Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixResource;
     Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource;
 
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView {};
-    Material* materialData = nullptr;
+ /*   D3D12_VERTEX_BUFFER_VIEW vertexBufferView {};*/
+ /*   Material* materialData = nullptr;*/
     TransformationMatrix* transformationMatrixData = nullptr;
     DirectionalLight* directionalLightData = nullptr;
 
@@ -88,7 +98,7 @@ private:
     Transform cameraTransform;
 
     // モデル
-    ModelData modelData;
+    //ModelData modelData;
 
     // カメラ
     DebugCamera debugCamera_;
