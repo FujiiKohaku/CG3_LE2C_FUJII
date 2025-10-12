@@ -16,7 +16,7 @@ void Model::Initialize(ModelCommon* modelCommon)
     // ===============================
     // モデルデータ読み込み
     // ===============================
-    modelData_ = Object3d::LoadObjFile("resources", "plane.obj");
+    modelData_ = Object3d::LoadObjFile("resources", "axis.obj");
 
     // ===============================
     // 頂点バッファの生成
