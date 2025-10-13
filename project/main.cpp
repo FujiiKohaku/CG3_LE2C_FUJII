@@ -17,6 +17,7 @@
 #include "Unknwn.h"
 #include "Utility.h"
 #include "Winapp/WinApp.h"
+#include "modelManager.h"
 #include <cassert>
 #include <chrono>
 #include <cstdint>
@@ -309,35 +310,39 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     ModelCommon modelCommon;
     modelCommon.Initialize(dxCommon);
 
+    ModelManager::GetInstance()->initialize(dxCommon);
+    ModelManager::GetInstance()->LoadModel("plane.obj");
+    ModelManager::GetInstance()->LoadModel("plane.obj");
+    ModelManager::GetInstance()->LoadModel("axis.obj");
     // =============================
     // 4. モデルと3Dオブジェクト生成
     // =============================
 
-    // モデルを生成
-    Model model; // 汎用モデル
-    model.Initialize(&modelCommon);
+    //// モデルを生成
+    //Model model; // 汎用モデル
+    //model.Initialize(&modelCommon);
 
-    Model modelPlayer; // プレイヤー用モデル
-    modelPlayer.Initialize(&modelCommon);
+    //Model modelPlayer; // プレイヤー用モデル
+    //modelPlayer.Initialize(&modelCommon);
 
-    Model modelEnemy; // 敵用モデル
-    modelEnemy.Initialize(&modelCommon);
+    //Model modelEnemy; // 敵用モデル
+    //modelEnemy.Initialize(&modelCommon);
 
     // 3Dオブジェクト生成
     Object3d object3d; // メインオブジェクト
     object3d.Initialize(object3dManager, debugCamera);
-    object3d.SetModel(&model);
+    object3d.SetModel("plane.obj");
 
     // プレイヤー
     Object3d player2;
     player2.Initialize(object3dManager, debugCamera);
-    player2.SetModel(&modelPlayer);
+    player2.SetModel("axis.obj");
     player2.SetTranslate({ 3.0f, 0.0f, 0.0f }); // 右に移動
 
     // 敵
     Object3d enemy;
     enemy.Initialize(object3dManager, debugCamera);
-    enemy.SetModel(&modelEnemy);
+    enemy.SetModel("axis.obj");
     enemy.SetTranslate({ -2.0f, 0.0f, 0.0f }); // 左に移動
 #pragma endregion
 
@@ -412,7 +417,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // ==============================
             //  開発用UI
             // ==============================
-            
+
             // ImGui::ShowDemoWindow();
 
             ImGui::Render(); // ImGuiの内部コマンドを生成（描画直前に呼ぶ）
@@ -458,6 +463,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             // ----- ImGui描画（デバッグUI） -----
             ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
 
+            
             // ----- 描画終了処理 -----
             dxCommon->PostDraw();
 
@@ -478,6 +484,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     // リリースする場所
     // XAudio解放
+    // 3Dモデル描画終了後、スプライト描画終了後に行う
+    ModelManager::GetInstance()->Finalize();
+
     soundmanager.Finalize(&bgm);
 
     delete object3dManager;

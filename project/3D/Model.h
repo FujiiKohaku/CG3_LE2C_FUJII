@@ -14,7 +14,7 @@ public:
     // ===============================
     // メイン関数
     // ===============================
-    void Initialize(ModelCommon* modelCommon); // 初期化（共通設定の受け取り）
+    void Initialize(ModelCommon* modelCommon, const std::string& directorypath, const std::string& filename); // 初期化（共通設定の受け取り）
     void Draw(); // 描画
 
     // ===============================

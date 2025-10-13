@@ -6,7 +6,7 @@
 // ===============================================
 // モデル初期化処理
 // ===============================================
-void Model::Initialize(ModelCommon* modelCommon)
+void Model::Initialize(ModelCommon* modelCommon, const std::string& directorypath, const std::string& filename)
 {
     // ===============================
     // 共通設定を受け取る
@@ -16,7 +16,7 @@ void Model::Initialize(ModelCommon* modelCommon)
     // ===============================
     // モデルデータ読み込み
     // ===============================
-    modelData_ = Object3d::LoadObjFile("resources", "axis.obj");
+    modelData_ = Object3d::LoadObjFile(directorypath, filename);
 
     // ===============================
     // 頂点バッファの生成

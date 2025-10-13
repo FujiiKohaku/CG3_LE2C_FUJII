@@ -1,11 +1,11 @@
 #include "Object3d.h"
 #include "MatrixMath.h"
 #include "Model.h"
+#include "ModelManager.h"
 #include "Object3dManager.h"
 #include <cassert>
 #include <fstream>
 #include <sstream>
-
 #pragma region 初期化処理
 void Object3d::Initialize(Object3dManager* object3DManager, DebugCamera debugCamera)
 {
@@ -175,4 +175,11 @@ Object3d::MaterialData Object3d::LoadMaterialTemplateFile(const std::string& dir
     }
     return materialData;
 }
+
 #pragma endregion
+
+void Object3d::SetModel(const std::string& filePath)
+{
+    // モデルを検索してセットする
+    model_ = ModelManager::GetInstance()->FindModel(filePath);
+}

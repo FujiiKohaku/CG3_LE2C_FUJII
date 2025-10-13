@@ -69,7 +69,7 @@ public:
     void SetScale(const Vector3& scale) { transform.scale = scale; }
     void SetRotate(const Vector3& rotate) { transform.rotate = rotate; }
     void SetTranslate(const Vector3& translate) { transform.translate = translate; }
-
+    void SetModel(const std::string& filePath);
     // === getter ===
     const Vector3& GetScale() const { return transform.scale; }
     const Vector3& GetRotate() const { return transform.rotate; }
@@ -83,13 +83,13 @@ private:
 
     Model* model_ = nullptr;
     // バッファ系
-  /*  Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource;*/
-    //Microsoft::WRL::ComPtr<ID3D12Resource> materialResource;
+    /*  Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource;*/
+    // Microsoft::WRL::ComPtr<ID3D12Resource> materialResource;
     Microsoft::WRL::ComPtr<ID3D12Resource> transformationMatrixResource;
     Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightResource;
 
- /*   D3D12_VERTEX_BUFFER_VIEW vertexBufferView {};*/
- /*   Material* materialData = nullptr;*/
+    /*   D3D12_VERTEX_BUFFER_VIEW vertexBufferView {};*/
+    /*   Material* materialData = nullptr;*/
     TransformationMatrix* transformationMatrixData = nullptr;
     DirectionalLight* directionalLightData = nullptr;
 
@@ -98,7 +98,7 @@ private:
     Transform cameraTransform;
 
     // モデル
-    //ModelData modelData;
+    // ModelData modelData;
 
     // カメラ
     DebugCamera debugCamera_;
