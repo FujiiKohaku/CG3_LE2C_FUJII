@@ -93,70 +93,64 @@ void Object3d::Draw()
 // ===============================================
 Object3d::ModelData Object3d::LoadObjFile(const std::string& directoryPath, const std::string filename)
 {
-    std::vector<Vector4> positions; // 位置
-    std::vector<Vector3> normals; // 法線
-    std::vector<Vector2> texcoords; // テクスチャ座標
+    ModelData modelData;
+    std::vector<Vector4> positions;
+    std::vector<Vector3> normals;
+    std::vector<Vector2> texcoords;
     std::string line;
 
-    Object3d::ModelData modelData;
-
-    // ファイルを開く
     std::ifstream file(directoryPath + "/" + filename);
     assert(file.is_open());
 
     while (std::getline(file, line)) {
-        std::string identifiler;
+        std::string identifier;
         std::istringstream s(line);
-        s >> identifiler;
+        s >> identifier;
 
-        // ================================
-        // 頂点情報の読み込み
-        // ================================
-        if (identifiler == "v") {
+        if (identifier == "v") {
             Vector4 position;
             s >> position.x >> position.y >> position.z;
+           // position.x *= -1.0f;
             position.w = 1.0f;
             positions.push_back(position);
-        } else if (identifiler == "vt") {
+        } else if (identifier == "vt") {
             Vector2 texcoord;
             s >> texcoord.x >> texcoord.y;
-            texcoord.y = 1.0f - texcoord.y; // 上下反転
+            texcoord.y= 1.0f - texcoord.y;
             texcoords.push_back(texcoord);
-        } else if (identifiler == "vn") {
+        } else if (identifier == "vn") {
             Vector3 normal;
             s >> normal.x >> normal.y >> normal.z;
-            normal.x *= -1.0f; // 左手座標系用
+            normal.x *= -1.0f;
             normals.push_back(normal);
-        } else if (identifiler == "f") {
+        } else if (identifier == "f") {
             VertexData triangle[3];
             for (int i = 0; i < 3; ++i) {
-                std::string vertexDef;
-                s >> vertexDef;
-                std::istringstream v(vertexDef);
-                uint32_t indices[3];
-                for (int j = 0; j < 3; ++j) {
+                std::string vertexDefinition;
+                s >> vertexDefinition;
+                std::istringstream v(vertexDefinition);
+                uint32_t idx[3];
+                for (int e = 0; e < 3; ++e) {
                     std::string index;
                     std::getline(v, index, '/');
-                    indices[j] = std::stoi(index);
+                    idx[e] = std::stoi(index);
                 }
                 triangle[i] = {
-                    positions[indices[0] - 1],
-                    texcoords[indices[1] - 1],
-                    normals[indices[2] - 1]
+                    positions[idx[0] - 1],
+                    texcoords[idx[1] - 1],
+                    normals[idx[2] - 1]
                 };
             }
-            // 逆順に格納（時計回り→反時計回り）
+            // 逆順
             modelData.vertices.push_back(triangle[2]);
             modelData.vertices.push_back(triangle[1]);
             modelData.vertices.push_back(triangle[0]);
-        } else if (identifiler == "mtllib") {
-            // マテリアルファイル読み込み
-            std::string materialFilename;
-            s >> materialFilename;
-            modelData.material = LoadMaterialTemplateFile(directoryPath, materialFilename);
+        } else if (identifier == "mtllib") {
+            std::string mtlFile;
+            s >> mtlFile;
+            modelData.material = LoadMaterialTemplateFile(directoryPath, mtlFile);
         }
     }
-
     return modelData;
 }
 #pragma endregion
