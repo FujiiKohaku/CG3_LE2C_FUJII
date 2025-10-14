@@ -123,7 +123,6 @@ void Game::Initialize()
 
     ModelManager::GetInstance()->initialize(dxCommon_);
     ModelManager::GetInstance()->LoadModel("plane.obj");
-    ModelManager::GetInstance()->LoadModel("plane.obj");
     ModelManager::GetInstance()->LoadModel("axis.obj");
     // =============================
     // 4. モデルと3Dオブジェクト生成
@@ -142,7 +141,7 @@ void Game::Initialize()
     // 3Dオブジェクト生成
 
     object3d_.Initialize(object3dManager_);
-    object3d_.SetModel("plane.obj");
+    object3d_.SetModel("axis.obj");
 
     // プレイヤー
 
@@ -153,7 +152,7 @@ void Game::Initialize()
     // 敵
 
     enemy_.Initialize(object3dManager_);
-    enemy_.SetModel("axis.obj");
+    enemy_.SetModel("plane.obj");
     enemy_.SetTranslate({ -2.0f, 0.0f, 0.0f }); // 左に移動
 #pragma endregion
 

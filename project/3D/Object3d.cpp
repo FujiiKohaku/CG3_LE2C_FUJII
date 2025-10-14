@@ -60,8 +60,7 @@ void Object3d::Update()
     // ================================
     // WVP行列を計算して転送
     // ================================
-    transformationMatrixData->WVP = MatrixMath::Multiply(worldMatrix,
-        MatrixMath::Multiply(viewMatrix, projectionMatrix));
+    transformationMatrixData->WVP = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
 
     // ワールド行列も送る（ライティングなどで使用）
     transformationMatrixData->World = worldMatrix;
@@ -121,7 +120,7 @@ Object3d::ModelData Object3d::LoadObjFile(const std::string& directoryPath, cons
         } else if (identifier == "vn") {
             Vector3 normal;
             s >> normal.x >> normal.y >> normal.z;
-            normal.x *= -1.0f;
+           // normal.x *= -1.0f;
             normals.push_back(normal);
         } else if (identifier == "f") {
             VertexData triangle[3];
