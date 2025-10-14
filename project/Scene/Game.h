@@ -17,7 +17,7 @@
 #include "TextureManager.h"
 #include "Unknwn.h"
 #include "Utility.h"
-#include "Winapp/WinApp.h"
+#include "WinApp.h"
 #include "modelManager.h"
 #include <cassert>
 #include <chrono>
@@ -36,11 +36,11 @@
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
 // 外部ライブラリ//
-#include "externals/DirectXTex/DirectXTex.h"
-#include "externals/DirectXTex/d3dx12.h"
-#include "externals/imgui/imgui.h"
-#include "externals/imgui/imgui_impl_dx12.h"
-#include "externals/imgui/imgui_impl_win32.h"
+#include "DirectXTex/DirectXTex.h"
+#include "DirectXTex/d3dx12.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_dx12.h"
+#include "imgui/imgui_impl_win32.h"
 // リンカオプション
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")

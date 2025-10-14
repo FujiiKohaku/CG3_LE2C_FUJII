@@ -197,7 +197,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="3D\ModelManager.cpp" />
     <ClCompile Include="StringUtility\StringUtility.cpp" />
     <ClCompile Include="TextureManager\TextureManager.cpp" />
-    <ClCompile Include="Utility.cpp">
+    <ClCompile Include="Winapp\Utility.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
@@ -254,7 +254,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="3D\ModelManager.h" />
     <ClInclude Include="StringUtility\StringUtility.h" />
     <ClInclude Include="TextureManager\TextureManager.h" />
-    <ClInclude Include="Utility.h" />
+    <ClInclude Include="Winapp\Utility.h" />
     <ClInclude Include="math\MatrixMath.h" />
     <ClInclude Include="Winapp\WinApp.h" />
   </ItemGroup>

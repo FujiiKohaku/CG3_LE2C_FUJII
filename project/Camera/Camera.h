@@ -10,13 +10,13 @@ struct Transform {
 
 class Camera {
 public:
-    // ƒfƒtƒHƒ‹ƒgƒRƒ“ƒXƒgƒ‰ƒNƒ^éŒ¾
+    // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿å®£è¨€
     Camera();
 
-    // XV
+    // æ›´æ–°
     void Update();
     // ===============================
-    // setteriŠO•”‚©‚ç’l‚ğİ’èj
+    // setterï¼ˆå¤–éƒ¨ã‹ã‚‰å€¤ã‚’è¨­å®šï¼‰
     // ===============================
     void SetRotate(const Vector3& rotate) { transform_.rotate = rotate; }
     void SetTranslate(const Vector3& translate) { transform_.translate = translate; }
@@ -26,20 +26,20 @@ public:
     void SetFarClip(float farClip) { farClip_ = farClip; }
 
     // ===============================
-    // getteriŠO•”‚©‚ç’l‚ğæ“¾j
+    // getterï¼ˆå¤–éƒ¨ã‹ã‚‰å€¤ã‚’å–å¾—ï¼‰
     // ===============================
 
-    // Šes—ñ
+    // å„è¡Œåˆ—
     const Matrix4x4& GetWorldMatrix() const { return worldMatrix_; }
     const Matrix4x4& GetViewMatrix() const { return viewMatrix_; }
     const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
-    // ViewProjectioni‡¬Ï‚İs—ñj
+    // ViewProjectionï¼ˆåˆæˆæ¸ˆã¿è¡Œåˆ—ï¼‰
     const Matrix4x4 GetViewProjectionMatrix() const { return viewProjectionMatrix_; }
-    // ŠeíTransformî•ñ
+    // å„ç¨®Transformæƒ…å ±
     const Vector3& GetRotate() const { return transform_.rotate; }
     const Vector3& GetTranslate() const { return transform_.translate; }
 
-    // ŠeíƒvƒƒWƒFƒNƒVƒ‡ƒ“İ’è’l
+    // å„ç¨®ãƒ—ãƒ­ã‚¸ã‚§ã‚¯ã‚·ãƒ§ãƒ³è¨­å®šå€¤
     float GetFovY() const { return fovY_; }
     float GetAspectRatio() const { return aspectRatio_; }
     float GetNearClip() const { return nearClip_; }
@@ -51,9 +51,9 @@ private:
     Matrix4x4 viewMatrix_;
     Matrix4x4 projectionMatrix_;
     Matrix4x4 viewProjectionMatrix_;
-    // ƒvƒƒWƒFƒNƒVƒ‡ƒ“ŒvZ—pƒpƒ‰ƒ[ƒ^
-    float fovY_ = 0.45f; // ‚’¼•ûŒü‚Ì‹–ìŠp
+    // ãƒ—ãƒ­ã‚¸ã‚§ã‚¯ã‚·ãƒ§ãƒ³è¨ˆç®—ç”¨ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
+    float fovY_ = 0.45f; // å‚ç›´æ–¹å‘ã®è¦–é‡è§’
     float aspectRatio_ = static_cast<float>(WinApp::kClientWidth) / static_cast<float>(WinApp::kClientHeight);
-    float nearClip_ = 0.1f; // ƒjƒAƒNƒŠƒbƒv‹——£
-    float farClip_ = 100.0f; // ƒtƒ@[ƒNƒŠƒbƒv‹——£
+    float nearClip_ = 0.1f; // ãƒ‹ã‚¢ã‚¯ãƒªãƒƒãƒ—è·é›¢
+    float farClip_ = 100.0f; // ãƒ•ã‚¡ãƒ¼ã‚¯ãƒªãƒƒãƒ—è·é›¢
 };
