@@ -46,10 +46,7 @@ void Object3d::Update()
     // ================================
     Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
     Matrix4x4 viewMatrix = debugCamera_.GetViewMatrix(); // カメラから取得
-    Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(
-        0.45f,
-        static_cast<float>(WinApp::kClientWidth) / static_cast<float>(WinApp::kClientHeight),
-        0.1f, 100.0f);
+    Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix( 0.45f,static_cast<float>(WinApp::kClientWidth) / static_cast<float>(WinApp::kClientHeight),0.1f, 100.0f);
 
     // ================================
     // 行列をGPUに転送

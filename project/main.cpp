@@ -1,4 +1,4 @@
-#include "Game.h"
+#include "Scene/Game.h"
 
 // ======================= ImGui用ウィンドウプロシージャ =====================
 // ImGuiの入力処理をWindowsメッセージから受け取るための宣言（ImGui内部用）
