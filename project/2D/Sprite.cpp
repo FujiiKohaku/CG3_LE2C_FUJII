@@ -126,7 +126,7 @@ void Sprite::CreateVertexBuffer()
     indexResource = spriteManager_->GetDxCommon()->CreateBufferResource(sizeof(uint32_t) * 6);
 
     // -------------------------------
-    // 頂点バッファビュー設定
+    // 頂点バッファビュー設定 
     // -------------------------------
     vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
     vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * 4);
