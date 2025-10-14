@@ -115,7 +115,7 @@ void Game::Initialize()
 
     // カメラ
 
-    debugCamera_.Initialize(winApp_);
+   
 
     // モデル共通設定
 
@@ -141,18 +141,18 @@ void Game::Initialize()
 
     // 3Dオブジェクト生成
 
-    object3d_.Initialize(object3dManager_, debugCamera_);
+    object3d_.Initialize(object3dManager_);
     object3d_.SetModel("plane.obj");
 
     // プレイヤー
 
-    player2_.Initialize(object3dManager_, debugCamera_);
+    player2_.Initialize(object3dManager_);
     player2_.SetModel("axis.obj");
     player2_.SetTranslate({ 3.0f, 0.0f, 0.0f }); // 右に移動
 
     // 敵
 
-    enemy_.Initialize(object3dManager_, debugCamera_);
+    enemy_.Initialize(object3dManager_);
     enemy_.SetModel("axis.obj");
     enemy_.SetTranslate({ -2.0f, 0.0f, 0.0f }); // 左に移動
 #pragma endregion
@@ -231,8 +231,7 @@ void Game::Update()
     // 入力状態の更新
     input_->Update();
 
-    // カメラの更新
-    debugCamera_.Update();
+  
 
     // 各3Dオブジェクトの更新
     object3d_.Update();

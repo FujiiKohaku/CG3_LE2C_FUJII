@@ -56,7 +56,7 @@ public:
     // ===============================
     // メンバ関数
     // ===============================
-    void Initialize(Object3dManager* object3DManager, DebugCamera debugCamera);
+    void Initialize(Object3dManager* object3DManager);
     void Update();
     void Draw();
 
@@ -100,6 +100,5 @@ private:
     // モデル
     // ModelData modelData;
 
-    // カメラ
-    DebugCamera debugCamera_;
+  
 };

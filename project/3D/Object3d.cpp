@@ -7,11 +7,10 @@
 #include <fstream>
 #include <sstream>
 #pragma region 初期化処理
-void Object3d::Initialize(Object3dManager* object3DManager, DebugCamera debugCamera)
+void Object3d::Initialize(Object3dManager* object3DManager)
 {
     // Object3dManager と DebugCamera を受け取って保持
     object3dManager_ = object3DManager;
-    debugCamera_ = debugCamera;
 
     // ================================
     // Transformバッファ初期化
@@ -39,21 +38,35 @@ void Object3d::Initialize(Object3dManager* object3DManager, DebugCamera debugCam
 #pragma endregion
 
 #pragma region 更新処理
+
 void Object3d::Update()
 {
     // ================================
     // 各種行列を作成
     // ================================
+
+    // ① モデル自身のワールド行列（スケール・回転・移動）
     Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
-    Matrix4x4 viewMatrix = debugCamera_.GetViewMatrix(); // カメラから取得
-    Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix( 0.45f,static_cast<float>(WinApp::kClientWidth) / static_cast<float>(WinApp::kClientHeight),0.1f, 100.0f);
+
+    // ② カメラのワールド行列（位置・回転のみ使用）
+    Matrix4x4 cameraMatrix = MatrixMath::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
+
+    // ③ ビュー行列（カメラ行列の逆行列）
+    Matrix4x4 viewMatrix = MatrixMath::Inverse(cameraMatrix);
+
+    // ④ 射影行列（FOV・アスペクト比・クリップ距離）
+    Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, static_cast<float>(WinApp::kClientWidth) / static_cast<float>(WinApp::kClientHeight), 0.1f, 100.0f);
 
     // ================================
-    // 行列をGPUに転送
+    // WVP行列を計算して転送
     // ================================
-    transformationMatrixData->WVP = MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
+    transformationMatrixData->WVP = MatrixMath::Multiply(worldMatrix,
+        MatrixMath::Multiply(viewMatrix, projectionMatrix));
+
+    // ワールド行列も送る（ライティングなどで使用）
     transformationMatrixData->World = worldMatrix;
 }
+
 #pragma endregion
 
 #pragma region 描画処理
