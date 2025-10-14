@@ -36,6 +36,7 @@ public:
         uint32_t textureIndex = 0;
     };
 
+    // 頂点、マテリアル関連
     struct VertexData {
         Vector4 position;
         Vector2 texcoord;
@@ -99,6 +100,4 @@ private:
 
     // モデル
     // ModelData modelData;
-
-  
 };
