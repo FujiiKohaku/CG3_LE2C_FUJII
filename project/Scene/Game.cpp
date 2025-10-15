@@ -1,4 +1,5 @@
 #include "Game.h"
+#include <numbers>
 void Game::Initialize()
 {
 
@@ -115,8 +116,6 @@ void Game::Initialize()
 
     // カメラ
 
-   
-
     // モデル共通設定
 
     modelCommon_.Initialize(dxCommon_);
@@ -141,14 +140,14 @@ void Game::Initialize()
     // 3Dオブジェクト生成
 
     object3d_.Initialize(object3dManager_);
-    object3d_.SetModel("axis.obj");
+    object3d_.SetModel("plane.obj");
 
     // プレイヤー
 
     player2_.Initialize(object3dManager_);
     player2_.SetModel("axis.obj");
     player2_.SetTranslate({ 3.0f, 0.0f, 0.0f }); // 右に移動
-
+   // player2_.SetRotate({ 0.0f, std::numbers::pi_v<float>, 0.0f });
     // 敵
 
     enemy_.Initialize(object3dManager_);
@@ -229,8 +228,6 @@ void Game::Update()
     // ==============================
     // 入力状態の更新
     input_->Update();
-
-  
 
     // 各3Dオブジェクトの更新
     object3d_.Update();
