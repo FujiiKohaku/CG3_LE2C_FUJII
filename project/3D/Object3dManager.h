@@ -1,4 +1,5 @@
 #pragma once
+#include "Camera.h"
 #include "DirectXCommon.h"
 class Object3dManager {
 public:
@@ -17,6 +18,11 @@ public:
     // getter
     //=========================================
     DirectXCommon* GetDxCommon() const { return dxCommon_; }
+    Camera* GetDefaultCamera() const { return defaultCamera_; }
+    //=========================================
+    // setter
+    //=========================================
+    void SetDefaultCamera(Camera* camera) { defaultCamera_ = camera; }
 
 private:
     //=========================================
@@ -40,4 +46,6 @@ private:
     // シリアライズ用Blob
     ID3DBlob* signatureBlob = nullptr;
     ID3DBlob* errorBlob = nullptr;
+
+    Camera* defaultCamera_ = nullptr;
 };

@@ -115,7 +115,9 @@ void Game::Initialize()
     object3dManager_->Initialize(dxCommon_);
 
     // カメラ
-
+    camera_ = new Camera();
+    camera_->SetTranslate({ 0.0f, 1.0f, -10.0f });
+    object3dManager_->SetDefaultCamera(camera_);
     // モデル共通設定
 
     modelCommon_.Initialize(dxCommon_);
@@ -147,7 +149,7 @@ void Game::Initialize()
     player2_.Initialize(object3dManager_);
     player2_.SetModel("axis.obj");
     player2_.SetTranslate({ 3.0f, 0.0f, 0.0f }); // 右に移動
-   // player2_.SetRotate({ 0.0f, std::numbers::pi_v<float>, 0.0f });
+    // player2_.SetRotate({ 0.0f, std::numbers::pi_v<float>, 0.0f });
     // 敵
 
     enemy_.Initialize(object3dManager_);
@@ -233,6 +235,7 @@ void Game::Update()
     object3d_.Update();
     player2_.Update();
     enemy_.Update();
+    camera_->Update();
 }
 
 void Game::Draw()

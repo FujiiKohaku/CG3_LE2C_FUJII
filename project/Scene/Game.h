@@ -2,6 +2,7 @@
 // ======================= ヘッダー・ライブラリ関連 ==========================
 #define _USE_MATH_DEFINES
 // 標準ライブラリ//
+#include "Camera.h"
 #include "D3DResourceLeakChecker.h"
 #include "DebugCamera.h"
 #include "DirectXCommon.h"
@@ -69,4 +70,5 @@ private:
     Object3d object3d_, player2_, enemy_;
     SoundData bgm;
     bool isEnd = false;
+    Camera* camera_;
 };
