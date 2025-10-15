@@ -144,13 +144,15 @@ void Object3dManager::CreateGraphicsPipeline()
 
     // ====== ラスタライザ設定 ======
     D3D12_RASTERIZER_DESC rasterizerDesc {};
-    rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+    rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
     rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
-    // ====== デプスステンシル設定（今回は無効） ======
+    // ====== デプスステンシル設定 ======
     D3D12_DEPTH_STENCIL_DESC depthStencilDesc {};
-    depthStencilDesc.DepthEnable = FALSE;
+    depthStencilDesc.DepthEnable = TRUE;
     depthStencilDesc.StencilEnable = FALSE;
+    depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+    depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
     // ====== シェーダーのコンパイル ======
     Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dxCommon_->CompileShader(L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
@@ -168,6 +170,8 @@ void Object3dManager::CreateGraphicsPipeline()
     desc.DepthStencilState = depthStencilDesc;
     desc.NumRenderTargets = 1;
     desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    desc.DepthStencilState = depthStencilDesc;
+    desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
     desc.SampleDesc.Count = 1;
     desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
     desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
