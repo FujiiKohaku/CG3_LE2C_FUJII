@@ -36,6 +36,7 @@ public:
         uint32_t textureIndex = 0;
     };
 
+    // 頂点、マテリアル関連
     struct VertexData {
         Vector4 position;
         Vector2 texcoord;
@@ -56,7 +57,7 @@ public:
     // ===============================
     // メンバ関数
     // ===============================
-    void Initialize(Object3dManager* object3DManager, DebugCamera debugCamera);
+    void Initialize(Object3dManager* object3DManager);
     void Update();
     void Draw();
 
@@ -99,7 +100,4 @@ private:
 
     // モデル
     // ModelData modelData;
-
-    // カメラ
-    DebugCamera debugCamera_;
 };

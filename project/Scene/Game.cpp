@@ -1,4 +1,5 @@
 #include "Game.h"
+#include <numbers>
 void Game::Initialize()
 {
 
@@ -115,14 +116,11 @@ void Game::Initialize()
 
     // カメラ
 
-    debugCamera_.Initialize(winApp_);
-
     // モデル共通設定
 
     modelCommon_.Initialize(dxCommon_);
 
     ModelManager::GetInstance()->initialize(dxCommon_);
-    ModelManager::GetInstance()->LoadModel("plane.obj");
     ModelManager::GetInstance()->LoadModel("plane.obj");
     ModelManager::GetInstance()->LoadModel("axis.obj");
     // =============================
@@ -141,19 +139,19 @@ void Game::Initialize()
 
     // 3Dオブジェクト生成
 
-    object3d_.Initialize(object3dManager_, debugCamera_);
+    object3d_.Initialize(object3dManager_);
     object3d_.SetModel("plane.obj");
 
     // プレイヤー
 
-    player2_.Initialize(object3dManager_, debugCamera_);
+    player2_.Initialize(object3dManager_);
     player2_.SetModel("axis.obj");
     player2_.SetTranslate({ 3.0f, 0.0f, 0.0f }); // 右に移動
-
+   // player2_.SetRotate({ 0.0f, std::numbers::pi_v<float>, 0.0f });
     // 敵
 
-    enemy_.Initialize(object3dManager_, debugCamera_);
-    enemy_.SetModel("axis.obj");
+    enemy_.Initialize(object3dManager_);
+    enemy_.SetModel("plane.obj");
     enemy_.SetTranslate({ -2.0f, 0.0f, 0.0f }); // 左に移動
 #pragma endregion
 
@@ -230,9 +228,6 @@ void Game::Update()
     // ==============================
     // 入力状態の更新
     input_->Update();
-
-    // カメラの更新
-    debugCamera_.Update();
 
     // 各3Dオブジェクトの更新
     object3d_.Update();
