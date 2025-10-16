@@ -1,8 +1,10 @@
-#include "Scene/Game.h"
+#include "Game.h"
+//#include <WinApp.cpp>
+#include <D3DResourceLeakChecker.h>
 
 // ======================= ImGui用ウィンドウプロシージャ =====================
 // ImGuiの入力処理をWindowsメッセージから受け取るための宣言（ImGui内部用）
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+//extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // ======================= エントリーポイント =====================
 // Windowsアプリのメイン関数（プログラムのスタート地点）
